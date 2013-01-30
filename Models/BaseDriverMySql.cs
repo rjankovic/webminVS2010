@@ -20,7 +20,11 @@ namespace _min.Models
         protected DataTable logTable;
         protected bool writeLog;
 
-        public bool IsInTransaction { get; private set; }
+        public virtual bool IsInTransaction
+        {
+            get;
+            protected set;
+        }
 
         private enum QueryType 
         {
@@ -322,6 +326,10 @@ namespace _min.Models
         public int LastId() {
             string id = fetchSingle("SELECT LAST_INSERT_ID()").ToString();
             return Int32.Parse(id);
+        }
+        public int NextAIForTable(string tableName) {
+            DataRow res = fetch("SHOW TABLE STATUS LIKE '" + tableName + "'");
+            return (int)res["Auto_increment"];
         }
 
     }

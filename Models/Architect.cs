@@ -447,7 +447,7 @@ namespace _min.Models
             }
 
             systemDriver.StartTransaction();
-
+            
             List<string> tables = stats.TableList();
             List<Panel> baseChildren = new List<Panel>();
             
@@ -501,6 +501,8 @@ namespace _min.Models
             //Notice(this, new ArchitectNoticeEventArgs("Updating database..."));
             systemDriver.AddPanel(basePanel);
 
+            SetControlPanelBindings(basePanel);
+
             TreeControl basePanelTreeControl = new TreeControl(basePanel.panelId, basePanelHierarchy, 
                 "Id", "ParentId", "Caption", UserAction.View);
             basePanelTreeControl.navThroughPanels = true;
@@ -508,7 +510,8 @@ namespace _min.Models
             
             //AddControl! only.
             systemDriver.AddControl(basePanelTreeControl);
-            
+            systemDriver.RewriteControlDefinitions(basePanel);
+
             // now children have everything set, even parentid 
             // as the parent was inserted first, his id was set and they took it from the object
 
@@ -517,6 +520,7 @@ namespace _min.Models
             basePanel.AddControls(addedList);
 
             
+
             //systemDriver.updatePanel(basePanel, false); 
             // sholuld no longer be neccessay
 
@@ -673,5 +677,20 @@ namespace _min.Models
             Panel proposalPanel = systemDriver.getArchitectureInPanel();
             return checkPanelProposal(proposalPanel, true);
         }
+
+        private void SetControlPanelBindings(Panel panel, bool recursive = true) {
+            foreach (Control c in panel.controls) {
+                if (c.targetPanelId != null)
+                    throw new Exception("Target panel id already set!");
+                if(c.targetPanel != null){
+                    c.targetPanelId = c.targetPanel.panelId;
+                }
+            }
+            if (recursive)
+                foreach (Panel p in panel.children)
+                    SetControlPanelBindings(p);
+        }
+
     }
+
 }

@@ -172,7 +172,7 @@ namespace _min.Interfaces
         void updatePanel(Panel panel, bool recursive = true);
         //void updatePanelProperty(Panel panel, string propertyName);
         void removePanel(Panel panel);
-        
+        void RewriteControlDefinitions(Panel panel, bool recursive = true);
         //Common.Environment.User getUser(string userName, string password);
         Common.Environment.Project getProject(int projectId);
 

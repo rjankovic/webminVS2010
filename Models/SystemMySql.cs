@@ -18,10 +18,12 @@ namespace _min.Models
 {
     class SystemDriverMySql : BaseDriverMySql, ISystemDriver
     {
+
+        private bool isInTransaction = false;
+        
         public SystemDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
             : base(connstring, logTable, writeLog)
         { }
-
 
         public void saveLog()
         {
@@ -422,5 +424,27 @@ namespace _min.Models
 
             writeLog = didWriteLog;
         }
+
+        public void RewriteControlDefinitions(Panel panel, bool recursive = true)
+        {
+            Dictionary<string, object> updateVals = new Dictionary<string, object>();
+
+            foreach (Control c in panel.controls)
+            {
+                updateVals["content"] = c.Serialize();
+                query("UPDATE controls SET ", updateVals, " WHERE id_control = ", c.controlId);
+            }
+
+            if (recursive)
+                foreach (Panel p in panel.children)
+                    RewriteControlDefinitions(p);
+        }
+        
+        /*
+        public void RewriteControlDefinitions(Panel panel)
+        {
+            throw new NotImplementedException();
+        }
+         */ 
     }
 }
