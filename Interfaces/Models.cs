@@ -122,6 +122,7 @@ namespace _min.Interfaces
         //int SetBufferSize(int size);
         //bool SetBufferUse(bool use);
         //void SendBuffer();
+        DataTable logTable { get; }
     }
 
     public interface IWebDriver : IBaseDriver     // webDB
@@ -144,6 +145,9 @@ namespace _min.Interfaces
         List<string> TableList();
         List<M2NMapping> findMappings();
         DateTime TableCreation(string tableName);//...
+        List<string> TablesMissingPK();
+        Dictionary<string, List<string>> GlobalPKs();
+        List<FK> selfRefFKs();
     }
     /*
     public interface IArchitect  // systemDB, does not fill structures with data
@@ -159,13 +163,15 @@ namespace _min.Interfaces
     */
     public interface ISystemDriver : IBaseDriver // systemDB
     {
-        void saveLog();
+        void ProcessLogTable();
+        void ProcessLogTable(DataTable data);
         void logUserAction(DataRow data);
         bool isUserAuthorized(int panelId, UserAction act);
         void doRequests();
         Panel getPanel(string tableName, UserAction action, bool recursive = true, Panel parent = null);
         Panel getPanel(int panelId, bool recursive = true, Panel parent = null);
         Panel getArchitectureInPanel();
+        Panel GetBasePanel();
         void AddPanel(Panel panel, bool recursive = true);
         void AddField(Field field);
         void AddControl(Control control);
@@ -175,9 +181,15 @@ namespace _min.Interfaces
         void RewriteControlDefinitions(Panel panel, bool recursive = true);
         //Common.Environment.User getUser(string userName, string password);
         Common.Environment.Project getProject(int projectId);
+        Common.Environment.Project getProject(string projectName);
 
         bool ProposalExists();
         void ClearProposal();
         //DataTable fetchBaseNavControlTable();   // the DataTable for main TreeControl / MenuDrop
+
+        string[] GetProjectNameList();
+        DataTable GetProjects();
+        void UpdateProject(int id, Dictionary<string, object> data);
+        void InsertProject(Dictionary<string, object> data);
     }
 }

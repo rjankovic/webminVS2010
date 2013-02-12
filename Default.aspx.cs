@@ -11,6 +11,9 @@ using CE = _min.Common.Environment;
 using CC = _min.Common.Constants;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
+using System.Data;
+using System.IO;
+using _min.Common;
 
 namespace _min_t7
 {
@@ -22,7 +25,7 @@ namespace _min_t7
         StatsMySql stats;
         SystemDriverMySql sysDriver;
         WebDriverMySql webDriver;
-        Architect architect;
+        _min.Models.Architect architect;
 
         public event ArchitectNotice AdditionalArchitectNotice;
 
@@ -43,8 +46,43 @@ namespace _min_t7
 
         protected void Page_Load(object sender, EventArgs e)
         {
+
+            
+            DataSet ds = new DataSet();
+            HierarchyNavTable hdt = new HierarchyNavTable();
+            HierarchyRow r = hdt.NewRow() as HierarchyRow;
+            r.Caption = "C";
+            r.Id = 1;
+            r.ParentId = 0;
+            r.NavId = 2;
+            hdt.Rows.Add(r);
+            HierarchyRow r2 = hdt.NewRow() as HierarchyRow;
+            r2.Id = 2;
+            r2.ParentId = 1;
+            r2.Caption = "D";
+            r2.NavId = 3;
+            hdt.Rows.Add(r2);
+            
+            ds.Tables.Add(hdt);
+            ds.Relations.Add(new DataRelation("Hierarchy", hdt.Columns["Id"], hdt.Columns["ParentId"], false));
+            DataContractSerializer serializer = new DataContractSerializer(typeof(Control));
+            /*
+
+            DataRow[] children = hdt.Rows[0].GetChildRows("Hierarchy");
+            
+
+            MemoryStream ms = new MemoryStream();
+            DataContractSerializer ser = new DataContractSerializer(typeof(DataSet));
+            ser.WriteObject(ms, ds);
+            string serialized = Functions.StreamToString(ms);
+            DataSet deser = (DataSet)(ser.ReadObject(Functions.GenerateStreamFromString(serialized)));
+
+            deser = deser;
+            */
             //string dbName = "naborycz";
-            string dbName = "ks";
+            //string dbName = "ks";
+             
+            /*
             
             FK fk = new FK("FKtable", "FKcolumn", "FKreftable", "FKrefCol", "FKdisplayCol");
             FKField fkf = new FKField(123, "FKCol", 0, fk, "C a p t i o n");
@@ -56,8 +94,8 @@ namespace _min_t7
             DataContractSerializer ser = new DataContractSerializer(typeof(Field));
             Field f2 = (Field)ser.ReadObject(_min.Common.Functions.GenerateStreamFromString(s));
             TextBox1.Text = f2.Serialize();
-
-
+            */
+            /*
             stats = new StatsMySql(
                 dbName, "Server=85.248.220.75;Uid=dotnet;Pwd=dotnet;Database=information_schema;pooling=true");
             sysDriver = new SystemDriverMySql(
@@ -65,7 +103,7 @@ namespace _min_t7
             CE.project = sysDriver.getProject(1);
             webDriver = new WebDriverMySql(
                 "Server=85.248.220.75;Uid=dotnet;Pwd=dotnet;Database=" + dbName + ";pooling=false");
-            architect = new Architect(sysDriver, stats);
+            architect = new _min.Models.Architect(sysDriver, stats);
 
 
             CE.user = new CE.User();
@@ -73,11 +111,13 @@ namespace _min_t7
             CE.user.login = "test";
             CE.user.name = "test";
             CE.user.rights = 10;
+             */ 
 
         }
 
         protected void Button1_Click(object sender, EventArgs e)
         {
+            
             /*
             architect.Notice += new ArchitectNotice(Architect_Notice);
             this.AdditionalArchitectNotice += new ArchitectNotice(Architect_Notice);
@@ -85,6 +125,7 @@ namespace _min_t7
             architect.Error += new ArchitectureError(Architect_Error);
             architect.Warning += new ArchitectWarning(Architect_Warning);
             */
+            /*
             Task<Panel> proposalTask = new Task<Panel>(() =>
             {
                 return architect.propose();
@@ -93,6 +134,7 @@ namespace _min_t7
             proposalTask.ContinueWith((taskResult) => ProposalReady(taskResult));
 
             proposalTask.Start();
+             */ 
         }
 
     }

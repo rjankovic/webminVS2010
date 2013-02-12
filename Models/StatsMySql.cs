@@ -11,7 +11,7 @@ namespace _min.Models
     class StatsMySql : BaseDriverMySql, IStats 
     {
         private string webDb;
-        public StatsMySql(string webDb, string connstring, DataTable logTable = null, bool writeLog = false)
+        public StatsMySql(string connstring, string webDb, DataTable logTable = null, bool writeLog = false)
             :base(connstring, logTable, writeLog)
         { 
             this.webDb = webDb;
@@ -113,6 +113,18 @@ namespace _min.Models
             return res;
         }
 
+        public List<FK> selfRefFKs() {
+            List<FK> res = new List<FK>();
+            DataTable stats = fetchAll("SELECT * FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
+                + webDb + "\" AND TABLE_NAME = REFERENCED_TABLE_NAME AND REFERENCED_COLUMN_NAME IS NOT NULL");
+            foreach (DataRow r in stats.Rows)
+            {
+                res.Add(new FK(r["TABLE_NAME"] as string, r["COLUMN_NAME"] as string, r["REFERENCED_TABLE_NAME"] as string,
+                    r["REFERENCED_COLUMN_NAME"] as string, r["REFERENCED_COLUMN_NAME"] as string));
+            }
+            return res;
+        }
+
         public List<List<string>> indexes(string tableName)
         {
             DataTable stats = fetchAll("SELECT *, GROUP_CONCAT(COLUMN_NAME) AS COLUMNS FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
@@ -131,6 +143,22 @@ namespace _min.Models
                 + webDb + "\" AND TABLE_NAME = \"" + tableName + "\" AND CONSTRAINT_NAME = \"PRIMARY\" "
                 + " GROUP BY CONSTRAINT_NAME ORDER BY ORDINAL_POSITION");
             return new List<string>(from row in stats.AsEnumerable() select row["COLUMN_NAME"] as string);
+        }
+
+        public Dictionary<string, List<string>> GlobalPKs(){
+            List<string> tables = TableList();
+            Dictionary<string, List<string>> res = new Dictionary<string, List<string>>();
+            foreach (string table in tables) {
+                res[table] = primaryKeyCols(table);
+            }
+            return res;
+        }
+
+        public List<string> TablesMissingPK() {
+            DataTable stats = fetchAll("SELECT L.TABLE_NAME FROM (SELECT TABLE_NAME FROM KEY_COLUMN_USAGE WHERE TABLE_SCHEMA =  '"
+                + webDb + "' GROUP BY TABLE_NAME) AS L LEFT JOIN (SELECT TABLE_NAME FROM KEY_COLUMN_USAGE WHERE TABLE_SCHEMA =  '"
+                + webDb + "' AND CONSTRAINT_NAME =  'PRIMARY' GROUP BY TABLE_NAME) AS R USING ( TABLE_NAME ) WHERE R.TABLE_NAME IS NULL");
+            return new List<string>(from row in stats.AsEnumerable() select row["TABLE_NAME"] as string);
         }
 
         public List<string> TwoColumnTables() {

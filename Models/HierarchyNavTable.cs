@@ -21,8 +21,9 @@ namespace _min.Models
             Columns.Add(new DataColumn("Caption", typeof(string)));
             Columns.Add(new DataColumn("NavId", typeof(int)));
             PrimaryKey = new DataColumn[] { Columns["PK"] };
-            Columns["ParentId"].AllowDBNull = true;
-            Columns["NavId"].AllowDBNull = true;
+            //Columns["ParentId"].AllowDBNull = true;   // should use NULL, not 0
+            //Columns["NavId"].AllowDBNull = true;
+            Columns["Id"].AutoIncrementSeed = 1;
             Columns["Id"].AutoIncrement = true;
         }
 
@@ -62,16 +63,16 @@ namespace _min.Models
             set { base["Id"] = value; }
         }
 
-        public int? NavId
+        public int NavId
         {
-            get { return (int?)base["NavId"]; }
-            set { if (value == null) base["NavId"] = DBNull.Value; else base["NavId"] = (int)value; }
+            get { return (int)base["NavId"]; }
+            set { base["NavId"] = (int)value; }
         }
 
-        public int? ParentId
+        public int ParentId
         {
-            get { return (int?)base["ParentId"]; }
-            set { if (value == null) base["ParentId"] = DBNull.Value; else base["ParentId"] = (int)value; }
+            get { return (int)base["ParentId"]; }
+            set { base["ParentId"] = (int)value; }
         }
 
         public string Caption
@@ -83,9 +84,12 @@ namespace _min.Models
         internal HierarchyRow(DataRowBuilder builder)
             : base(builder)
         {
+            /*
             Id = 0;
-            ParentId = null;
+            ParentId = 0;
+            NavId = 0;
             Caption = string.Empty;
+             */
         }
     }
 }

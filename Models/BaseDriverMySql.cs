@@ -17,7 +17,7 @@ namespace _min.Models
     {
         private MySqlConnection conn;
         // logTable declared in Environment, defined here as string query, int time (miliseconds)
-        protected DataTable logTable;
+        public DataTable logTable { get; private set; }
         protected bool writeLog;
 
         public virtual bool IsInTransaction

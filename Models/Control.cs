@@ -8,6 +8,9 @@ using _min.Common;
 using System.Runtime.Serialization;
 using System.IO;
 
+using UControl = System.Web.UI.Control;
+using WC = System.Web.UI.WebControls;
+
 namespace _min.Models
 {
     [DataContract]
@@ -20,11 +23,14 @@ namespace _min.Models
         public int? panelId { get; set; }
         [IgnoreDataMember]
         private Panel _panel;
-        public Panel panel {
-            get {
+        public Panel panel
+        {
+            get
+            {
                 return _panel;
             }
-            set {
+            set
+            {
                 if (_panel == null)
                 {
                     _panel = value;
@@ -63,7 +69,7 @@ namespace _min.Models
         [IgnoreDataMember]
         public Panel targetPanel { get; set; }
 
-        public Control(int panelId, Panel panel, int targetPanelId, Panel targetPanel,  
+        public Control(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
             DataTable data, List<string> PKColNames, UserAction action)
         {
             this.panelId = panelId;
@@ -77,11 +83,12 @@ namespace _min.Models
 
         public Control(int panelId, Panel panel,
             DataTable data, List<string> PKColNames, UserAction action)
-            :this(panelId, panel, panel.panelId, panel, data, PKColNames, action)
+            : this(panelId, panel, panel.panelId, panel, data, PKColNames, action)
         {
         }
 
-        public Control(int panelId, DataTable data, List<string> PKColNames, UserAction action) {
+        public Control(int panelId, DataTable data, List<string> PKColNames, UserAction action)
+        {
             this.panelId = panelId;
             this.data = data;
             this.PKColNames = PKColNames;
@@ -108,16 +115,22 @@ namespace _min.Models
             return Functions.StreamToString(ms);
         }
 
-        public void SetCreationId(int id) {
-            if (this.controlId == null) {
+        public void SetCreationId(int id)
+        {
+            if (this.controlId == null)
+            {
                 this.controlId = id;
             }
         }
 
-        public void RefreshPanelId() {
+        public void RefreshPanelId()
+        {
             this.panelId = panel.panelId;
         }
 
+        public virtual UControl ToUControl() {
+            throw new NotImplementedException();
+        }
     }
 
 
@@ -130,18 +143,20 @@ namespace _min.Models
         [DataMember]
         public string displayColName { get; private set; }
         [DataMember]
-        public HierarchyNavTable  hierarchyData { get; set; }
+        public DataSet storedHierarchyDataSet { get; set; }
+        [IgnoreDataMember]
+        public HierarchyNavTable storedHierarchyData { get; set; }
         [IgnoreDataMember]
         public override DataTable data
         {
             get
             {
-                return hierarchyData;
+                return storedHierarchyData;
             }
             set
             {
-                if(value is HierarchyNavTable) 
-                    hierarchyData = value as HierarchyNavTable;
+                if (value is HierarchyNavTable)
+                    storedHierarchyData = value as HierarchyNavTable;
                 else
                     throw new FormatException("TreeControl can be filled with as HierarchyNavTable only");
             }
@@ -156,18 +171,81 @@ namespace _min.Models
         public TreeControl(int panelId, HierarchyNavTable data, string PKColName,    // tree controls must have a single-column primary key
             string parentColName, string displayColName,
             UserAction action)
-                : base(panelId, data, PKColName, action) 
+            : base(panelId, data, PKColName, action)
         {
             this.parentColName = parentColName;
             this.displayColName = displayColName;
             ds = new DataSet();
+            //this.data.DataSet = null;
             this.data.TableName = "data";
             ds.Tables.Add(this.data);
-            
+            storedHierarchyDataSet = storedHierarchyData.DataSet;
+            //storedHierarchyDataSet.Tables.Add(storedHierarchyData);
+            //storedHierarchyDataSet.Relations.Add("Hierarchy", 
+            //    storedHierarchyData.Columns["Id"], storedHierarchyData.Columns["ParentId"], false);
+
             //reenable!!!
             //ds.Relations.Add("hierarchy", ds.Tables[0].Columns["Id"], ds.Tables[0].Columns["ParentId"]);
         }
 
+        public override UControl ToUControl() { 
+            /*
+            DataSet ds = new DataSet();
+            ds.Tables.Add(this.hierarchyData);
+            //  twisted (probably)
+            ds.Relations.Add(new DataRelation("Hierarchy", hierarchyData.Columns["ParentId"], hierarchyData.Columns["Id"], true));
+             */
+            if(panel.type == PanelTypes.MenuDrop){
+            WC.Menu res = new WC.Menu();
+            WC.MenuItem item;
+            foreach(DataRow r in storedHierarchyData.Rows){
+                if((int)(r["ParentId"]) == 0){
+                    item = new WC.MenuItem(r["Caption"].ToString(), r["NavId"].ToString());
+                    AddSubmenuForItem(r, item);
+                    res.Items.Add(item);
+                }
+            }
+            return res;
+            }
+            else if(panel.type == PanelTypes.NavTree){
+                            WC.TreeView res = new WC.TreeView();
+            WC.TreeNode item;
+            foreach(DataRow r in storedHierarchyData.Rows){
+                if((int)(r["ParentId"]) == 0){
+                    item = new WC.TreeNode(r["Caption"].ToString(), r["NavId"].ToString());
+                    AddSubtreeForItem(r, item);
+                    res.Nodes.Add(item);
+                }
+            }
+            return res;
+            }
+            throw new Exception("Unsupported hierarchical control type.");
+        }
+
+
+        private void AddSubmenuForItem(DataRow row, WC.MenuItem item)
+        {
+            DataRow[] children = row.GetChildRows("Hierarchy");
+            WC.MenuItem childItem;
+            foreach (DataRow child in children)
+            {
+                childItem = new WC.MenuItem(child["Caption"].ToString(), child["NavId"].ToString());
+                item.ChildItems.Add(childItem);
+                AddSubmenuForItem(child, childItem);
+            }
+        }
+
+        private void AddSubtreeForItem(DataRow row, WC.TreeNode item)
+        {
+            DataRow[] children = row.GetChildRows("Hierarchy");
+            WC.TreeNode childItem;
+            foreach (DataRow child in children)
+            {
+                childItem = new WC.TreeNode(child["Caption"].ToString(), child["NavId"].ToString());
+                item.ChildNodes.Add(childItem);
+                AddSubtreeForItem(child, childItem);
+            }
+        }
     }
 
 }

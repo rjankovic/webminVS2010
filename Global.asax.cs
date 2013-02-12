@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Security;
 using System.Web.SessionState;
+using System.Web.Routing;
 
 namespace _min_t7
 {
@@ -13,7 +14,12 @@ namespace _min_t7
         void Application_Start(object sender, EventArgs e)
         {
             // Code that runs on application startup
+            RouteTable.Routes.MapPageRoute("LoginRoute", "login", "~/Account/Login.aspx");
+            RouteTable.Routes.MapPageRoute("UsersRoute", "sys/users", "~/Sys/Users.aspx");
+            RouteTable.Routes.MapPageRoute("ProjectsRoute", "sys/projects", "~/Sys/Projects.aspx");
 
+            RouteTable.Routes.MapPageRoute("ArchitectInitRoute", "architect/init/{projectName}", "~/Architect/InitProposal.aspx");
+            RouteTable.Routes.MapPageRoute("ArchitectShowRoute", "architect/show/{projectName}", "~/Architect/Show.aspx");
         }
 
         void Application_End(object sender, EventArgs e)

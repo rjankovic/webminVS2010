@@ -75,6 +75,16 @@ namespace _min.Common
     static class Constants {
         public const string SALT = "hjjh5435435jl43kj5ljlj53l4j5lk4";
 
+        public const string ADMIN_PREFIX = "Admin of ";
+        public const string ARCHITECT_PREFIX = "Architect of ";
+
+
+
+
+
+
+
+        // depreceated
         public const string CONTROL_DISABLED = "disabled";      // this panel may not be displayed / edited / ...
 
         // depreceated

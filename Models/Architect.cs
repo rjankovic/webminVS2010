@@ -16,7 +16,8 @@ namespace _min.Models
         public string questionText { get; private set; }
         public Dictionary<string, object> options { get; private set; }
 
-        public ArchitectQuestionEventArgs(string qText, Dictionary<string, object> options) {
+        public ArchitectQuestionEventArgs(string qText, Dictionary<string, object> options)
+        {
             questionText = qText;
             this.options = options;
         }
@@ -32,7 +33,8 @@ namespace _min.Models
         public Field field { get; private set; }
         public Control control { get; set; }
 
-        public ArchitectureErrorEventArgs(string message, string tableName) {
+        public ArchitectureErrorEventArgs(string message, string tableName)
+        {
             this.message = message;
             this.tableName = tableName;
             this.panel = null;
@@ -41,7 +43,7 @@ namespace _min.Models
         }
 
         public ArchitectureErrorEventArgs(string message, Panel panel, Field field)
-            :this(message, panel.tableName)
+            : this(message, panel.tableName)
         {
             this.panel = panel;
             this.field = field;
@@ -57,7 +59,7 @@ namespace _min.Models
 
     public delegate void ArchitectureError(Architect sender, ArchitectureErrorEventArgs e);
 
-    
+
     public class ArchitectWarningEventArgs : ArchitectureErrorEventArgs
     {
         public ArchitectWarningEventArgs(string message, string tableName)
@@ -67,7 +69,7 @@ namespace _min.Models
 
     public delegate void ArchitectWarning(Architect sender, ArchitectWarningEventArgs e);
 
-    
+
     public class ArchitectNoticeEventArgs : ArchitectureErrorEventArgs
     {
         public ArchitectNoticeEventArgs(string message, string tableName = null)
@@ -82,7 +84,7 @@ namespace _min.Models
 
     public class Architect
     {
-        public class ColumnDisplayComparer : IComparer<DataColumn> 
+        public class ColumnDisplayComparer : IComparer<DataColumn>
         {
 
             public int Compare(DataColumn x, DataColumn y)
@@ -92,12 +94,12 @@ namespace _min.Models
                 if (y == null) return -1;
                 if (x.DataType == typeof(string) && y.DataType == typeof(string))
                     return y.MaxLength - x.MaxLength;
-                if(x.DataType == typeof(string)) return -1;
-                if(y.DataType == typeof(string)) return 1;
-                if(x.DataType == typeof(DateTime)) return -1;
-                if(x.DataType == typeof(DateTime)) return 1;
-                if(x.DataType == typeof(int)) return -1;
-                if(y.DataType == typeof(int)) return 1;
+                if (x.DataType == typeof(string)) return -1;
+                if (y.DataType == typeof(string)) return 1;
+                if (x.DataType == typeof(DateTime)) return -1;
+                if (x.DataType == typeof(DateTime)) return 1;
+                if (x.DataType == typeof(int)) return -1;
+                if (y.DataType == typeof(int)) return 1;
                 return 0;
             }
         }
@@ -110,20 +112,19 @@ namespace _min.Models
 
         private ISystemDriver systemDriver;
         private IStats stats;
-        private List<M2NMapping> mappings;
-        private List<M2NMapping> usedMappings;
-        
+        public Dictionary<string, M2NMapping> mappings;
+        public List<string> hierarchies;
 
-        public Architect(ISystemDriver system, IStats stats) {
+
+        public Architect(ISystemDriver system, IStats stats)
+        {
             this.stats = stats;
             this.systemDriver = system;
-            this.mappings = stats.findMappings();
-            this.usedMappings = new List<M2NMapping>();
             questionAnswer = null;
         }
 
-        private List<string> DisplayColOrder(string tableName)      
-            // the order in which columns will be displayed in summary tables & M2NMapping, covers all columns
+        private List<string> DisplayColOrder(string tableName)
+        // the order in which columns will be displayed in summary tables & M2NMapping, covers all columns
         {
             DataColumnCollection cols = stats.columnTypes(tableName);
 
@@ -151,124 +152,84 @@ namespace _min.Models
             DataColumnCollection cols = stats.columnTypes(tableName);
             List<FK> FKs = stats.foreignKeys(tableName);
             List<string> PKCols = stats.primaryKeyCols(tableName);
-            while(PKCols.Count == 0) 
-            {
-                Dictionary<string, object> options = new Dictionary<string, object>();
-                options.Add("Try again", 1);
-                options.Add("Ommit table", 2);
-
-                ArchitectQuestionEventArgs args = new ArchitectQuestionEventArgs(
-                    "The table " + tableName + " does not have a primary key defined and therefore "
-                    + "cannot be used in the administration. Is this intentional or will you add the primary key? (OMMIT TABLE)",
-                    options);
-                
-                //Question(this, args);
-                
-                //int answer = (int)questionAnswer;
-                int answer = 2;
-                if (answer == 1)
-                    PKCols = stats.primaryKeyCols(tableName);
-                else
-                    return null;
-            }
-
 
             if (cols.Count == 2 && FKs.Count == 2) return null; // seems like mapping table
             // FK ~> mapping ?
-            
             List<Field> fields = new List<Field>();
-             List<ValidationRules> validation = new List<ValidationRules>();
-            foreach (M2NMapping mapping in mappings) {
-                 validation = new List<ValidationRules>();
-                if (mapping.myTable == tableName && !usedMappings.Exists(m => mapping == m))
-                    // && (stats.TableCreation(mapping.myTable) > stats.TableCreation(mapping.refTable)
-                    // the later-created table would get to edit the mapping
-                    // but I`d better ask the user
-                    
-                {
-                    Dictionary<string, object> options = new Dictionary<string,object>();
-                    options.Add("Include in this panel", 1);
-                    options.Add("Include in this panel only", 2);
-                    options.Add("Do not include", 3);
-                    ArchitectQuestionEventArgs args = new ArchitectQuestionEventArgs(
-                        "While proposing administration panel for the table " + mapping.myTable
-                        + ", the system found out that the table " + mapping.mapTable
-                        + " is likely to  be a M to N mapping between this table and " + mapping.refTable
-                        + ". Do you want to include an interface to manage this mapping in this panel? (INCLUDE IN THIS PANEL ONLY)",
-                        options);
-                    
-                    //Question(this, args); // ask questions!
-                    
-                    //int answer = (int)questionAnswer;
-                    int answer = 2;
-                    if(answer == 1 || answer == 2){
-                    // no potentional field from cols is removed by this, though
-                    List<string> displayColOrder = DisplayColOrder(mapping.refTable);
-                    mapping.displayColumn = displayColOrder[0];
-                    fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
-                    }
-                    if(answer == 2){
-                        usedMappings.Add(mapping);
-                    }
-                }
+            List<ValidationRules> validation = new List<ValidationRules>();
+            if (mappings.ContainsKey(tableName))
+            {
+                M2NMapping mapping = mappings[tableName];
+                // no potentional field from cols is removed by this, though
+                List<string> displayColOrder = DisplayColOrder(mapping.refTable);
+                mapping.displayColumn = displayColOrder[0];
+                fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
+
             }
 
-            
             // standard FKs
-            foreach(FK actFK in FKs){
-                 validation = new List<ValidationRules>();
+            foreach (FK actFK in FKs)
+            {
+                validation = new List<ValidationRules>();
                 //PropertyCollection validation = new PropertyCollection();
                 if (!cols[actFK.myColumn].AllowDBNull) validation.Add(ValidationRules.Required);
                 List<string> displayColOrder = DisplayColOrder(actFK.refTable);
                 actFK.displayColumn = displayColOrder[0];
                 fields.Add(new FKField(0, actFK.myColumn, 0, actFK));
-                
+
                 cols.Remove(actFK.myColumn);    // will be edited as a foreign key
 
             }
-           
+
             // editable fields in the order as defined in table; don`t edit AI
-            foreach (DataColumn col in cols) {
+            foreach (DataColumn col in cols)
+            {
                 //PropertyCollection validation = new PropertyCollection();
-                
-                 validation = new List<ValidationRules>();
+
+                validation = new List<ValidationRules>();
                 if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_EDITABLE)) continue;
-                if(!col.AllowDBNull) validation.Add(ValidationRules.Required);
+                if (!col.AllowDBNull) validation.Add(ValidationRules.Required);
                 FieldTypes fieldType;  // default => standard textBox
-              
-                if(col.DataType == typeof(string)){
-                        if(col.MaxLength <= 255) fieldType = FieldTypes.Varchar;
-                        else fieldType = FieldTypes.Text;
+
+                if (col.DataType == typeof(string))
+                {
+                    if (col.MaxLength <= 255) fieldType = FieldTypes.Varchar;
+                    else fieldType = FieldTypes.Text;
                 }
-                else if(col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short)){
-                        fieldType = FieldTypes.Ordinal;
-                        validation.Add(ValidationRules.Ordinal);
+                else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
+                {
+                    fieldType = FieldTypes.Ordinal;
+                    validation.Add(ValidationRules.Ordinal);
                 }
-                else if(col.DataType == typeof(float) || col.DataType == typeof(double)){
-                        fieldType = FieldTypes.Decimal;
-                        validation.Add(ValidationRules.Decimal);
+                else if (col.DataType == typeof(float) || col.DataType == typeof(double))
+                {
+                    fieldType = FieldTypes.Decimal;
+                    validation.Add(ValidationRules.Decimal);
                 }
-                else if(col.DataType == typeof(bool)){
-                        fieldType = FieldTypes.Bool;
+                else if (col.DataType == typeof(bool))
+                {
+                    fieldType = FieldTypes.Bool;
                 }
-                else if(col.DataType == typeof(DateTime)){
-                    if(col.ExtendedProperties.ContainsKey(CC.FIELD_DATE_ONLY))
+                else if (col.DataType == typeof(DateTime))
+                {
+                    if (col.ExtendedProperties.ContainsKey(CC.FIELD_DATE_ONLY))
                         fieldType = FieldTypes.Date;
-                        // should DATETIME, BUT DATETIME is usually used for date only...or is it?
+                    // should DATETIME, BUT DATETIME is usually used for date only...or is it?
                     else fieldType = FieldTypes.Date;
                     validation.Add(ValidationRules.Date);
                 }
-                else if (col.DataType == typeof(Enum)) {
+                else if (col.DataType == typeof(Enum))
+                {
                     // cannot happen, since column properties are taken from Stats
                     if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_ENUM_VALUES))
                         throw new Exception("Missing enum options for field " + col.ColumnName);
-                    fieldType = FieldTypes.Enum;    
+                    fieldType = FieldTypes.Enum;
                 }
                 else
                 {
                     throw new Exception("Unrecognised column type " + col.DataType.ToString());
                 }
-                fields.Add(new Field(0, col.ColumnName, fieldType, 
+                fields.Add(new Field(0, col.ColumnName, fieldType,
                     0));  // don`t add any properties, just copy from Stat
             }
             fields.OrderBy(x => ((int)(x.position)));
@@ -280,6 +241,7 @@ namespace _min.Models
 
             List<Control> controls = new List<Control>();
 
+            /*
             string actionName = UserAction.View.ToString();
             controlProps.Add(actionName, actionName);
             controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 1);
@@ -295,21 +257,47 @@ namespace _min.Models
             actionName = UserAction.Delete.ToString();
             controlProps.Add(actionName, actionName);
             controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 5);
-            
-            foreach(string actName in Enum.GetNames(typeof(UserAction))){
-                if(controlProps.ContainsKey(actName)){
-                    controls.Add(new Control(0, actName, (UserAction)Enum.Parse(typeof(UserAction), actName)));
-                }
+            */
+            foreach (string actName in Enum.GetNames(typeof(UserAction)))
+            {
+                controls.Add(new Control(0, actName, (UserAction)Enum.Parse(typeof(UserAction), actName)));
             }
             List<Control> controlsAsControl = new List<Control>(controls);
-            
+
             //set additional properties
             // the order of fields in edit form (if defined), if doesn`t cover all editable columns, display the remaining
             // at the begining, non-editable columns are skipped
             //viewProps[CC.PANEL_DISPLAY_COLUMN_ORDER] = String.Join(",", DisplayColOrder(tableName));
 
-            Panel res = new Panel(tableName, 0, PanelTypes.Editable, 
+            Panel res = new Panel(tableName, 0, PanelTypes.Editable,
                 new List<Panel>(), fields, controlsAsControl, PKCols);
+            return res;
+        }
+
+
+
+        public Dictionary<string, KeyValuePair<bool, string>> CheckHierarchies()
+        {
+            List<FK> selfRefFK = stats.selfRefFKs();
+            Dictionary<string, List<string>> PKs = stats.GlobalPKs();
+            var tableSRFKs = from fk in selfRefFK group fk by fk.myTable into groups select new { Key = groups.Key, Value = groups };
+            Dictionary<string, KeyValuePair<bool, string>> res = new Dictionary<string, KeyValuePair<bool, string>>();
+
+            foreach (var x in tableSRFKs)
+            {
+                if (PKs[x.Key].Count != 1)
+                    res[x.Key] = new KeyValuePair<bool, string>(false, "This table does not have a single-column PK.");
+                else if (x.Value.Count() > 1)
+                    res[x.Key] = new KeyValuePair<bool, string>(false, "Multiple self-referential columns?");
+                else if (x.Value.First().refColumn != PKs[x.Key][0])
+                    res[x.Key] = new KeyValuePair<bool, string>(false, "The self-referential column must refer to the PK.");
+                else
+                {
+                    FK goodSRFK = x.Value.First();
+                    res[x.Key] = new KeyValuePair<bool, string>(true, goodSRFK.myColumn + " refers to " + goodSRFK.refColumn +
+                        " this table can be navigated through via a trre");
+                }
+            }
             return res;
         }
 
@@ -320,7 +308,8 @@ namespace _min.Models
         /// </summary>
         /// <param name="tableName">string</param>
         /// <returns>Panel</returns>
-        private Panel proposeSummaryPanel(string tableName) {
+        private Panel proposeSummaryPanel(string tableName)
+        {
             DataColumnCollection cols = stats.columnTypes(tableName);
             List<FK> FKs = stats.foreignKeys(tableName);
             // a table with more than one self-referential FK is improbable
@@ -328,73 +317,24 @@ namespace _min.Models
             List<string> PKCols = stats.primaryKeyCols(tableName);
             FK selfRefFK = null;
             // strict hierarchy structure validation - not nice => no Tree
-
-            string hierarchyExplanation = "(For a tree-like navigation within view, the table must have exactly one FK pointing "
-                + " to it`s PK column. (It can of course have other FKs refering to other tables.))";
-
-            if (selfRefs.Count > 1)
-                hierarchyExplanation = hierarchyExplanation + "";
-            //Warning(this, new ArchitectWarningEventArgs(
-            //    "Unexpected hierarchy table structure for " + tableName + " - multiple self-referential columns. " 
-            //    + hierarchyExplanation, tableName));
-            else
-                if (selfRefs.Count == 1 && PKCols.Count == 1)
-                {
-                    selfRefFK = selfRefs.First();
-
-                    if (PKCols.Count > 1)
-                    {
-                        //Warning(this, new ArchitectWarningEventArgs(
-                        //"Hierarchical table " + tableName + " does have a signle-column PK. "
-                        //+ hierarchyExplanation, tableName));
-                        selfRefFK = null;       // remove the selfRefFK => as if there was no hierarchy
-                    }
-                    if (selfRefFK.refColumn != PKCols[0])
-                    {
-                        selfRefFK = null;
-                        //Warning(this, new ArchitectWarningEventArgs("The self-referential FK in table " 
-                        //    + tableName + " must refer to the PK column. " 
-                        //    + hierarchyExplanation, tableName));
-                    }
-                }
+            if (hierarchies.Contains(tableName))
+                selfRefFK = selfRefs.First();
             List<string> displayColOrder = DisplayColOrder(tableName);
             /*
             PropertyCollection controlProps = new PropertyCollection();
             PropertyCollection displayProps = new PropertyCollection();
             */
 
-            Panel res = new Panel(tableName, 0, PanelTypes.MenuDrop, new List<Panel>(), new List<Field>(), 
+            Panel res = new Panel(tableName, 0, PanelTypes.MenuDrop, new List<Panel>(), new List<Field>(),
                 new List<Control>(), displayColOrder);
             res.displayAccessRights = 1;
             Control control;
             DataTable controlTab = new DataTable();
-            
+
             List<Field> fields = new List<Field>();
             List<Control> Controls = new List<Control>();
-            if(selfRefFK == null){
-                //displayProps.Add(CC.NAVTAB_COLUMNS_DISLAYED, CC.NAVTAB_COLUMNS_DISLAYED_DEFAULT);
-                // table takes first four display-suitable fields; the above is not neccessary, in Navtable Columns are fields
-                foreach(string column in displayColOrder.Take(CC.NAVTAB_COLUMNS_DISLAYED_DEFAULT)){
-                    //controlTab.Columns.Add(column);
-                    if (FKs.Any(x => x.myColumn == column))
-                    {
-                        FK myFK = FKs.Find(x => x.myColumn == column);
-                        fields.Add(new FKField(0, column, 0, myFK));
-                    }
-                    else
-                    {
-                        fields.Add(new Field(0, column, FieldTypes.Varchar, 0));
-                    }
-                    fields.OrderBy(x => displayColOrder.IndexOf(x.column)); 
-                    // to maintain the order from displayColOrder without further properties
-                }
-                control = new Control(0, controlTab, PKCols, UserAction.Update);
-                control.navThroughRecords = true;
-                control.navTableSpan = true;
-                res.type = PanelTypes.NavTable;
-                Controls.Add(control);
-            }
-            else {
+            if (selfRefFK != null)
+            {
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Update", UserAction.Update);
                 Controls.Add(control);
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Delete", UserAction.Delete);
@@ -430,29 +370,16 @@ namespace _min.Models
         public Panel propose()
         {
             //Notice(this, new ArchitectNoticeEventArgs("Starting proposal..."));
-            
-            if (systemDriver.ProposalExists()) {
-                Dictionary<string, object> options = new Dictionary<string,object>();
-                options.Add("Repropose", true);
-                options.Add("Edit", false);
-                //Question(this, new ArchitectQuestionEventArgs("A proposal already exists for this project. \n" +
-                //    "Do you want to remove it and propose again or edit the existing proposal? (REMOVE)", options));
-                //bool repropose = (bool)questionAnswer;
-                bool repropose = true;
-                if (!repropose)
-                {
-                    return systemDriver.getArchitectureInPanel();
-                }
-                systemDriver.ClearProposal();
-            }
+
 
             systemDriver.StartTransaction();
-            
+
             List<string> tables = stats.TableList();
             List<Panel> baseChildren = new List<Panel>();
-            
+
             HierarchyNavTable basePanelHierarchy = new HierarchyNavTable();
-            foreach (string tableName in tables) {
+            foreach (string tableName in tables)
+            {
                 //Notice(this, new ArchitectNoticeEventArgs("Exploring table \"" + tableName + "\"..."));
                 Panel editPanel = proposeForTable(tableName);
                 if (editPanel != null)
@@ -472,12 +399,12 @@ namespace _min.Models
                     HierarchyRow tableRow = (HierarchyRow)basePanelHierarchy.NewRow();
                     HierarchyRow tableEditRow = (HierarchyRow)basePanelHierarchy.NewRow();
                     HierarchyRow tableSummaryRow = (HierarchyRow)basePanelHierarchy.NewRow();
-                    tableRow.ParentId = null;
+                    tableRow.ParentId = 0;
                     tableSummaryRow.ParentId = tableRow.Id;
                     tableEditRow.ParentId = tableRow.Id;
-                    tableRow.NavId = null;
-                    tableSummaryRow.NavId = summaryPanel.panelId;
-                    tableEditRow.NavId = editPanel.panelId;
+                    tableRow.NavId = 0;
+                    //tableSummaryRow.NavId = summaryPanel.panelId;
+                    //tableEditRow.NavId = editPanel.panelId;
                     tableRow.Caption = tableName;
                     tableEditRow.Caption = "Add";
                     tableSummaryRow.Caption = "Browse";
@@ -486,28 +413,35 @@ namespace _min.Models
                     basePanelHierarchy.Add(tableEditRow);
                     basePanelHierarchy.Add(tableSummaryRow);
                 }
-                else 
+                else
                 {
                     //Notice(this, new ArchitectNoticeEventArgs("Table \"" + tableName + "\" is probably NOT suitable for direct management."));
                 }
             }
             //Notice(this, new ArchitectNoticeEventArgs("Creating navigation base with " +
             //    baseChildren.Count + " options (2 per table)."));
-            
-            Panel basePanel = new Panel(null, 0, PanelTypes.MenuDrop, 
+
+            Panel basePanel = new Panel(null, 0, PanelTypes.MenuDrop,
                 baseChildren, null, null, null);
             basePanel.isBaseNavPanel = true;
-            systemDriver.query("TRUNCATE TABLE log_db");
+            //systemDriver.query("TRUNCATE TABLE log_db");
             //Notice(this, new ArchitectNoticeEventArgs("Updating database..."));
             systemDriver.AddPanel(basePanel);
 
             SetControlPanelBindings(basePanel);
 
-            TreeControl basePanelTreeControl = new TreeControl(basePanel.panelId, basePanelHierarchy, 
+            TreeControl basePanelTreeControl = new TreeControl(basePanel.panelId, basePanelHierarchy,
                 "Id", "ParentId", "Caption", UserAction.View);
             basePanelTreeControl.navThroughPanels = true;
-            
-            
+
+            // navId for menu items
+            for (int i = 0; i < basePanel.children.Count / 2; i++) // ad hoc beyond sense
+            {
+                basePanelHierarchy.Rows[i * 3]["NavId"] = basePanel.children[2 * i].panelId;
+                basePanelHierarchy.Rows[i * 3 + 1]["NavId"] = basePanel.children[2 * i].panelId;
+                basePanelHierarchy.Rows[i * 3 + 2]["NavId"] = basePanel.children[2 * i + 1].panelId;
+            } 
+
             //AddControl! only.
             systemDriver.AddControl(basePanelTreeControl);
             systemDriver.RewriteControlDefinitions(basePanel);
@@ -519,7 +453,7 @@ namespace _min.Models
             addedList.Add(basePanelTreeControl);
             basePanel.AddControls(addedList);
 
-            
+
 
             //systemDriver.updatePanel(basePanel, false); 
             // sholuld no longer be neccessay
@@ -538,11 +472,11 @@ namespace _min.Models
         /// <param name="recursive">run itself on panel children</param>
         /// <returns>true if no errors found, true othervise</returns>
         public bool checkPanelProposal(Panel proposalPanel, bool recursive = true)
-            // non-recursive checking after the initial check - after panel modification
+        // non-recursive checking after the initial check - after panel modification
         {
-            string messageBeginning = "In panel " +  proposalPanel.panelName + 
-                "of type " + proposalPanel.type + " for " + proposalPanel.tableName  + ": ";
-            
+            string messageBeginning = "In panel " + proposalPanel.panelName +
+                "of type " + proposalPanel.type + " for " + proposalPanel.tableName + ": ";
+
             DataColumnCollection cols = stats.columnTypes(proposalPanel.tableName);
             if (cols.Count == 0 && !proposalPanel.isBaseNavPanel)
             {
@@ -554,9 +488,9 @@ namespace _min.Models
             List<FK> FKs = stats.foreignKeys(proposalPanel.tableName);
 
             bool good = true;
-            if (proposalPanel.type == PanelTypes.Editable 
-                || proposalPanel.type == PanelTypes.NavTable)       
-                // this is indeed the only panelType containing fields
+            if (proposalPanel.type == PanelTypes.Editable
+                || proposalPanel.type == PanelTypes.NavTable)
+            // this is indeed the only panelType containing fields
             {
                 bool isNavTable = proposalPanel.type == PanelTypes.NavTable;
                 foreach (Field field in proposalPanel.fields)
@@ -603,20 +537,20 @@ namespace _min.Models
                             // just cannot occur in a NavTable, but just in case...
                             if (isNavTable) throw new Exception("Cannot display a M2NMapping in NavTable");
                             M2NMapping thisMapping = ((M2NMappingField)field).mapping;
-                            if (!mappings.Contains(thisMapping))
-                            {        
+                            if (!mappings.Values.Contains(thisMapping))
+                            {
                                 Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the schema " +
                                     "does not define an usual M2NMapping batween tables " + thisMapping.myTable +
-                                    " and " + thisMapping.refTable + " using " + thisMapping.mapTable + 
+                                    " and " + thisMapping.refTable + " using " + thisMapping.mapTable +
                                     " as a map table", proposalPanel, field));
                                 good = false;
                             }
                         }
-                        else if( field is FKField) 
+                        else if (field is FKField)
                         {
                             FK fieldFK = ((FKField)field).fk;
-                            if (!FKs.Contains(fieldFK)) 
-                            {        
+                            if (!FKs.Contains(fieldFK))
+                            {
                                 Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column
                                 + " is not a foreign key representable by the FK field", proposalPanel, field));
                                 good = false;
@@ -629,40 +563,43 @@ namespace _min.Models
             // controls...
 
             // not ideal
-            if (!proposalPanel.isBaseNavPanel && proposalPanel.controls.Any(x=>x.targetPanelId == null || x.targetPanel == null)){
-                 Error(this, new ArchitectureErrorEventArgs(messageBeginning + "Each control must have a target panel set",
-                     proposalPanel, proposalPanel.controls[0]));
-                 good = false;
-                 }
+            if (!proposalPanel.isBaseNavPanel && proposalPanel.controls.Any(x => x.targetPanelId == null || x.targetPanel == null))
+            {
+                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "Each control must have a target panel set",
+                    proposalPanel, proposalPanel.controls[0]));
+                good = false;
+            }
 
-            if (proposalPanel.type == PanelTypes.NavTable 
-                || proposalPanel.type == PanelTypes.NavTree 
-                || proposalPanel.type == PanelTypes.MenuDrop) {
-                    if (proposalPanel.controls.Count == 0)
+            if (proposalPanel.type == PanelTypes.NavTable
+                || proposalPanel.type == PanelTypes.NavTree
+                || proposalPanel.type == PanelTypes.MenuDrop)
+            {
+                if (proposalPanel.controls.Count == 0)
+                {
+                    Error(this, new ArchitectureErrorEventArgs(messageBeginning + "navTables, navTrees and drop menus"
+                   + "must have at least one control", proposalPanel.tableName));
+                }
+                else
+                {
+                    if (proposalPanel.isBaseNavPanel)
                     {
-                        Error(this, new ArchitectureErrorEventArgs(messageBeginning + "navTables, navTrees and drop menus"
-                       + "must have at least one control", proposalPanel.tableName));
-                    }
-                    else
-                    {
-                        if (proposalPanel.isBaseNavPanel)
+                        if (proposalPanel.tableName != null)
                         {
-                            if (proposalPanel.tableName != null)
-                            {
-                                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "Panel that navigates through panels "
-                                    + "cannot have tableName set", proposalPanel.tableName));
-                                good = false;
-                            }
+                            Error(this, new ArchitectureErrorEventArgs(messageBeginning + "Panel that navigates through panels "
+                                + "cannot have tableName set", proposalPanel.tableName));
+                            good = false;
                         }
                     }
+                }
             }
 
             // TODO & TODO & TODO (CONTROLS & OTHER PROPERTIES)
             // OR allow the admin-user take valid steps only (?)
 
-            if (recursive && proposalPanel.children != null) foreach (Panel child in proposalPanel.children) {
-                good = good && checkPanelProposal(child, true);
-            }
+            if (recursive && proposalPanel.children != null) foreach (Panel child in proposalPanel.children)
+                {
+                    good = good && checkPanelProposal(child, true);
+                }
             return good;
         }
 
@@ -672,17 +609,20 @@ namespace _min.Models
             return checkPanelProposal(proposalPanel, true);
         }
 
-        public bool checkProposal() 
+        public bool checkProposal()
         {
             Panel proposalPanel = systemDriver.getArchitectureInPanel();
             return checkPanelProposal(proposalPanel, true);
         }
 
-        private void SetControlPanelBindings(Panel panel, bool recursive = true) {
-            foreach (Control c in panel.controls) {
+        private void SetControlPanelBindings(Panel panel, bool recursive = true)
+        {
+            foreach (Control c in panel.controls)
+            {
                 if (c.targetPanelId != null)
                     throw new Exception("Target panel id already set!");
-                if(c.targetPanel != null){
+                if (c.targetPanel != null)
+                {
                     c.targetPanelId = c.targetPanel.panelId;
                 }
             }

@@ -60,6 +60,20 @@
                                      CssClass="failureNotification" Display="Dynamic" ErrorMessage="The Password and Confirmation Password must match."
                                      ValidationGroup="RegisterUserValidationGroup">*</asp:CompareValidator>
                             </p>
+                            <p>
+                                <asp:Label ID="QuestionLabel" runat="server" AssociatedControlID="Question">Security Question:</asp:Label>
+                                <asp:TextBox ID="Question" runat="server" CssClass="textEntry"></asp:TextBox>
+                                <asp:RequiredFieldValidator ControlToValidate="Question" CssClass="failureNotification" Display="Dynamic" 
+                                     ErrorMessage="Security Question is required." ID="RequiredFieldValidator1" runat="server" 
+                                     ToolTip="Security Question is required." ValidationGroup="RegisterUserValidationGroup">*</asp:RequiredFieldValidator>
+                            </p>
+                                                        <p>
+                                <asp:Label ID="AnswerLabel" runat="server" AssociatedControlID="Answer">Answer:</asp:Label>
+                                <asp:TextBox ID="Answer" runat="server" CssClass="textEntry"></asp:TextBox>
+                                <asp:RequiredFieldValidator ControlToValidate="Answer" CssClass="failureNotification" Display="Dynamic" 
+                                     ErrorMessage="Security Question Answer is required." ID="RequiredFieldValidator2" runat="server" 
+                                     ToolTip="Security Question Answer is required." ValidationGroup="RegisterUserValidationGroup">*</asp:RequiredFieldValidator>
+                            </p>
                         </fieldset>
                         <p class="submitButton">
                             <asp:Button ID="CreateUserButton" runat="server" CommandName="MoveNext" Text="Create User" 

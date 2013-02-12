@@ -11,7 +11,7 @@ namespace _min_t7.Account
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            
         }
     }
 }

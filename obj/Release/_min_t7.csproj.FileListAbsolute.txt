@@ -1,0 +1,5 @@
+C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\_min_t7.dll
+C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\_min_t7.pdb
+C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\obj\Release\ResolveAssemblyReference.cache
+C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\obj\Release\_min_t7.dll
+C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\obj\Release\_min_t7.pdb

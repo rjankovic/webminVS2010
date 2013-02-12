@@ -24,6 +24,7 @@ namespace _min.Models
         public SystemDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
             : base(connstring, logTable, writeLog)
         { }
+        /*
 
         public void saveLog()
         {
@@ -35,9 +36,21 @@ namespace _min.Models
             }
         }
 
+        public void saveLog(DataTable data)
+        {
+            if (data.IsInitialized)
+            {
+                foreach (DataRow r in data.Rows)
+                {
+                    query("INSERT INTO log_db", r);
+                }
+                data.Rows.Clear();
+            }
+        }
+        */
         public void logUserAction(System.Data.DataRow data)
         {
-            query("INSERT INTO log_users VALUES ", data);
+            query("INSERT INTO log_users", data);
         }
 
         // not this way!
@@ -95,7 +108,21 @@ namespace _min.Models
             foreach (DataRow row in tbl.Rows)
             {
                 DataContractSerializer serializer = new DataContractSerializer(typeof(Control));
-                res.Add((Control)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string))));
+                Control c = (Control)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string)));
+                if (c is TreeControl) {
+                    TreeControl c2 = c as TreeControl;
+                    c2.storedHierarchyData = new HierarchyNavTable();
+                    if (c2.storedHierarchyDataSet.Tables.Count > 0)
+                    {
+                        c2.storedHierarchyData.Merge(c2.storedHierarchyDataSet.Tables[0]);
+                        c2.storedHierarchyDataSet.Tables.Add(c2.storedHierarchyData);
+                        c2.storedHierarchyData.DataSet.Relations.Add("Hierarchy", 
+                c2.storedHierarchyData.Columns["Id"], c2.storedHierarchyData.Columns["ParentId"], false);
+
+                    }
+
+                } 
+                res.Add(c);
             }
              
             return res;
@@ -199,6 +226,13 @@ namespace _min.Models
                 CE.project.id);
             Panel res = getPanel(basePanelId, false);
             BindPanelChildrenFull(res);
+            return res;
+        }
+
+        public Panel GetBasePanel() {
+            int basePanelId = (int)fetchSingle("SELECT id_panel FROM panels WHERE id_parent IS NULL AND id_project = ",
+                CE.project.id);
+            Panel res = getPanel(basePanelId, false);
             return res;
         }
 
@@ -352,16 +386,45 @@ namespace _min.Models
             return user;
         }
 
-        public CE.Project getProject(int projectId) { 
+        private CE.Project ProjectFromDataRow(DataRow row) {
             CE.Project project = new CE.Project();
-            DataRow row = fetch("SELECT * FROM projects WHERE id_project = ", projectId);
-            project.id = projectId;
+            project.id = (Int32)row["id_project"];
             project.lastChange = (DateTime)row["last_modified"];
             project.name = (string)row["name"];
             project.serverName = (string)row["server_type"];
             project.connstringIS = (string)row["connstring_information_schema"];
             project.connstringWeb = (string)row["connstring_web"];
             return project;
+        }
+
+        public CE.Project getProject(int projectId) { 
+            DataRow row = fetch("SELECT * FROM projects WHERE id_project = ", projectId);
+            return ProjectFromDataRow(row);
+            }
+
+        public CE.Project getProject(string projectName) {
+            DataRow row = fetch("SELECT * FROM projects WHERE `name` = '" + projectName + "'");
+            return ProjectFromDataRow(row);
+        }
+
+        public string[] GetProjectNameList() {
+            DataTable resTable = fetchAll("SELECT name FROM projects");
+            string[] res = new string[resTable.Rows.Count];
+            for (int i = 0; i < resTable.Rows.Count; i++)
+                res[i] = resTable.Rows[i]["name"] as string;
+            return res;
+        }
+        public DataTable GetProjects() {
+            DataTable res = fetchAll("SELECT * FROM projects");
+            res.PrimaryKey = new DataColumn[] { res.Columns["id_project"] };
+            return res;
+        }
+        public void UpdateProject(int id, Dictionary<string,object> data) {
+            query("UPDATE projects SET ", data, " WHERE id_project = ", id); 
+        }
+
+        public void InsertProject(Dictionary<string, object> data) {
+            query("INSERT INTO projects ", data);
         }
 
         /*
@@ -395,19 +458,23 @@ namespace _min.Models
             query("DELETE FROM panels WHERE id_project = ", CE.project.id);
         }
 
-        public void ProcessLogTable()
+        public void ProcessLogTable() {
+            ProcessLogTable(logTable);
+        }
+
+        public void ProcessLogTable(DataTable data)
         {
-            bool didWriteLog = writeLog;
+            bool didWriteLog = writeLog;    // do not log the logging
             writeLog = false;
 
-            if (!(logTable is DataTable)) throw new MissingMemberException("logTable is not a DataTable");
-            foreach (DataRow row in logTable.Rows)
+            if (!(data is DataTable)) throw new MissingMemberException("logTable is not a DataTable");
+            foreach (DataRow row in data.Rows)
             {
                 // replace string and numeric constants with "s?" and "n?"
                 //row["query"] = Regex.Replace(row["query"] as string, "['\"][^'\"]+['\"]", "s?");
                 row["query"] = Regex.Replace(row["query"] as string, "([^a-zA-Z_])[0-9]+(.[0-9]+)?", "$1n?");
             }
-            var queryGroups = (from r in logTable.AsEnumerable() group r by r["query"] into s  select new 
+            var queryGroups = (from r in data.AsEnumerable() group r by r["query"] into s  select new 
                 { Query = s.Key as string, Count = s.Count(), MaxTime = s.Max(x => (int)x["time"]), 
                     TotalTime = s.Sum(x=> (int)x["time"])  });
 
@@ -420,7 +487,7 @@ namespace _min.Models
                 insertVals["max_time"] = queryGroup.MaxTime;
                 query("INSERT INTO log_db", insertVals);
             }
-            logTable.Clear();
+            data.Clear();
 
             writeLog = didWriteLog;
         }
