@@ -14,6 +14,7 @@ using System.Runtime.Serialization;
 using System.Data;
 using System.IO;
 using _min.Common;
+using _min.Controls;
 
 namespace _min_t7
 {
@@ -42,6 +43,17 @@ namespace _min_t7
             bool correctness = architect.checkProposal();
             TextBox1.Text += correctness;
             //List<string> diff = Common.Debug.ComparePanels(proposal, retrieved);
+        }
+
+        protected void Page_Init(object sender, EventArgs e) {
+            M2NMappingControl m2nc = new M2NMappingControl();
+            Dictionary<string, int> vals = new Dictionary<string, int>();
+            vals.Add("Halo", 1);
+            vals.Add("Aha", 2);
+            vals.Add("Lala", 3);
+            m2nc.SetOptions(vals);
+            this.Form.Controls.Add(m2nc); 
+            //this.Controls.Add(m2nc);
         }
 
         protected void Page_Load(object sender, EventArgs e)

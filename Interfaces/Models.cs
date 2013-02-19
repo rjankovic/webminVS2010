@@ -128,6 +128,7 @@ namespace _min.Interfaces
     public interface IWebDriver : IBaseDriver     // webDB
     {
         void FillPanel(Panel panel);
+        void FillPanelArchitect(Panel panel);
         int insertPanel(Panel panel, DataRow values);  // returns insertedId
         void updatePanel(Panel panel, DataRow values);
         void deletePanel(Panel panel);
@@ -191,5 +192,6 @@ namespace _min.Interfaces
         DataTable GetProjects();
         void UpdateProject(int id, Dictionary<string, object> data);
         void InsertProject(Dictionary<string, object> data);
+        //Dictionary<UserAction, int> GetPanelActionPanels(int currentPanel);
     }
 }

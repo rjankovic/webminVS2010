@@ -512,6 +512,18 @@ namespace _min.Models
         {
             throw new NotImplementedException();
         }
+         */
+
+        /*
+        public Dictionary<UserAction, int> GetPanelActionPanels(int currentPanel)
+        {
+            DataTable tbl = fetchAll("SELECT `action`, id_panel FROM panels WHERE tablename = " + currentPanel);
+            Dictionary<UserAction, int> res = new Dictionary<UserAction, int>();
+            foreach(DataRow row in tbl.Rows){
+                res.Add((UserAction)Enum.Parse(typeof(UserAction), row["action"].ToString()), (int)row["id_panel"]);
+            }
+            return res;
+        }
          */ 
     }
 }

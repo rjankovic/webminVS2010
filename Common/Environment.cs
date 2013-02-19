@@ -13,10 +13,21 @@ namespace _min.Common
     public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, Varchar, Text, Decimal, Ordinal, Bool, Enum }
     public enum PropertyConcerns { Control, Validation, View }
     public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, ZIP }
-
+    public enum GlobalState { Unknown, Architect, Production }
 
     public static class Environment
     {
+        private static GlobalState _globalState = Common.GlobalState.Architect;
+        public static GlobalState GlobalState
+        {
+            get { return _globalState; }
+            set {
+                if (_globalState == Common.GlobalState.Unknown)
+                    _globalState = value;
+                else throw new Exception("Global state already set");
+            }
+        }
+
         // User and Project objects can be created freely, 
         // but only once initiated in the Environment
         public class User {

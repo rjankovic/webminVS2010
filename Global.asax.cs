@@ -20,6 +20,16 @@ namespace _min_t7
 
             RouteTable.Routes.MapPageRoute("ArchitectInitRoute", "architect/init/{projectName}", "~/Architect/InitProposal.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectShowRoute", "architect/show/{projectName}", "~/Architect/Show.aspx");
+            RouteTable.Routes.MapPageRoute("ArchitectShowPanelDefaultRoute", "architect/show/{projectName}/{panelId}", "~/Architect/Show.aspx");
+            RouteTable.Routes.MapPageRoute("ArchitectShowPanelRoute", "architect/show/{projectName}/{panelId}/{action}", "~/Architect/Show.aspx");
+            RouteTable.Routes.MapPageRoute("ArchitectShowPanelSpecRoute", "architect/show/{projectName}/{panelId}/{action}/{itemKey}", 
+                "~/Architect/Show.aspx");
+
+            RouteTable.Routes.MapPageRoute("ProductionShowRoute", "show/{projectName}", "~/Production/Show.aspx");
+            RouteTable.Routes.MapPageRoute("ProductionShowPanelDefaultRoute", "show/{projectName}/{panelId}", "~/Prouction/Show.aspx");
+            RouteTable.Routes.MapPageRoute("ProductionShowPanelRoute", "show/{projectName}/{panelId}/{action}", "~/Prouction/Show.aspx");
+            RouteTable.Routes.MapPageRoute("ProductionShowPanelSpecRoute", "show/{projectName}/{panelId}/{action}/{itemKey}", 
+                "~/Prouction/Show.aspx");
         }
 
         void Application_End(object sender, EventArgs e)

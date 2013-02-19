@@ -19,3 +19,6 @@ C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\ru\AjaxCon
 C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\tr-TR\AjaxControlToolkit.resources.dll
 C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\zh-CHS\AjaxControlToolkit.resources.dll
 C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\zh-CHT\AjaxControlToolkit.resources.dll
+C:\Users\RJ\documents\visual studio 2010\Projects\_min_t7\_min_t7\bin\NLipsum.Core.dll
+C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\HtmlAgilityPack.dll
+C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\SanitizerProviders.dll

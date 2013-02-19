@@ -258,10 +258,13 @@ namespace _min.Models
             controlProps.Add(actionName, actionName);
             controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 5);
             */
+            controls.Add(new Control(0, UserAction.Insert.ToString(), UserAction.Insert));
+            controls.Add(new Control(0, UserAction.Update.ToString(), UserAction.Update));
+            /*
             foreach (string actName in Enum.GetNames(typeof(UserAction)))
             {
                 controls.Add(new Control(0, actName, (UserAction)Enum.Parse(typeof(UserAction), actName)));
-            }
+            }*/
             List<Control> controlsAsControl = new List<Control>(controls);
 
             //set additional properties
@@ -338,6 +341,7 @@ namespace _min.Models
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Update", UserAction.Update);
                 Controls.Add(control);
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Delete", UserAction.Delete);
+                control.independent = false;    // linkbuttons together with Update
                 Controls.Add(control);
                 /*
                 controlProps.Add(CC.CONTROL_HIERARCHY_SELF_FK_COL, selfRefFK.myColumn);

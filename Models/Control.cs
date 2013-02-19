@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Data;
-using _min.Interfaces;
-using _min.Common;
 using System.Runtime.Serialization;
 using System.IO;
+
+using _min.Interfaces;
+using _min.Common;
+using _min.Templates;
 
 using UControl = System.Web.UI.Control;
 using WC = System.Web.UI.WebControls;
@@ -68,9 +70,11 @@ namespace _min.Models
         public int? targetPanelId { get; set; }
         [IgnoreDataMember]
         public Panel targetPanel { get; set; }
+        [DataMember]
+        public bool independent { get; set; }   // for grid option controls
 
         public Control(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
-            DataTable data, List<string> PKColNames, UserAction action)
+            DataTable data, List<string> PKColNames, UserAction action, bool independent = true)
         {
             this.panelId = panelId;
             this.data = data;
@@ -79,6 +83,7 @@ namespace _min.Models
             this.panel = panel;
             this.targetPanel = targetPanel;
             this.targetPanelId = targetPanelId;
+            this.independent = independent;
         }
 
         public Control(int panelId, Panel panel,
@@ -128,8 +133,36 @@ namespace _min.Models
             this.panelId = panel.panelId;
         }
 
-        public virtual UControl ToUControl() {
-            throw new NotImplementedException();
+        public virtual UControl ToUControl(WC.GridViewCommandEventHandler handler, string navigateUrl = null)
+        {
+            // take care of all the dependant controls as well
+            WC.GridView grid = new WC.GridView();
+            grid.DataKeyNames = PKColNames.ToArray();
+            HashSet<UserAction> actions = new HashSet<UserAction>();
+            actions.Add(this.action);
+            IEnumerable<UserAction> actionsQuery = from control in panel.controls
+                                                   where control.independent == false
+                                                   select control.action;
+            foreach (UserAction act in actionsQuery)
+                actions.Add(act);
+
+            grid.DataSource = data;
+            WC.TemplateField tf = new WC.TemplateField();
+            tf.HeaderTemplate = new SummaryGridCommandColumn(WC.ListItemType.Header);
+            tf.FooterTemplate = new SummaryGridCommandColumn(WC.ListItemType.Footer);
+            tf.ItemTemplate = new SummaryGridCommandColumn(WC.ListItemType.Item, actions);
+            grid.Columns.Add(tf);
+            grid.DataBind();
+            grid.RowCommand += handler;
+            return grid;
+        }
+
+        public virtual UControl ToUControl(WC.CommandEventHandler handler, string navigateUrl = null)
+        {
+            WC.Button button = new WC.Button();
+            button.Text = this.action.ToString();
+            button.Command += (WC.CommandEventHandler)handler;
+            return button;
         }
     }
 
@@ -188,40 +221,45 @@ namespace _min.Models
             //ds.Relations.Add("hierarchy", ds.Tables[0].Columns["Id"], ds.Tables[0].Columns["ParentId"]);
         }
 
-        public override UControl ToUControl() { 
-            /*
-            DataSet ds = new DataSet();
-            ds.Tables.Add(this.hierarchyData);
-            //  twisted (probably)
-            ds.Relations.Add(new DataRelation("Hierarchy", hierarchyData.Columns["ParentId"], hierarchyData.Columns["Id"], true));
-             */
-            if(panel.type == PanelTypes.MenuDrop){
+        public UControl ToUControl(WC.MenuEventHandler handler, string navigateUrl = null)
+        {
+            if(panel.type != PanelTypes.MenuDrop) throw new ArgumentException(
+                "MenuEventHandler can operate only on a Menu - within a MenuDrop panel");
             WC.Menu res = new WC.Menu();
+            res.Orientation = WC.Orientation.Horizontal;
             WC.MenuItem item;
-            foreach(DataRow r in storedHierarchyData.Rows){
-                if((int)(r["ParentId"]) == 0){
+            foreach (DataRow r in storedHierarchyData.Rows)
+            {
+                if ((int)(r["ParentId"]) == 0)
+                {
                     item = new WC.MenuItem(r["Caption"].ToString(), r["NavId"].ToString());
                     AddSubmenuForItem(r, item);
                     res.Items.Add(item);
                 }
             }
+            res.MenuItemClick += handler;
             return res;
-            }
-            else if(panel.type == PanelTypes.NavTree){
-                            WC.TreeView res = new WC.TreeView();
+        }
+
+        public UControl ToUControl(EventHandler handler, string navigateUrl = null)
+        {
+
+            if (panel.type != PanelTypes.NavTree) throw new ArgumentException(
+                 "This handler cannot handle events different from that fired by a TreeView in a NavtreePanel`s contorl");
+            WC.TreeView res = new WC.TreeView();
             WC.TreeNode item;
-            foreach(DataRow r in storedHierarchyData.Rows){
-                if((int)(r["ParentId"]) == 0){
+            foreach (DataRow r in storedHierarchyData.Rows)
+            {
+                if ((int)(r["ParentId"]) == 0)
+                {
                     item = new WC.TreeNode(r["Caption"].ToString(), r["NavId"].ToString());
                     AddSubtreeForItem(r, item);
                     res.Nodes.Add(item);
                 }
             }
+            res.SelectedNodeChanged += handler;
             return res;
-            }
-            throw new Exception("Unsupported hierarchical control type.");
         }
-
 
         private void AddSubmenuForItem(DataRow row, WC.MenuItem item)
         {
