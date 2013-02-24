@@ -26,17 +26,17 @@ namespace _min.Models
             }
         }
         [DataMember]
-        public string myTable { get; private set; }
+        public string myTable { get; protected set; }
         [DataMember]
-        public string myColumn { get; private set; }
+        public string myColumn { get; protected set; }
         [DataMember]
-        public string refTable { get; private set; }
+        public string refTable { get; protected set; }
         [DataMember]
-        public string refColumn { get; private set; }
+        public string refColumn { get; protected set; }
         [DataMember]
         public string displayColumn { get; set; }
         [DataMember]
-        public Dictionary<string, int> options { get; private set; }
+        public Dictionary<string, int> options { get; set; }
 
 
         public FK(//string fk_table, string fk_column, 
@@ -130,6 +130,7 @@ namespace _min.Models
             this.mapTable = mapTable;
             this.mapMyColumn = mapMyColumn;
             this.mapRefColumn = mapRefColumn;
+            options = new Dictionary<string, int>();
         }
 
         public bool validateWholeInput(List<string> inputValues)

@@ -72,6 +72,8 @@ namespace _min.Models
         public Panel targetPanel { get; set; }
         [DataMember]
         public bool independent { get; set; }   // for grid option controls
+        [DataMember]
+        public List<string> displayColumns { get; set; }
 
         public Control(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
             DataTable data, List<string> PKColNames, UserAction action, bool independent = true)
@@ -98,6 +100,7 @@ namespace _min.Models
             this.data = data;
             this.PKColNames = PKColNames;
             this.action = action;
+            this.independent = true;
         }
 
         public Control(int panelId, DataTable data, string PKColName, UserAction action)
@@ -154,6 +157,7 @@ namespace _min.Models
             grid.Columns.Add(tf);
             grid.DataBind();
             grid.RowCommand += handler;
+            grid.ID = "control" + controlId;
             return grid;
         }
 
@@ -161,7 +165,9 @@ namespace _min.Models
         {
             WC.Button button = new WC.Button();
             button.Text = this.action.ToString();
+            button.CommandName = action.ToString();
             button.Command += (WC.CommandEventHandler)handler;
+            button.ID = "control" + controlId;
             return button;
         }
     }

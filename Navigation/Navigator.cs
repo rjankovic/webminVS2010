@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using System.Web.Routing;
 
 using System.Web.UI.WebControls;
 using _min.Common;
@@ -37,35 +38,61 @@ namespace _min.Navigation
         }
 
         public void GridCommandHandle(object sender, GridViewCommandEventArgs e) {
+            
             GridView grid = (GridView)sender;       // must be fired from a gridview and a gridview only ! (is there another way??)
-            System.Web.Routing.RouteData routeData = new System.Web.Routing.RouteData();
-            UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName);
-            routeData.DataTokens.Add("panelId", currentTableActionPanels[action]);
-            routeData.DataTokens.Add("action", e.CommandName);
-            if (grid.SelectedIndex != -1)
-            {
-                routeData.DataTokens.Add("itemKey", grid.SelectedDataKey);
-                response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelRoute" : "ProductionShowPanelRoute",
-                routeData);
-            }
-            routeData.DataTokens.Add("itemKey", grid.SelectedDataKey.Values);
+            int selectedIndex = ((GridViewRow)((WebControl)(e.CommandSource)).NamingContainer).DataItemIndex;
+            //grid.DataKeys[selectedIndex].Values
+            //Dictionary<string, object> data = new Dictionary<string, object>();
+            string command = e.CommandName.Substring(1);
+            UserAction action = (UserAction)Enum.Parse(typeof(UserAction), command);
+            RouteValueDictionary data = new RouteValueDictionary();
+            data.Add("panelId", currentTableActionPanels[action]);
+            data.Add("action", command);
+            //object[]
+
+                //Serializer 
+            data.Add("itemKey", grid.DataKeys[selectedIndex].Values.Values);
+            //if (selectedIndex != -1)
+            //{
+                //data.Add("itemKey", grid.DataKeys[selectedIndex]);
+
+                response.RedirectToRoute(CE.GlobalState == GlobalState.Architect 
+                    ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
+                    new { panelId = currentTableActionPanels[action], action = e.CommandName, 
+                        itemKey = DataKey2Url(grid.DataKeys[selectedIndex]) } );
+                //new { panelId = currentTableActionPanels[action], action = e.CommandName, 
+                //    itemKey = (grid.DataKeys[selectedIndex].Values) } );
+            //}
+            //data.Add("itemKey", grid.DataKeys[].Values);
             //response.End();
-            response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
-                routeData);
+            //response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
+            //    data);
         }
 
+        private string DataKey2Url(DataKey key) {
+            var parts = from object p in key.Values.Values select p.ToString();
+            List<string> lParts = new List<string>();
+            foreach (string s in parts) lParts.Add(s);
+
+            return string.Join("/", lParts.ToArray());
+        }
+
+        
         public void ActionCommandHandle(object sender, CommandEventArgs e) {    // buttons must fire Commands !
             //response.End();
+            
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName);
             System.Web.Routing.RouteData routeData = new System.Web.Routing.RouteData();
             routeData.DataTokens.Add("action", action);
             routeData.DataTokens.Add("panelId", currentTableActionPanels[action]);
-            if(e.CommandArgument != null){
+            if(e.CommandArgument.ToString() != ""){   // TODO ...
                 routeData.DataTokens.Add("itemKey", e.CommandArgument);
                 response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
-                    routeData);
-            } else response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? 
-                "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute", routeData);
+                    new { action = action, panelId = currentTableActionPanels[action], itemKey = e.CommandArgument } );
+            }
+            else response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ?
+              "ArchitectShowPanelRoute" : "ProductionShowPanelRoute",
+              new { action = action, panelId = currentTableActionPanels[action] });
         }
     }
 }

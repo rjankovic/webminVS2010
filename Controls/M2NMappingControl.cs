@@ -14,10 +14,12 @@ namespace _min.Controls
     {
         private ListBox inList = new ListBox();
         private ListBox outList = new ListBox();
+        private string _ID;
 
         public ListItemCollection IncludedItems {
             get {
                 EnsureChildControls();
+
                 return inList.Items;
             }
         }
@@ -29,16 +31,34 @@ namespace _min.Controls
                 return outList.Items;
             }
         }
+
+        public override string ID {
+            get { return _ID; }
+            set { _ID = value; }
+        }
+
         
         public void SetOptions(IDictionary<string, int> vals){
             outList.DataSource = vals;
+            outList.DataTextField = "Key";
+            outList.DataValueField = "Value";
             EnsureChildControls();
+            inList.DataBind();
+            outList.DataBind();
+        }
+
+        public void SetIncludedOptions(List<string> included) {
+            foreach (string s in included) {
+                ListItem item = outList.Items.FindByText(s);
+                inList.Items.Add(item);
+                outList.Items.Remove(item);
+            }
         }
 
         protected override void CreateChildControls()
         {
-            inList.DataBind();
-            outList.DataBind();
+            //inList.EnableViewState = true;
+            //outList.EnableViewState = true;
             inList.SelectedIndexChanged += OnINListSelectedItemChanged;
             outList.SelectedIndexChanged += OnOutListSelectedItemChanged;
             inList.AutoPostBack = true;
@@ -48,19 +68,21 @@ namespace _min.Controls
             this.Controls.Add(outList);
         }
 
-        private void OnINListSelectedItemChanged(object sender, EventArgs e) {
+        protected void OnINListSelectedItemChanged(object sender, EventArgs e) {
             //if (inList.SelectedIndex == -1) return;
             outList.Items.Add(inList.SelectedItem);
             inList.Items.Remove(inList.SelectedItem);
             outList.SelectedIndex = -1; // the selected item moves
         }
-        private void OnOutListSelectedItemChanged(object sender, EventArgs e)
+        protected void OnOutListSelectedItemChanged(object sender, EventArgs e)
         {
             //if (outList.SelectedIndex == -1) return;
             inList.Items.Add(outList.SelectedItem);
             outList.Items.Remove(outList.SelectedItem);
             inList.SelectedIndex = -1;  // the selected item moves
         }
+
+       
 
         protected override void Render(HtmlTextWriter writer)
         {

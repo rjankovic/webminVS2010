@@ -30,7 +30,7 @@
             </div>
             <div class="clear hideSkiplink">
                 <asp:Menu ID="NavigationMenu" runat="server" CssClass="menu" 
-                    EnableViewState="false" IncludeStyleBlock="false" Orientation="Horizontal">
+                    EnableViewState="true" IncludeStyleBlock="false" Orientation="Horizontal">
                     <Items>
                     </Items>
                 </asp:Menu>

@@ -86,10 +86,16 @@ namespace _min.Models
                             fkf.fk.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.M2NMapping:
-                        string[] opts = Lipsum();
+                        
+                        
                         M2NMappingField m2nf = field as M2NMappingField;
+                        //if (m2nf.Mapping.options.Count == 0)
+                        //    break;
+                        string[] opts = Lipsum();
+                        //m2nf.Mapping.options.Clear();
                         foreach (string s in opts)
-                            m2nf.mapping.options.Add(s, rnd.Next());
+                            if(!m2nf.Mapping.options.ContainsKey(s))
+                                m2nf.Mapping.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.Date:
                         field.value = DateTime.Now.ToShortDateString();
@@ -124,25 +130,42 @@ namespace _min.Models
                 }
             }
 
-            foreach (Control c in panel.controls)
+            if (panel.type == Common.PanelTypes.NavTable || panel.type == Common.PanelTypes.NavTree)
             {
-                if (c.data is DataTable)        // is null othervise ?
+                foreach (Control c in panel.controls)
                 {
-                    int n = rnd.Next() % 5 + 5;
-                    for(int i = 0; i < n; i++)
-                        c.data.Rows.Add(c.data.NewRow());
-                    foreach (DataColumn col in c.data.Columns) {
-                        if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short)) {
-                            foreach (DataRow r in c.data.Rows) r[col] = rnd.Next() % 10000;
+                    if (c.independent && c.displayColumns is List<string>)        // is null othervise ?
+                    {
+                        c.data = fetchSchema("SELECT ", c.displayColumns, " FROM ", panel.tableName);
+                        int n = rnd.Next() % 5 + 5;
+                        DataRow[] rows = new DataRow[n];
+                        for (int i = 0; i < n; i++)
+                            rows[i] = c.data.NewRow();
+                            //c.data.Rows.Add(c.data.NewRow());
+                        
+                        foreach (DataColumn col in c.data.Columns)
+                        {
+                            if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
+                            {
+                                foreach (DataRow r in rows) r[col] = rnd.Next() % 10000;
+                            }
+                            else if (col.DataType == typeof(float) 
+                                || col.DataType == typeof(double) 
+                                || col.DataType == typeof(decimal))
+                            {
+                                foreach (DataRow r in rows) r[col] = rnd.NextDouble() % 100000;
+                            }
+                            else if (col.DataType == typeof(bool))
+                            {
+                                foreach (DataRow r in rows) r[col] = false;
+                            }
+                            else
+                            {
+                                foreach (DataRow r in rows) r[col] = LSentence();
+                            }
                         }
-                        else if (col.DataType == typeof(float) || col.DataType == typeof(double)) {
-                            foreach (DataRow r in c.data.Rows) r[col] = rnd.NextDouble() % 100000;
-                        } else if(col.DataType == typeof(bool)){
-                            foreach (DataRow r in c.data.Rows) r[col] = false;
-                        }
-                        else{
-                            foreach (DataRow r in c.data.Rows) r[col] = col.MaxLength <= 256 ? LWord() : LSentence();
-                        }
+                        foreach (DataRow r in rows)
+                            c.data.Rows.Add(r);
                     }
                 }
             }
@@ -202,6 +225,10 @@ namespace _min.Models
                 row[1] = val;
                 query("INSERT INTO", mapping.mapTable, row);
             }
+        }
+
+        public DataRow PKColRowFormat(Panel panel) {
+            return fetchSchema("SELECT ", panel.PKColNames, " FROM ", panel.tableName, " LIMIT 1").NewRow();
         }
     }
 }

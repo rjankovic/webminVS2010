@@ -135,6 +135,7 @@ namespace _min.Interfaces
         DataTable fetchFKOptions(FK fk);
         void MapM2NVals(M2NMapping mapping, int key, int[] vals);
         void UnmapM2NMappingKey(M2NMapping mapping, int key);
+        DataRow PKColRowFormat(Panel panel);
     }
 
     public interface IStats : IBaseDriver {    // information_schema
@@ -180,6 +181,7 @@ namespace _min.Interfaces
         //void updatePanelProperty(Panel panel, string propertyName);
         void removePanel(Panel panel);
         void RewriteControlDefinitions(Panel panel, bool recursive = true);
+        void RewriteFieldDefinitions(Panel panel, bool recursive = true);
         //Common.Environment.User getUser(string userName, string password);
         Common.Environment.Project getProject(int projectId);
         Common.Environment.Project getProject(string projectName);

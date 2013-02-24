@@ -16,6 +16,7 @@ namespace _min.Templates
 
         public SummaryGridCommandColumn(ListItemType itemType, HashSet<UserAction> options = null) {
             this.itemType = itemType;
+            this.options = new HashSet<UserAction>();
             this.options.Add(UserAction.View);
             this.options.Add(UserAction.Insert);
             this.options.Add(UserAction.Delete);
@@ -31,7 +32,7 @@ namespace _min.Templates
                     if(options.Contains(UserAction.Insert)){
                         LinkButton insButton = new LinkButton();
                         insButton.Text = "Insert new item";
-                        insButton.CommandName = "Insert";
+                        insButton.CommandName = "_Insert";
                         container.Controls.Add(insButton);
                     }
                     break;
@@ -40,14 +41,14 @@ namespace _min.Templates
                     {
                         LinkButton viewButton = new LinkButton();
                         viewButton.Text = "Edit";
-                        viewButton.CommandName = "View";
+                        viewButton.CommandName = "_View";
                         container.Controls.Add(viewButton);
                     }
                     if (options.Contains(UserAction.Delete))
                     {
                         LinkButton delButton = new LinkButton();
                         delButton.Text = "Delete";
-                        delButton.CommandName = "Delete";
+                        delButton.CommandName = "_Delete";
                         container.Controls.Add(delButton);
                     }
                     break;

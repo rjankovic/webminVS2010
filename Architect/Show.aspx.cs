@@ -27,6 +27,7 @@ namespace _min_t7.Architect
         _min.Models.Panel basePanel;
         _min.Models.Panel activePanel;
         Navigator navigator;
+        IWebDriver webDriver;
 
 
         protected void Page_Init(object sender, EventArgs e)
@@ -40,6 +41,7 @@ namespace _min_t7.Architect
             _min.Common.Environment.project = sysDriver.getProject(projectName);
             string WebDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
             stats = new StatsMySql(CE.project.connstringIS, WebDbName);
+            webDriver = new WebDriverMySql(CE.project.connstringWeb);
             architect = new _min.Models.Architect(sysDriver, stats);
 
 
@@ -76,6 +78,9 @@ namespace _min_t7.Architect
                 {
                     int panelId = Int32.Parse(Page.RouteData.Values["panelId"].ToString());
                     activePanel = sysDriver.getPanel(panelId, false);
+                    if(RouteData.Values.ContainsKey("itemKey")){
+                        SetRoutedPKForPanel(activePanel, RouteData.Values["itemKey"] as string);
+                    }
                     Session["activePanel"] = activePanel;
                     currentPanelActionPanels = new Dictionary<UserAction, int>();
                     var controlTargetPanels = from _min.Models.Control c in activePanel.controls 
@@ -103,6 +108,8 @@ namespace _min_t7.Architect
 
             MenuEventHandler menuHandler = navigator.MenuHandle;
             Menu baseMenu = (Menu)((TreeControl)basePanel.controls[0]).ToUControl(navigator.MenuHandler);
+            baseMenu.ID = "baseMenu";
+            baseMenu.EnableViewState = false;
             MainPanel.Controls.Add(baseMenu);
                 
             if (Page.RouteData.Values.ContainsKey("panelId"))
@@ -112,12 +119,39 @@ namespace _min_t7.Architect
 
         }
 
+
+        void SetRoutedPKForPanel(_min.Models.Panel panel, string PKval) {
+            DataRow row = webDriver.PKColRowFormat(panel);
+            string[] parts = PKval.Split('/');
+            for (int i = 0; i < row.Table.Columns.Count; i++) {
+                if (row.Table.Columns[i].DataType == typeof(int))
+                    row[i] = Int32.Parse(parts[i]);
+                else
+                    row[i] = parts[i];
+                }
+            panel.PK = row;
+        }
+
         void CreateWebControlsForPanel(MPanel activePanel, System.Web.UI.WebControls.Panel containerPanel){
             List<AjaxControlToolkit.ExtenderControlBase> extenders = new List<AjaxControlToolkit.ExtenderControlBase>();
+            List<BaseValidator> validators = new List<BaseValidator>();
+            if (!Page.IsPostBack)
+            {
+                if (activePanel.type == PanelTypes.NavTree
+                    || activePanel.type == PanelTypes.NavTable
+                    || RouteData.Values.ContainsKey("itemKey"))
+                    webDriver.FillPanelArchitect(activePanel);
+            }
             if (activePanel.type == PanelTypes.Editable) {
+                //return;
+
                 Table tbl = new Table();
+                tbl.EnableViewState = false;
+                //tbl.ID = "EditTbl";
+                
                 foreach (Field f in activePanel.fields)
                 {
+                    //continue;
                     if (f.type == FieldTypes.Holder) throw new NotImplementedException("Holder fields not yet supported in UI");
                     TableRow row = new TableRow();
                     TableCell captionCell = new TableCell();
@@ -127,35 +161,117 @@ namespace _min_t7.Architect
                     row.Cells.Add(captionCell);
 
                     TableCell fieldCell = new TableCell();
-                    fieldCell.Controls.Add(f.ToUControl(extenders));      // TODO: check
+                    System.Web.UI.Control c = f.ToUControl(extenders);
+                    validators.AddRange(f.GetValidator());
+                    
+                    foreach (BaseValidator v in validators) {
+                        this.Form.Controls.Add(v);
+                        //MainPanel.Controls.Add(v);
+                    }
+                
+                    c.EnableViewState = true;
+                    fieldCell.Controls.Add(c);      // TODO: check
                     row.Cells.Add(fieldCell);
                     tbl.Rows.Add(row);
                 }
                 MainPanel.Controls.Add(tbl);
             }
+            //if (activePanel.type == PanelTypes.Editable) return;
+            
 
             foreach (_min.Models.Control control in activePanel.controls) {
+                if (!control.independent) continue;
                 if (control.data is DataTable && control.data.Rows.Count > 0) {     // first condition SHOULD be enough!
                     if(control is TreeControl)
                         throw new NotImplementedException();
                     else        // it is a mere gridview of a summary panel
-                    containerPanel.Controls.Add(control.ToUControl(navigator.GridCommandHandle));
+                    containerPanel.Controls.Add(control.ToUControl(new GridViewCommandEventHandler(GridCommandEventHandler)));
                 }
                 else    // a simple Button or alike 
                     containerPanel.Controls.Add(control.ToUControl((CommandEventHandler)UserActionCommandHandler));
                                                                     // not GridViewCommandEventHandler
             }
-
+            //if (activePanel.type == PanelTypes.Editable) return;
             foreach (AjaxControlToolkit.ExtenderControlBase extender in extenders) {
                 MainPanel.Controls.Add(extender);
             }
+
+            foreach (BaseValidator validator in validators) {
+                MainPanel.Controls.Add(validator);
+            }
+
+            ValidationSummary validationSummary = new ValidationSummary();
+            validationSummary.BorderWidth = 1;
+            MainPanel.Controls.Add(validationSummary);
+
+
+            if (Page.RouteData.Values.ContainsKey("panelId"))
+            {
+
+                foreach (Field f in activePanel.fields)
+                {
+                    f.SetControlData();
+                }
+            }
+            
         }
+
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+
+            
+        }
+
+        protected void Page_LoadComplete(object sender, EventArgs e) {
+
+            if (Page.RouteData.Values.ContainsKey("panelId"))
+            {
+                if (Page.IsPostBack)
+                {
+                    foreach (Field f in activePanel.fields)
+                    {
+                        f.RetrieveData();
+                    }
+                }
+
+            }
+
+            Session["activePanel"] = activePanel;
+        }
+
 
         private void UserActionCommandHandler(object sender, CommandEventArgs e) {
             if (_min.Common.Environment.GlobalState == GlobalState.Production) { 
                 // do the action
             }
-            navigator.ActionCommandHandle(sender, e);
+            if (e.CommandName.Substring(1) != "Delete")
+                navigator.ActionCommandHandle(sender, e);
+        }
+
+        protected override void LoadViewState(object savedState)
+        {
+            base.LoadViewState(savedState);
+        }
+
+        protected override void LoadControlState(object savedState)
+        {
+            base.LoadControlState(savedState);
+        }
+
+        protected void Page_PreRender(object sender, EventArgs e)
+        {
+            System.Web.UI.Control c = Controls[0];
+        }
+
+        private void GridCommandEventHandler(object sender, GridViewCommandEventArgs e){
+            if ((UserAction)Enum.Parse(typeof(UserAction), (e.CommandName.Substring(1))) != UserAction.Delete)
+            {
+                navigator.GridViewCommandHandler(sender, e);
+            }
+            else { 
+            
+            }
         }
     }
 

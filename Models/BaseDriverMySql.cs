@@ -233,6 +233,39 @@ namespace _min.Models
             return resultQuery.ToString();
         }
 
+        public System.Data.DataTable fetchSchema(params object[] parts)
+        {
+            string query = this.translate(parts);
+            QueryType type = this.getQueryType(query);
+            if (type != QueryType.Select)
+            {
+                throw new Exception("Trying to fetch from a non-select query");
+            }
+            DataTable result = new DataTable();
+            MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
+            Stopwatch watch = new Stopwatch();
+            if (logTable is DataTable)
+            {
+                watch.Start();
+            }
+            try
+            {
+                conn.Open();
+                adapter.FillSchema(result, SchemaType.Source);
+            }
+            finally
+            {
+                conn.Close();
+            }
+            if (writeLog)
+            {
+                watch.Stop();
+                this.log(query, watch);
+            }
+            return result;
+        }
+
+        
         public System.Data.DataTable fetchAll(params object[] parts)
         {
             string query = this.translate(parts);

@@ -506,6 +506,21 @@ namespace _min.Models
                 foreach (Panel p in panel.children)
                     RewriteControlDefinitions(p);
         }
+
+        public void RewriteFieldDefinitions(Panel panel, bool recursive = true)
+        {
+            Dictionary<string, object> updateVals = new Dictionary<string, object>();
+
+            foreach (Field f in panel.fields)
+            {
+                updateVals["content"] = f.Serialize();
+                query("UPDATE fields SET ", updateVals, " WHERE id_field = ", f.fieldId);
+            }
+
+            if (recursive)
+                foreach (Panel p in panel.children)
+                    RewriteFieldDefinitions(p);
+        }
         
         /*
         public void RewriteControlDefinitions(Panel panel)

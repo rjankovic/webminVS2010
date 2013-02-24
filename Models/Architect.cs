@@ -229,8 +229,9 @@ namespace _min.Models
                 {
                     throw new Exception("Unrecognised column type " + col.DataType.ToString());
                 }
-                fields.Add(new Field(0, col.ColumnName, fieldType,
-                    0));  // don`t add any properties, just copy from Stat
+                Field f = new Field(0, col.ColumnName, fieldType, 0);
+                f.validationRules = validation;
+                fields.Add(f);  // don`t add any properties, just copy from Stat
             }
             fields.OrderBy(x => ((int)(x.position)));
             // setup controls as properies
@@ -328,16 +329,17 @@ namespace _min.Models
             PropertyCollection displayProps = new PropertyCollection();
             */
 
-            Panel res = new Panel(tableName, 0, PanelTypes.MenuDrop, new List<Panel>(), new List<Field>(),
-                new List<Control>(), displayColOrder);
-            res.displayAccessRights = 1;
+
             Control control;
             DataTable controlTab = new DataTable();
 
-            List<Field> fields = new List<Field>();
+            //List<Field> fields = new List<Field>();
             List<Control> Controls = new List<Control>();
             if (selfRefFK != null)
             {
+                Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
+                    new List<Control>(), displayColOrder);
+                res.displayAccessRights = 1;
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Update", UserAction.Update);
                 Controls.Add(control);
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Delete", UserAction.Delete);
@@ -350,11 +352,30 @@ namespace _min.Models
                 controlTab.Columns.Add(displayColOrder[0]);
                 control = new TreeControl(controlTab, PKCols[0], selfRefFK.myColumn, displayColOrder[0], UserAction.Update);
                 */
-                res.type = PanelTypes.NavTree;
+                res.AddControls(Controls);
+                return res;
             }
-            res.AddControls(Controls);
-            res.AddFields(fields);
-            return res;
+            else {
+                Panel res = new Panel(tableName, 0, PanelTypes.NavTable, new List<Panel>(), new List<Field>(),
+                    new List<Control>(), PKCols);
+                res.displayAccessRights = 1;
+                control = new Control(0, null, PKCols, UserAction.View);
+                control.independent = true;
+                control.displayColumns = displayColOrder.GetRange(0, 4);
+                Controls.Add(control);
+                control = new Control(0, null, PKCols, UserAction.Update);
+                control.independent = false;
+                Controls.Add(control);
+                control = new Control(0, null, PKCols, UserAction.Delete);
+                control.independent = false;
+                Controls.Add(control);
+                control = new Control(0, null, PKCols, UserAction.Insert);
+                control.independent = true;
+                Controls.Add(control);
+
+                res.AddControls(Controls);
+                return res;
+            }
         }
 
 
@@ -448,7 +469,9 @@ namespace _min.Models
 
             //AddControl! only.
             systemDriver.AddControl(basePanelTreeControl);
-            systemDriver.RewriteControlDefinitions(basePanel);
+            systemDriver.RewriteControlDefinitions(basePanel);  // to give it correct IDs in serialization
+            systemDriver.RewriteFieldDefinitions(basePanel);
+
 
             // now children have everything set, even parentid 
             // as the parent was inserted first, his id was set and they took it from the object
@@ -540,7 +563,7 @@ namespace _min.Models
                         {
                             // just cannot occur in a NavTable, but just in case...
                             if (isNavTable) throw new Exception("Cannot display a M2NMapping in NavTable");
-                            M2NMapping thisMapping = ((M2NMappingField)field).mapping;
+                            M2NMapping thisMapping = ((M2NMappingField)field).Mapping;
                             if (!mappings.Values.Contains(thisMapping))
                             {
                                 Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the schema " +

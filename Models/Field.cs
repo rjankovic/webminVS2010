@@ -21,6 +21,8 @@ namespace _min.Models
     [KnownType(typeof(M2NMappingField))]
     public class Field
     {
+        [IgnoreDataMember]
+        protected System.Web.UI.Control myControl;
         [DataMember]
         public int? fieldId { get; private set; }
         [DataMember]
@@ -53,7 +55,7 @@ namespace _min.Models
         [DataMember]
         public string caption { get; private set; }
         [DataMember]
-        public List<ValidationRules> validationRules { get; private set; }
+        public List<ValidationRules> validationRules { get; set; }
         [DataMember]
         public int position { get; private set; }
 
@@ -108,38 +110,100 @@ namespace _min.Models
 
         public virtual UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
         {
+            System.Web.UI.Control res;
             switch (type)
             {
+                
                 case FieldTypes.Date:
                     WC.Calendar resCal = new WC.Calendar();
-                    resCal.SelectionMode = WC.CalendarSelectionMode.Day;
-                    return resCal;
+                    /*
+                    if(value is DateTime)
+                        resCal.SelectedDate = (DateTime)value;
+                    else
+                        resCal.SelectionMode = WC.CalendarSelectionMode.Day;
+                    
+                     */res = resCal;
+                    
+                     
+                    break;
                 case FieldTypes.DateTime:
                     throw new NotImplementedException(); // composite control
                 case FieldTypes.Time:
                     throw new NotImplementedException();
                 case FieldTypes.Holder:
-                    WC.PlaceHolder resHol = new WC.PlaceHolder();
-                    return resHol;
+                    WC.Panel resHol = new WC.Panel();
+                    //return resHol;
+                    res = resHol;
+                    break;
                 case FieldTypes.Decimal:
                 case FieldTypes.Ordinal:
+                    WC.TextBox resNTxt = new WC.TextBox();
+                    if (value is int || value is long || value is decimal || value is double)
+                        resNTxt.Text = value.ToString();
+                    res = resNTxt;
+                    break;
                 case FieldTypes.Varchar:
                     WC.TextBox resTxt = new WC.TextBox();
+                    resTxt.EnableViewState = false;
+                    //if(value is string)
+                    //    resTxt.Text = (string)value;
+                    //resTxt.ID = "Field" + fieldId.ToString();
                     resTxt.Width = 200;
-                    return resTxt;
+                    res = resTxt;
+                    break;
                 case FieldTypes.Text:
                     AjaxControlToolkit.HtmlEditorExtender editor = new AjaxControlToolkit.HtmlEditorExtender();
                     WC.TextBox tb = new WC.TextBox();
+                    //if(value is string)
+                    //    tb.Text = (string)value;
                     tb.ID = "Field" + fieldId.ToString();
                     tb.Width = 500;
                     tb.Height = 250;
                     editor.Enabled = true;
                     editor.TargetControlID = tb.ID;
                     extenders.Add(editor);
-                    return tb;
+                    res = tb;
+                    break;
                 case FieldTypes.Bool:
                     WC.CheckBox cb = new WC.CheckBox();
-                    return cb;
+                    if(value is bool)
+                        cb.Checked = (bool)value;
+                    res = cb;
+                    break;
+                case FieldTypes.Enum:
+                    throw new NotFiniteNumberException();
+                default:
+                    throw new NotImplementedException();
+            }
+            res.ID = "Field" + fieldId;
+            this.myControl = res;
+            return res;
+        }
+
+        public virtual void RetrieveData() {
+            switch (type)
+            {
+                case FieldTypes.Date:
+                    WC.Calendar resCal = (WC.Calendar)myControl;
+                    value = resCal.SelectedDate;
+                    break;
+                case FieldTypes.DateTime:
+                    throw new NotImplementedException(); // composite control
+                case FieldTypes.Time:
+                    throw new NotImplementedException();
+                case FieldTypes.Holder:
+                    break;
+                case FieldTypes.Decimal:
+                case FieldTypes.Ordinal:
+                case FieldTypes.Text:
+                case FieldTypes.Varchar:
+                    WC.TextBox resTxt = (WC.TextBox)myControl;
+                    value = resTxt.Text;
+                    break;
+                case FieldTypes.Bool:
+                    WC.CheckBox cb = (WC.CheckBox)myControl;
+                    value = cb.Checked;
+                    break;
                 case FieldTypes.Enum:
                     throw new NotFiniteNumberException();
                 default:
@@ -147,9 +211,42 @@ namespace _min.Models
             }
         }
 
-        public virtual List<WC.BaseValidator> GetValidator(UControl fieldControl)
+        public virtual void SetControlData() {
+            if (value == null) return;
+            switch (type)
+            {
+                case FieldTypes.Date:
+                    WC.Calendar resCal = (WC.Calendar)myControl;
+                    resCal.SelectedDate = (DateTime)value;
+                    break;
+                case FieldTypes.DateTime:
+                    throw new NotImplementedException(); // composite control
+                case FieldTypes.Time:
+                    throw new NotImplementedException();
+                case FieldTypes.Holder:
+                    break;
+                case FieldTypes.Decimal:
+                case FieldTypes.Ordinal:
+                case FieldTypes.Text:
+                case FieldTypes.Varchar:
+                    WC.TextBox resTxt = (WC.TextBox)myControl;
+                    resTxt.Text = value.ToString();
+                    break;
+                case FieldTypes.Bool:
+                    WC.CheckBox cb = (WC.CheckBox)myControl;
+                    cb.Checked = (bool)value;
+                    break;
+                case FieldTypes.Enum:
+                    throw new NotFiniteNumberException();
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public virtual List<WC.BaseValidator> GetValidator()
         {
             List<WC.BaseValidator> res = new List<WC.BaseValidator>();
+            UControl fieldControl = myControl;
 
             foreach (ValidationRules rule in validationRules)
             {
@@ -159,24 +256,31 @@ namespace _min.Models
                         WC.RequiredFieldValidator reqVal = new WC.RequiredFieldValidator();
                         reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
                         reqVal.ErrorMessage = this.caption + " is required";
+                        reqVal.Display = WC.ValidatorDisplay.None;
                         res.Add(reqVal);
                         break;
                     case ValidationRules.Ordinal:
                         WC.RegularExpressionValidator regexVal = new WC.RegularExpressionValidator();
                         regexVal.ValidationExpression = "[0-9]+";
+                        regexVal.ControlToValidate = fieldControl.ID;
                         regexVal.ErrorMessage = this.caption + " must be an integer";
+                        regexVal.Display = WC.ValidatorDisplay.None;
                         res.Add(regexVal);
                         break;
                     case ValidationRules.Decimal:
                         WC.RegularExpressionValidator regexVal2 = new WC.RegularExpressionValidator();
                         regexVal2.ValidationExpression = "[0-9]+([.,][0-9]+)?";
+                        regexVal2.ControlToValidate = fieldControl.ID;
                         regexVal2.ErrorMessage = this.caption + " must be a decimal number";
+                        regexVal2.Display = WC.ValidatorDisplay.None;
                         res.Add(regexVal2);
                         break;
                     case ValidationRules.ZIP:
                         WC.RegularExpressionValidator regexValZIP = new WC.RegularExpressionValidator();
+                        regexValZIP.ControlToValidate = fieldControl.ID;
                         regexValZIP.ValidationExpression = "[0-9]{5}";
                         regexValZIP.ErrorMessage = this.caption + " must be a valid ZIP code";
+                        regexValZIP.Display = WC.ValidatorDisplay.None;
                         res.Add(regexValZIP);
                         break;
                     default:
@@ -194,6 +298,7 @@ namespace _min.Models
         private object _value;
         public override object value
         {
+            
             get
             {
                 return _value;
@@ -224,8 +329,24 @@ namespace _min.Models
         {
             WC.DropDownList res = new WC.DropDownList();
             res.DataSource = fk.options;
+            res.DataValueField = "Value";
+            res.DataTextField = "Key";
             res.DataBind();
+            myControl = res;
             return res;
+        }
+
+        public override void RetrieveData()
+        {
+            WC.DropDownList ddl = (WC.DropDownList)myControl;
+            value = ddl.SelectedValue;
+        }
+
+        public override void SetControlData(){
+            if (value == null) return;
+            WC.DropDownList ddl = (WC.DropDownList)myControl;
+            ddl.DataSource = fk.options.Keys;
+            ddl.SelectedIndex = ddl.Items.IndexOf(ddl.Items.FindByText((string)value));
         }
 
     }
@@ -233,7 +354,7 @@ namespace _min.Models
     [DataContract]
     class M2NMappingField : Field
     {
-        private object _value;
+        private object _value = new List<string>();
         public override object value
         {
             get
@@ -250,26 +371,59 @@ namespace _min.Models
         }
 
         [DataMember]
-        public M2NMapping mapping { get; private set; }
+        private M2NMapping mapping;
+        public M2NMapping Mapping
+        {
+            get
+            {
+                if (mapping.options == null) 
+                    mapping.options = new Dictionary<string, int>();
+                return mapping;
+            }
+            private set {
+                mapping = value;
+            }
+        }
+
 
         public M2NMappingField(int fieldId, string column, int panelId,
             M2NMapping mapping, string caption = null)
             : base(fieldId, column, FieldTypes.M2NMapping, panelId)
         {
-            this.mapping = mapping;
+            this.Mapping = mapping;
+            //if (mapping.options == null) mapping.options = new Dictionary<string, int>();
+            //if(mapping == null) this.mapping = new M2NMapping(;
         }
 
         public override bool ValidateSelf()
         {
-            return mapping.validateWholeInput((List<string>)value);
+            return Mapping.validateWholeInput((List<string>)value);
 
         }
 
-        public UControl ToUControl(EventHandler handler, List<AjaxControlToolkit.ExtenderControlBase> extenders)
+        public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
         {
             _min.Controls.M2NMappingControl res = new M2NMappingControl();
-            res.SetOptions(this.mapping.options);
+            res.ID = "Field" + fieldId;
+            myControl = res;
+            //res.SetOptions(this.Mapping.options);
             return res;
+        }
+
+        public override void RetrieveData()
+        {
+            M2NMappingControl c = (M2NMappingControl)myControl;
+            value = (from WC.ListItem item in c.IncludedItems select item.Text).ToList(); 
+        }
+
+        public override void SetControlData()
+        {
+            
+            M2NMappingControl c = (M2NMappingControl)myControl;
+            c.SetOptions(this.mapping.options);
+
+            if (value == null) return;
+            c.SetIncludedOptions((List<string>)value);
         }
     }
 

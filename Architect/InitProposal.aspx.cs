@@ -113,7 +113,7 @@ namespace _min_t7.Architect
             {
                 ItemCheckBox = (CheckBox)item.FindControl("ItemCheckBox");
                 if (ItemCheckBox.Checked)
-                    mappingsDictionary[mappingsList[i].mapTable] = mappingsList[i];
+                    mappingsDictionary[mappingsList[i].myTable] = mappingsList[i];
                 i++;
             }
             architect.mappings = mappingsDictionary;
