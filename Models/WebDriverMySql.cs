@@ -83,7 +83,7 @@ namespace _min.Models
                         FKField fkf = field as FKField;
                         string[] options = Lipsum();
                         foreach (string s in options)
-                            fkf.fk.options.Add(s, rnd.Next());
+                            fkf.FK.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.M2NMapping:
                         
@@ -98,13 +98,13 @@ namespace _min.Models
                                 m2nf.Mapping.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.Date:
-                        field.value = DateTime.Now.ToShortDateString();
+                        field.value = DateTime.Now;
                         break;
                     case _min.Common.FieldTypes.DateTime:
-                        field.value = DateTime.Now.ToString();
+                        field.value = DateTime.Now;
                         break;
                     case _min.Common.FieldTypes.Time:
-                        field.value = DateTime.Now.ToShortTimeString();
+                        field.value = DateTime.Now;
                         break;
                     case _min.Common.FieldTypes.Holder:
                         break;
@@ -134,9 +134,16 @@ namespace _min.Models
             {
                 foreach (Control c in panel.controls)
                 {
+
                     if (c.independent && c.displayColumns is List<string>)        // is null othervise ?
                     {
-                        c.data = fetchSchema("SELECT ", c.displayColumns, " FROM ", panel.tableName);
+                        List<string> toSelect = c.displayColumns.Union(c.PKColNames).ToList();
+                        /*
+                        foreach(string s in c.PKColNames)
+                            if(!toSelect.Contains(s))
+                                toSelect.Add(s);
+                         */ 
+                        c.data = fetchSchema("SELECT ", toSelect, " FROM `" + panel.tableName + "`");
                         int n = rnd.Next() % 5 + 5;
                         DataRow[] rows = new DataRow[n];
                         for (int i = 0; i < n; i++)
@@ -145,7 +152,10 @@ namespace _min.Models
                         
                         foreach (DataColumn col in c.data.Columns)
                         {
-                            if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
+                            if (col.DataType == typeof(DateTime)) {
+                                foreach (DataRow r in rows) r[col] = DateTime.Today;
+                            }
+                            else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
                             {
                                 foreach (DataRow r in rows) r[col] = rnd.Next() % 10000;
                             }
@@ -161,11 +171,31 @@ namespace _min.Models
                             }
                             else
                             {
-                                foreach (DataRow r in rows) r[col] = LSentence();
+                                foreach (DataRow r in rows)
+                                {
+                                    string s = LSentence();
+                                    if (col.MaxLength > -1 && col.MaxLength < s.Length) {
+                                        s = s.Substring(0, col.MaxLength);
+                                    }
+                                    r[col] = s;
+                                }
                             }
                         }
                         foreach (DataRow r in rows)
                             c.data.Rows.Add(r);
+                    }
+                    if (c.panel.type == Common.PanelTypes.NavTree && c.data is DataTable) {
+                        c.data.Rows.Clear();
+                        int n = rnd.Next() % 10 + 10;
+                        HierarchyNavTable hierarchy = (HierarchyNavTable)(c.data);
+                        for(int i = 0; i < n; i++){
+                            HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
+                            r.Id = i + 1;
+                            r.ParentId = rnd.Next() % (i + 1);
+                            r.Caption = LWord();
+                            r.NavId = 0;
+                            c.data.Rows.Add(r);
+                        }
                     }
                 }
             }
@@ -228,7 +258,7 @@ namespace _min.Models
         }
 
         public DataRow PKColRowFormat(Panel panel) {
-            return fetchSchema("SELECT ", panel.PKColNames, " FROM ", panel.tableName, " LIMIT 1").NewRow();
+            return fetchSchema("SELECT ", panel.PKColNames, " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
         }
     }
 }

@@ -127,9 +127,12 @@ namespace _min.Models
         // the order in which columns will be displayed in summary tables & M2NMapping, covers all columns
         {
             DataColumnCollection cols = stats.columnTypes(tableName);
-
+            Dictionary<string, List<string>> PKs = stats.GlobalPKs();
+            List<string> PKcols = PKs[tableName];
             List<string> res = new List<string>();
-            List<DataColumn> colList = new List<DataColumn>(from DataColumn col in cols select col);
+            List<DataColumn> colList = new List<DataColumn>(from DataColumn col in cols 
+                                                            where !PKcols.Contains(col.ColumnName) 
+                                                            select col);
             ColumnDisplayComparer comparer = new ColumnDisplayComparer();
             colList.Sort(comparer);
             return new List<string>(from col in colList select col.ColumnName);
@@ -361,7 +364,7 @@ namespace _min.Models
                 res.displayAccessRights = 1;
                 control = new Control(0, null, PKCols, UserAction.View);
                 control.independent = true;
-                control.displayColumns = displayColOrder.GetRange(0, 4);
+                control.displayColumns = displayColOrder.GetRange(0, Math.Min(displayColOrder.Count, 4));
                 Controls.Add(control);
                 control = new Control(0, null, PKCols, UserAction.Update);
                 control.independent = false;
@@ -575,7 +578,7 @@ namespace _min.Models
                         }
                         else if (field is FKField)
                         {
-                            FK fieldFK = ((FKField)field).fk;
+                            FK fieldFK = ((FKField)field).FK;
                             if (!FKs.Contains(fieldFK))
                             {
                                 Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column

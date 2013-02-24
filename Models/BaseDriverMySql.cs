@@ -44,7 +44,8 @@ namespace _min.Models
             {"SET", Expectations.UpdateValues},
             {"WHERE", Expectations.Conditions},            
             {"HAVING", Expectations.Conditions},
-            {"SELECT", Expectations.Columns}
+            {"SELECT", Expectations.Columns},
+            {"FROM", Expectations.Columns}
         };
 
 

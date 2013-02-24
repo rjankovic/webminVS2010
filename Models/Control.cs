@@ -149,13 +149,40 @@ namespace _min.Models
             foreach (UserAction act in actionsQuery)
                 actions.Add(act);
 
+            grid.AutoGenerateColumns = false;
             grid.DataSource = data;
+            
             WC.TemplateField tf = new WC.TemplateField();
             tf.HeaderTemplate = new SummaryGridCommandColumn(WC.ListItemType.Header);
             tf.FooterTemplate = new SummaryGridCommandColumn(WC.ListItemType.Footer);
             tf.ItemTemplate = new SummaryGridCommandColumn(WC.ListItemType.Item, actions);
             grid.Columns.Add(tf);
+
+
+            foreach (string col in displayColumns)
+            {
+                WC.BoundField bf = new WC.BoundField();
+                bf.DataField = col;
+                bf.HeaderText = col;
+                grid.Columns.Add(bf);
+            }
+            foreach (string col in PKColNames) {
+                if (displayColumns.Contains(col)) continue;
+                WC.BoundField bf = new WC.BoundField();
+                bf.DataField = col;
+                bf.Visible = false;
+                grid.Columns.Add(bf);
+            }
+
             grid.DataBind();
+            /*
+            foreach(WC.DataControlField f in grid.Columns){
+                if (f is WC.BoundField) {
+                    WC.BoundField bf = (WC.BoundField)f;
+                    if (!displayColumns.Contains(bf.DataField))
+                        f.Visible = false;
+                }
+            }*/
             grid.RowCommand += handler;
             grid.ID = "control" + controlId;
             return grid;
@@ -170,6 +197,7 @@ namespace _min.Models
             button.ID = "control" + controlId;
             return button;
         }
+
     }
 
 
@@ -249,12 +277,12 @@ namespace _min.Models
 
         public UControl ToUControl(EventHandler handler, string navigateUrl = null)
         {
-
             if (panel.type != PanelTypes.NavTree) throw new ArgumentException(
                  "This handler cannot handle events different from that fired by a TreeView in a NavtreePanel`s contorl");
             WC.TreeView res = new WC.TreeView();
+            res.ShowLines = true;
             WC.TreeNode item;
-            foreach (DataRow r in storedHierarchyData.Rows)
+            foreach (DataRow r in data.Rows)
             {
                 if ((int)(r["ParentId"]) == 0)
                 {
@@ -264,6 +292,7 @@ namespace _min.Models
                 }
             }
             res.SelectedNodeChanged += handler;
+            
             return res;
         }
 

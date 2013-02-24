@@ -113,18 +113,14 @@ namespace _min.Models
             System.Web.UI.Control res;
             switch (type)
             {
-                
+
                 case FieldTypes.Date:
-                    WC.Calendar resCal = new WC.Calendar();
-                    /*
-                    if(value is DateTime)
-                        resCal.SelectedDate = (DateTime)value;
-                    else
-                        resCal.SelectionMode = WC.CalendarSelectionMode.Day;
-                    
-                     */res = resCal;
-                    
-                     
+                    WC.TextBox resCal = new WC.TextBox();
+                    resCal.ID = "Field" + fieldId.ToString();
+                    AjaxControlToolkit.CalendarExtender calendarExtender = new AjaxControlToolkit.CalendarExtender();
+                    calendarExtender.TargetControlID = resCal.ID;
+                    extenders.Add(calendarExtender);
+                    res = resCal;
                     break;
                 case FieldTypes.DateTime:
                     throw new NotImplementedException(); // composite control
@@ -138,13 +134,14 @@ namespace _min.Models
                 case FieldTypes.Decimal:
                 case FieldTypes.Ordinal:
                     WC.TextBox resNTxt = new WC.TextBox();
+                    /*
                     if (value is int || value is long || value is decimal || value is double)
-                        resNTxt.Text = value.ToString();
+                        resNTxt.Text = value.ToString();*/
                     res = resNTxt;
                     break;
                 case FieldTypes.Varchar:
                     WC.TextBox resTxt = new WC.TextBox();
-                    resTxt.EnableViewState = false;
+                    //resTxt.EnableViewState = false;
                     //if(value is string)
                     //    resTxt.Text = (string)value;
                     //resTxt.ID = "Field" + fieldId.ToString();
@@ -166,7 +163,7 @@ namespace _min.Models
                     break;
                 case FieldTypes.Bool:
                     WC.CheckBox cb = new WC.CheckBox();
-                    if(value is bool)
+                    if (value is bool)
                         cb.Checked = (bool)value;
                     res = cb;
                     break;
@@ -180,12 +177,17 @@ namespace _min.Models
             return res;
         }
 
-        public virtual void RetrieveData() {
+        public virtual void RetrieveData()
+        {
             switch (type)
             {
                 case FieldTypes.Date:
-                    WC.Calendar resCal = (WC.Calendar)myControl;
-                    value = resCal.SelectedDate;
+
+                    WC.TextBox resCal = (WC.TextBox)myControl;
+                    DateTime date = DateTime.MinValue;
+                    DateTime.TryParse(resCal.Text, out date);
+                    if (date != DateTime.MinValue)
+                        value = date;
                     break;
                 case FieldTypes.DateTime:
                     throw new NotImplementedException(); // composite control
@@ -211,13 +213,14 @@ namespace _min.Models
             }
         }
 
-        public virtual void SetControlData() {
+        public virtual void SetControlData()
+        {
             if (value == null) return;
             switch (type)
             {
                 case FieldTypes.Date:
-                    WC.Calendar resCal = (WC.Calendar)myControl;
-                    resCal.SelectedDate = (DateTime)value;
+                    WC.TextBox resCal = (WC.TextBox)myControl;
+                    resCal.Text = ((DateTime)value).ToShortDateString();
                     break;
                 case FieldTypes.DateTime:
                     throw new NotImplementedException(); // composite control
@@ -253,11 +256,13 @@ namespace _min.Models
                 switch (rule)
                 {
                     case ValidationRules.Required:
-                        WC.RequiredFieldValidator reqVal = new WC.RequiredFieldValidator();
+                        WC.RequiredFieldValidator reqVal;
+                        reqVal = new WC.RequiredFieldValidator();
                         reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
                         reqVal.ErrorMessage = this.caption + " is required";
                         reqVal.Display = WC.ValidatorDisplay.None;
                         res.Add(reqVal);
+
                         break;
                     case ValidationRules.Ordinal:
                         WC.RegularExpressionValidator regexVal = new WC.RegularExpressionValidator();
@@ -298,7 +303,7 @@ namespace _min.Models
         private object _value;
         public override object value
         {
-            
+
             get
             {
                 return _value;
@@ -312,7 +317,23 @@ namespace _min.Models
             }
         }
         [DataMember]
-        public FK fk { get; private set; }
+        private FK fk;
+
+        public FK FK
+        {
+            get
+            {
+                if (fk.options == null)
+                    fk.options = new Dictionary<string, int>();
+                return fk;
+            }
+
+            private set
+            {
+                fk = value;
+            }
+
+        }
 
         public FKField(int fieldId, string column, int panelId, FK fk, string caption = null)
             : base(fieldId, column, FieldTypes.FK, panelId, caption)
@@ -342,7 +363,8 @@ namespace _min.Models
             value = ddl.SelectedValue;
         }
 
-        public override void SetControlData(){
+        public override void SetControlData()
+        {
             if (value == null) return;
             WC.DropDownList ddl = (WC.DropDownList)myControl;
             ddl.DataSource = fk.options.Keys;
@@ -376,11 +398,12 @@ namespace _min.Models
         {
             get
             {
-                if (mapping.options == null) 
+                if (mapping.options == null)
                     mapping.options = new Dictionary<string, int>();
                 return mapping;
             }
-            private set {
+            private set
+            {
                 mapping = value;
             }
         }
@@ -413,12 +436,12 @@ namespace _min.Models
         public override void RetrieveData()
         {
             M2NMappingControl c = (M2NMappingControl)myControl;
-            value = (from WC.ListItem item in c.IncludedItems select item.Text).ToList(); 
+            value = (from WC.ListItem item in c.IncludedItems select item.Text).ToList();
         }
 
         public override void SetControlData()
         {
-            
+
             M2NMappingControl c = (M2NMappingControl)myControl;
             c.SetOptions(this.mapping.options);
 

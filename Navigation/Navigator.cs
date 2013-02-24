@@ -17,6 +17,7 @@ namespace _min.Navigation
         public readonly MenuEventHandler MenuHandler;
         public readonly GridViewCommandEventHandler GridViewCommandHandler;
         public readonly CommandEventHandler CommandHandler;
+        public readonly EventHandler TreeHandler;
 
 
         public Navigator(HttpResponse response, Dictionary<UserAction, int> currentPanelActionPanels) {
@@ -26,6 +27,7 @@ namespace _min.Navigation
             MenuHandler = MenuHandle;
             GridViewCommandHandler = GridCommandHandle;
             CommandHandler = ActionCommandHandle;
+            TreeHandler = TreeHandle;
         }
 
         public void MenuHandle(object sender, MenuEventArgs e) {
@@ -35,6 +37,20 @@ namespace _min.Navigation
             //response.End();
             response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelDefaultRoute"
                 : "ProductionShowPanelDefaultRoute", new { panelId = e.Item.Value });
+        }
+
+        public void TreeHandle(object sender, EventArgs e) {
+            TreeView tree = (TreeView)sender;
+            int navId = Int32.Parse(tree.SelectedValue);
+
+            response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
+                ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
+                new
+                {
+                    panelId = currentTableActionPanels[UserAction.Update],
+                    action = UserAction.Update.ToString(),
+                    itemKey = navId     // trees must have single-column int PKs
+                });
         }
 
         public void GridCommandHandle(object sender, GridViewCommandEventArgs e) {
@@ -76,6 +92,7 @@ namespace _min.Navigation
 
             return string.Join("/", lParts.ToArray());
         }
+
 
         
         public void ActionCommandHandle(object sender, CommandEventArgs e) {    // buttons must fire Commands !
