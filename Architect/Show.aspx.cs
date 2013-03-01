@@ -180,14 +180,13 @@ namespace _min_t7.Architect
             
 
             foreach (_min.Models.Control control in activePanel.controls) {
-                if (!control.independent) continue;
-                if (control.data is DataTable && control.data.Rows.Count > 0) {     // first condition SHOULD be enough!
                     if (control is TreeControl)
                     {
                         containerPanel.Controls.Add(((TreeControl)control).ToUControl(navigator.TreeHandler));
                     }
-                    else        // it is a mere gridview of a summary panel
-                        containerPanel.Controls.Add(control.ToUControl(new GridViewCommandEventHandler(GridCommandEventHandler)));
+                    else if(control is NavTableControl){        // it is a mere gridview of a summary panel
+                        containerPanel.Controls.Add(((NavTableControl)control).ToUControl(
+                            new GridViewCommandEventHandler(GridCommandEventHandler)));
                 }
                 else    // a simple Button or alike 
                     containerPanel.Controls.Add(control.ToUControl((CommandEventHandler)UserActionCommandHandler));
@@ -195,6 +194,7 @@ namespace _min_t7.Architect
             }
             //if (activePanel.type == PanelTypes.Editable) return;
             foreach (AjaxControlToolkit.ExtenderControlBase extender in extenders) {
+                extender.EnableClientState = false;
                 MainPanel.Controls.Add(extender);
             }
 

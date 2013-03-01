@@ -11,12 +11,12 @@ namespace _min.Templates
 {
     public class SummaryGridCommandColumn : ITemplate
     {
-        HashSet<UserAction> options;
+        List<UserAction> options;
         ListItemType itemType;
 
-        public SummaryGridCommandColumn(ListItemType itemType, HashSet<UserAction> options = null) {
+        public SummaryGridCommandColumn(ListItemType itemType, List<UserAction> options = null) {
             this.itemType = itemType;
-            this.options = new HashSet<UserAction>();
+            this.options = new List<UserAction>();
             this.options.Add(UserAction.View);
             this.options.Add(UserAction.Insert);
             this.options.Add(UserAction.Delete);

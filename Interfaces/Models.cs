@@ -139,7 +139,8 @@ namespace _min.Interfaces
     }
 
     public interface IStats : IBaseDriver {    // information_schema
-        DataColumnCollection columnTypes(string tableName);
+        Dictionary<string, DataColumnCollection> ColumnTypes { get; }
+        Dictionary<string, List<string>> ColumnsToDisplay { get; }
         List<FK> foreignKeys(string tableName);
         List<List<string>> indexes(string tableName);
         List<string> primaryKeyCols(string tableName);

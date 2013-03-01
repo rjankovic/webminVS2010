@@ -299,7 +299,6 @@ namespace _min.Models
     [DataContract]
     class FKField : Field
     {
-
         private object _value;
         public override object value
         {

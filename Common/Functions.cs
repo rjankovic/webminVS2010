@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.IO;
+using System.Data;
 
 namespace _min.Common
 {
@@ -51,4 +52,25 @@ namespace _min.Common
             return reader.ReadToEnd();
         }
     }
+
+    public class ColumnDisplayComparer : IComparer<DataColumn>
+    {
+
+        public int Compare(DataColumn x, DataColumn y)
+        {
+            if (x == y || x.DataType == y.DataType) return 0;
+            if (x == null) return 1;
+            if (y == null) return -1;
+            if (x.DataType == typeof(string) && y.DataType == typeof(string))
+                return y.MaxLength - x.MaxLength;
+            if (x.DataType == typeof(string)) return -1;
+            if (y.DataType == typeof(string)) return 1;
+            if (x.DataType == typeof(DateTime)) return -1;
+            if (x.DataType == typeof(DateTime)) return 1;
+            if (x.DataType == typeof(int)) return -1;
+            if (y.DataType == typeof(int)) return 1;
+            return 0;
+        }
+    }
+
 }

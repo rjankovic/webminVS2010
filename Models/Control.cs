@@ -17,6 +17,7 @@ namespace _min.Models
 {
     [DataContract]
     [KnownType(typeof(TreeControl))]
+    [KnownType(typeof(NavTableControl))]
     public class Control
     {
         [DataMember]
@@ -71,12 +72,10 @@ namespace _min.Models
         [IgnoreDataMember]
         public Panel targetPanel { get; set; }
         [DataMember]
-        public bool independent { get; set; }   // for grid option controls
-        [DataMember]
         public List<string> displayColumns { get; set; }
 
         public Control(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
-            DataTable data, List<string> PKColNames, UserAction action, bool independent = true)
+            DataTable data, List<string> PKColNames, UserAction action)
         {
             this.panelId = panelId;
             this.data = data;
@@ -85,7 +84,6 @@ namespace _min.Models
             this.panel = panel;
             this.targetPanel = targetPanel;
             this.targetPanelId = targetPanelId;
-            this.independent = independent;
         }
 
         public Control(int panelId, Panel panel,
@@ -100,7 +98,6 @@ namespace _min.Models
             this.data = data;
             this.PKColNames = PKColNames;
             this.action = action;
-            this.independent = true;
         }
 
         public Control(int panelId, DataTable data, string PKColName, UserAction action)
@@ -136,22 +133,50 @@ namespace _min.Models
             this.panelId = panel.panelId;
         }
 
+        public virtual UControl ToUControl(WC.CommandEventHandler handler, string navigateUrl = null)
+        {
+            WC.Button button = new WC.Button();
+            button.Text = this.action.ToString();
+            button.CommandName = action.ToString();
+            button.Command += (WC.CommandEventHandler)handler;
+            button.ID = "Control" + controlId;
+            return button;
+        }
+
+    }
+
+    [DataContract]
+    [KnownType(typeof(FK))]
+    public class NavTableControl : Control {
+        [DataMember]
+        public List<FK> FKs { get; private set; }
+        public List<UserAction> actions { get; private set; }
+
+        public NavTableControl(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
+            DataTable data, List<string> PKColNames, List<FK> Fks, List<UserAction> actions)
+            :base(panelId, panel, targetPanelId, targetPanel, data, PKColNames, actions[0])
+        {
+            this.FKs = Fks;
+            this.actions = actions;
+        }
+
+        public NavTableControl(int panelId, DataTable data, List<string> PKColNames, List<FK> FKs, List<UserAction> actions)
+            :base(panelId, data, PKColNames, actions[0])
+        {
+            this.FKs = FKs;
+            this.actions = actions;
+        
+        }
+
         public virtual UControl ToUControl(WC.GridViewCommandEventHandler handler, string navigateUrl = null)
         {
             // take care of all the dependant controls as well
             WC.GridView grid = new WC.GridView();
             grid.DataKeyNames = PKColNames.ToArray();
-            HashSet<UserAction> actions = new HashSet<UserAction>();
-            actions.Add(this.action);
-            IEnumerable<UserAction> actionsQuery = from control in panel.controls
-                                                   where control.independent == false
-                                                   select control.action;
-            foreach (UserAction act in actionsQuery)
-                actions.Add(act);
-
+            
             grid.AutoGenerateColumns = false;
             grid.DataSource = data;
-            
+
             WC.TemplateField tf = new WC.TemplateField();
             tf.HeaderTemplate = new SummaryGridCommandColumn(WC.ListItemType.Header);
             tf.FooterTemplate = new SummaryGridCommandColumn(WC.ListItemType.Footer);
@@ -166,7 +191,8 @@ namespace _min.Models
                 bf.HeaderText = col;
                 grid.Columns.Add(bf);
             }
-            foreach (string col in PKColNames) {
+            foreach (string col in PKColNames)
+            {
                 if (displayColumns.Contains(col)) continue;
                 WC.BoundField bf = new WC.BoundField();
                 bf.DataField = col;
@@ -184,22 +210,11 @@ namespace _min.Models
                 }
             }*/
             grid.RowCommand += handler;
-            grid.ID = "control" + controlId;
+            grid.ID = "Control" + controlId;
             return grid;
         }
 
-        public virtual UControl ToUControl(WC.CommandEventHandler handler, string navigateUrl = null)
-        {
-            WC.Button button = new WC.Button();
-            button.Text = this.action.ToString();
-            button.CommandName = action.ToString();
-            button.Command += (WC.CommandEventHandler)handler;
-            button.ID = "control" + controlId;
-            return button;
-        }
-
     }
-
 
     [DataContract]
     [KnownType(typeof(HierarchyNavTable))]
@@ -292,7 +307,7 @@ namespace _min.Models
                 }
             }
             res.SelectedNodeChanged += handler;
-            
+            res.ID = "Control" + controlId;
             return res;
         }
 

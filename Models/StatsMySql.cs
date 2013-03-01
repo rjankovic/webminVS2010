@@ -11,17 +11,75 @@ namespace _min.Models
     class StatsMySql : BaseDriverMySql, IStats 
     {
         private string webDb;
+
+
+        private Dictionary<string, DataColumnCollection> columnTypes = null;
+        private Dictionary<string, List<string>> columnsToDisplay = null;
+
+        public Dictionary<string, DataColumnCollection> ColumnTypes {
+            get {
+                if (columnTypes == null)
+                    GetColumnTypes();
+                return columnTypes;
+            }
+            private set {
+                columnTypes = value;
+            }
+        }
+
+        public Dictionary<string, List<string>> ColumnsToDisplay {
+            get
+            {
+                if (columnsToDisplay == null)
+                    FindColumnsToDisplay();
+                return columnsToDisplay;
+            
+            }
+            private set {
+                columnsToDisplay = value;
+            }
+        }
+
         public StatsMySql(string connstring, string webDb, DataTable logTable = null, bool writeLog = false)
             :base(connstring, logTable, writeLog)
         { 
             this.webDb = webDb;
         }
 
-        public DataColumnCollection columnTypes(string tableName)   // extracts information from the COLUMNS table of INFORMATION_SCHEMA
+
+        private void FindColumnsToDisplay()
         {
-            DataTable tbl = new DataTable();
-            DataTable stats = fetchAll("SELECT * FROM COLUMNS WHERE TABLE_SCHEMA = \"" + webDb + "\" AND TABLE_NAME = \"" + tableName + "\" ORDER BY ORDINAL_POSITION");
-            foreach (DataRow r in stats.Rows) { 
+            columnsToDisplay = new Dictionary<string, List<string>>();
+            foreach (string tab in ColumnTypes.Keys)
+            {
+                DataColumnCollection cols = ColumnTypes[tab];
+
+                List<DataColumn> innerList = new List<DataColumn>();
+                foreach (DataColumn col in cols)
+                    innerList.Add(col);
+                IComparer<DataColumn> comparer = new Common.ColumnDisplayComparer();
+                innerList.Sort(comparer);
+                columnsToDisplay[tab] = new List<string>();
+                foreach (DataColumn c in innerList)
+                {
+                    columnsToDisplay[tab].Add(c.ColumnName);
+                }
+            }
+        }
+
+        private void GetColumnTypes()   // extracts information from the COLUMNS table of INFORMATION_SCHEMA
+        {
+            DataTable tbl = null;
+            DataTable stats = fetchAll("SELECT * FROM COLUMNS WHERE TABLE_SCHEMA = \"" + webDb + "\" ORDER BY TABLE_NAME, ORDINAL_POSITION");
+            Dictionary<string, DataColumnCollection> res = new Dictionary<string, DataColumnCollection>();
+
+            foreach (DataRow r in stats.Rows) {
+                if (tbl == null || tbl.TableName != r["TABLE_NAME"].ToString())
+                {
+                    tbl = new DataTable(r["TABLE_NAME"].ToString());
+                    res.Add(tbl.TableName, tbl.Columns);
+                }
+
                 DataColumn col = new DataColumn(r["COLUMN_NAME"] as string);        // set ColumnName
                 
                 col.ExtendedProperties.Add(Common.Constants.FIELD_POSITION, Convert.ToInt32(r["ORDINAL_POSITION"]));
@@ -96,7 +154,7 @@ namespace _min.Models
                 tbl.Columns.Add(col);
                 
             }       // for each row in stats
-            return tbl.Columns;
+            columnTypes = res;
         }
 
         public List<FK> foreignKeys(string tableName)
@@ -107,8 +165,8 @@ namespace _min.Models
                 + webDb + "\" AND TABLE_NAME = \"" + tableName + "\" AND REFERENCED_COLUMN_NAME IS NOT NULL");
             foreach (DataRow r in stats.Rows)
             {
-                res.Add(new FK(r["TABLE_NAME"] as string, r["COLUMN_NAME"] as string, r["REFERENCED_TABLE_NAME"] as string, 
-                    r["REFERENCED_COLUMN_NAME"] as string, r["REFERENCED_COLUMN_NAME"] as string));
+                res.Add(new FK(r["TABLE_NAME"] as string, r["COLUMN_NAME"] as string, r["REFERENCED_TABLE_NAME"] as string,
+                    r["REFERENCED_COLUMN_NAME"] as string, ColumnsToDisplay[r["REFERENCED_TABLE_NAME"] as string][0]));
             }
             return res;
         }

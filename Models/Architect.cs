@@ -84,26 +84,6 @@ namespace _min.Models
 
     public class Architect
     {
-        public class ColumnDisplayComparer : IComparer<DataColumn>
-        {
-
-            public int Compare(DataColumn x, DataColumn y)
-            {
-                if (x == y || x.DataType == y.DataType) return 0;
-                if (x == null) return 1;
-                if (y == null) return -1;
-                if (x.DataType == typeof(string) && y.DataType == typeof(string))
-                    return y.MaxLength - x.MaxLength;
-                if (x.DataType == typeof(string)) return -1;
-                if (y.DataType == typeof(string)) return 1;
-                if (x.DataType == typeof(DateTime)) return -1;
-                if (x.DataType == typeof(DateTime)) return 1;
-                if (x.DataType == typeof(int)) return -1;
-                if (y.DataType == typeof(int)) return 1;
-                return 0;
-            }
-        }
-
         public object questionAnswer;
         public event ArchitectQuestion Question;
         public event ArchitectureError Error;
@@ -122,7 +102,7 @@ namespace _min.Models
             this.systemDriver = system;
             questionAnswer = null;
         }
-
+        /*
         private List<string> DisplayColOrder(string tableName)
         // the order in which columns will be displayed in summary tables & M2NMapping, covers all columns
         {
@@ -133,11 +113,11 @@ namespace _min.Models
             List<DataColumn> colList = new List<DataColumn>(from DataColumn col in cols 
                                                             where !PKcols.Contains(col.ColumnName) 
                                                             select col);
-            ColumnDisplayComparer comparer = new ColumnDisplayComparer();
+            ColumnDisplayComparer comparer = new Common.ColumnDisplayComparer();
             colList.Sort(comparer);
             return new List<string>(from col in colList select col.ColumnName);
         }
-
+        */
         public Panel getArchitectureInPanel()
         {
             return systemDriver.getArchitectureInPanel();
@@ -152,7 +132,7 @@ namespace _min.Models
         {
             // dont care for indexes for now
 
-            DataColumnCollection cols = stats.columnTypes(tableName);
+            DataColumnCollection cols = stats.ColumnTypes[tableName];
             List<FK> FKs = stats.foreignKeys(tableName);
             List<string> PKCols = stats.primaryKeyCols(tableName);
 
@@ -164,7 +144,7 @@ namespace _min.Models
             {
                 M2NMapping mapping = mappings[tableName];
                 // no potentional field from cols is removed by this, though
-                List<string> displayColOrder = DisplayColOrder(mapping.refTable);
+                List<string> displayColOrder = stats.ColumnsToDisplay[mapping.refTable];
                 mapping.displayColumn = displayColOrder[0];
                 fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
 
@@ -176,7 +156,7 @@ namespace _min.Models
                 validation = new List<ValidationRules>();
                 //PropertyCollection validation = new PropertyCollection();
                 if (!cols[actFK.myColumn].AllowDBNull) validation.Add(ValidationRules.Required);
-                List<string> displayColOrder = DisplayColOrder(actFK.refTable);
+                List<string> displayColOrder = stats.ColumnsToDisplay[actFK.refTable];
                 actFK.displayColumn = displayColOrder[0];
                 fields.Add(new FKField(0, actFK.myColumn, 0, actFK));
 
@@ -317,7 +297,7 @@ namespace _min.Models
         /// <returns>Panel</returns>
         private Panel proposeSummaryPanel(string tableName)
         {
-            DataColumnCollection cols = stats.columnTypes(tableName);
+            DataColumnCollection cols = stats.ColumnTypes[tableName];
             List<FK> FKs = stats.foreignKeys(tableName);
             // a table with more than one self-referential FK is improbable
             List<FK> selfRefs = new List<FK>(from FK in FKs where FK.myTable == FK.refTable select FK as FK);
@@ -326,7 +306,7 @@ namespace _min.Models
             // strict hierarchy structure validation - not nice => no Tree
             if (hierarchies.Contains(tableName))
                 selfRefFK = selfRefs.First();
-            List<string> displayColOrder = DisplayColOrder(tableName);
+            List<string> displayColOrder = stats.ColumnsToDisplay[tableName];
             /*
             PropertyCollection controlProps = new PropertyCollection();
             PropertyCollection displayProps = new PropertyCollection();
@@ -343,10 +323,7 @@ namespace _min.Models
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
                     new List<Control>(), displayColOrder);
                 res.displayAccessRights = 1;
-                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Update", UserAction.Update);
-                Controls.Add(control);
-                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "Delete", UserAction.Delete);
-                control.independent = false;    // linkbuttons together with Update
+                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "View", UserAction.Update);
                 Controls.Add(control);
                 /*
                 controlProps.Add(CC.CONTROL_HIERARCHY_SELF_FK_COL, selfRefFK.myColumn);
@@ -362,18 +339,15 @@ namespace _min.Models
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTable, new List<Panel>(), new List<Field>(),
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
-                control = new Control(0, null, PKCols, UserAction.View);
-                control.independent = true;
-                control.displayColumns = displayColOrder.GetRange(0, Math.Min(displayColOrder.Count, 4));
-                Controls.Add(control);
-                control = new Control(0, null, PKCols, UserAction.Update);
-                control.independent = false;
-                Controls.Add(control);
-                control = new Control(0, null, PKCols, UserAction.Delete);
-                control.independent = false;
+                List<UserAction> actions = new List<UserAction>( new UserAction[] { UserAction.View, UserAction.Delete } );
+                List<string> displayColumns = displayColOrder.GetRange(0, Math.Min(displayColOrder.Count, 4));
+                List<FK> neededFKs =  (from FK fk in FKs where displayColumns.Contains(fk.myColumn) select fk).ToList();
+                
+                control = new NavTableControl(0, null, PKCols, neededFKs, actions);
+
+                control.displayColumns = displayColumns;
                 Controls.Add(control);
                 control = new Control(0, null, PKCols, UserAction.Insert);
-                control.independent = true;
                 Controls.Add(control);
 
                 res.AddControls(Controls);
@@ -507,7 +481,7 @@ namespace _min.Models
             string messageBeginning = "In panel " + proposalPanel.panelName +
                 "of type " + proposalPanel.type + " for " + proposalPanel.tableName + ": ";
 
-            DataColumnCollection cols = stats.columnTypes(proposalPanel.tableName);
+            DataColumnCollection cols = stats.ColumnTypes[proposalPanel.tableName];
             if (cols.Count == 0 && !proposalPanel.isBaseNavPanel)
             {
                 Error(this, new ArchitectureErrorEventArgs(messageBeginning + "table not found or has 0 columns",

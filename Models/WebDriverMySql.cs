@@ -11,6 +11,7 @@ namespace _min.Models
     class WebDriverMySql : BaseDriverMySql, IWebDriver
     {
 
+        
         public WebDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
             : base(connstring, logTable, writeLog)
         { }
@@ -135,15 +136,31 @@ namespace _min.Models
                 foreach (Control c in panel.controls)
                 {
 
-                    if (c.independent && c.displayColumns is List<string>)        // is null othervise ?
+                    if (c is NavTableControl)
                     {
-                        List<string> toSelect = c.displayColumns.Union(c.PKColNames).ToList();
+                        NavTableControl ntc = (NavTableControl)c;
+                        List<string> toSelect = ntc.displayColumns.Union(c.PKColNames).ToList();
                         /*
                         foreach(string s in c.PKColNames)
                             if(!toSelect.Contains(s))
                                 toSelect.Add(s);
-                         */ 
-                        c.data = fetchSchema("SELECT ", toSelect, " FROM `" + panel.tableName + "`");
+                         */
+                        List<Tuple<string, string, string>> specSelect = new List<Tuple<string, string, string>>();
+                        List<string> neededTables = new List<string>();
+                        foreach (string col in toSelect) { 
+                            FK correspondingFK = ntc.FKs.Where(x => x.myColumn == col).FirstOrDefault();
+                            if (correspondingFK is FK)
+                            {
+                                neededTables.Add(correspondingFK.refTable);
+                                specSelect.Add(new Tuple<string, string, string>(correspondingFK.refTable, 
+                                    correspondingFK.displayColumn, col));
+                            }
+                            else {
+                                specSelect.Add(new Tuple<string, string, string>(panel.tableName, col, col));
+                            }
+                        }
+
+                        c.data = fetchSchema("SELECT ", specSelect, " FROM `" + panel.tableName + "`", ntc.FKs);
                         int n = rnd.Next() % 5 + 5;
                         DataRow[] rows = new DataRow[n];
                         for (int i = 0; i < n; i++)
@@ -256,6 +273,7 @@ namespace _min.Models
                 query("INSERT INTO", mapping.mapTable, row);
             }
         }
+
 
         public DataRow PKColRowFormat(Panel panel) {
             return fetchSchema("SELECT ", panel.PKColNames, " FROM `" + panel.tableName + "` LIMIT 1").NewRow();

@@ -32,7 +32,7 @@ namespace _min.Models
         };
         private enum Expectations
         {
-            Single, InsertValues, UpdateValues, Conditions, InList, Columns
+            Single, InsertValues, UpdateValues, Conditions, InList, Columns, Tables
         };
 
         private static readonly Dictionary<string, Expectations> lastWordsDecoder =
@@ -45,7 +45,7 @@ namespace _min.Models
             {"WHERE", Expectations.Conditions},            
             {"HAVING", Expectations.Conditions},
             {"SELECT", Expectations.Columns},
-            {"FROM", Expectations.Columns}
+            {"FROM", Expectations.Tables}
         };
 
 
@@ -197,16 +197,40 @@ namespace _min.Models
                                 handled = true;
                             }
                             break;
+                        case Expectations.Tables:
+                            if (part is string) { 
+                                resultQuery.Append(" `" + part.ToString() + "` ");
+                                handled = true;
+                            }
+                            else if(part is IEnumerable<FK>){    // inner join
+                                foreach(FK fk in (IEnumerable<FK>)part){
+                                    resultQuery.Append(" JOIN `" + fk.refTable + "` ON `" + fk.myTable + "`.`" + fk.myColumn + 
+                                        "` = `" + fk.refTable + "`.`" + fk.refColumn + "`"); 
+                                }
+                                handled = true;
+                            }
+                            break;
                         case Expectations.Single:
                         case Expectations.Columns:
                             if (part is IEnumerable)    // column
                             {
                                 bool first = true;
-                                foreach (object item in (part as IEnumerable))
+                                foreach (object item in (IEnumerable)(part))
                                 {
-                                    resultQuery.Append(first ? "" : ", ");
-                                    resultQuery.Append("`" + (item as string) + "`");
-                                    first = false;
+                                    if (item is Tuple<string, string, string>)
+                                    {
+                                        Tuple<string, string, string> st = (Tuple<string, string, string>)item;
+                                        if (!first) resultQuery.Append(", ");
+                                        resultQuery.Append("`" + st.Item1 + "`.`" + st.Item2 + "` AS `" + st.Item3 + "`");
+                                        first = false;
+                                    }
+                                    else
+                                    {
+                                        resultQuery.Append(first ? "" : ", ");
+                                        resultQuery.Append("`" + (item as string) + "`");
+                                        first = false;
+                                    }
+                                    //else throw new Exception("Unexpected collection type");
                                 }
                                 handled = true;
                             }
@@ -222,6 +246,12 @@ namespace _min.Models
                                 {
                                     resultQuery.Append(part.ToString());
                                     handled = true;
+                                }
+                                if(part is Tuple<string, string, string>)       // explicit table name an alias
+                                {
+                                    handled = true;
+                                    Tuple<string, string, string> st = (Tuple<string, string, string>)part;
+                                    resultQuery.Append("`" + st.Item1 + "`.`" + st.Item2 + "` AS `" + st.Item3 + "`");
                                 }
                             }
                             break;

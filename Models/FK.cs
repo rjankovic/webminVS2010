@@ -35,7 +35,7 @@ namespace _min.Models
         public string refColumn { get; protected set; }
         [DataMember]
         public string displayColumn { get; set; }
-        [DataMember]
+        [IgnoreDataMember]
         public Dictionary<string, int> options { get; set; }
 
 
@@ -61,7 +61,7 @@ namespace _min.Models
         public int valueForInput(string inputValue) {
             return options[inputValue];
         }
-
+        /*
         public string CaptionForValue(int value) {
             if (driver == null) throw new NullReferenceException("No driver assigned");
             return driver.fetchSingle("SELECT `", displayColumn, 
@@ -81,7 +81,7 @@ namespace _min.Models
                 options.Add((string)row[0], (int)row[1]);
             }
         }
-
+        */
         // initially redefined becase of Architect.checkPanelProposal checking whether matching FKs still exist in the db
         public bool Equals(FK other)
         {
@@ -141,21 +141,7 @@ namespace _min.Models
             return true;
         }
 
-        public List<int> valuesForInput(List<string> inputValues) { 
-            List<int> res = new List<int>();
-            foreach (string iv in inputValues) {
-                res.Add(valueForInput(iv));
-            }
-            return res;
-        }
-
-        public List<string> CaptionsForValues(List<int> values) { 
-            List<string> res = new List<string>();
-            foreach(int val in values) {
-                res.Add(CaptionForValue(val));
-            }
-            return res;
-        }
+        
 
         public void unMap(int key) {        // clears mapping for given key
             if (driver == null) throw new NullReferenceException("No driver assigned");
