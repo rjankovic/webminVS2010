@@ -18,7 +18,7 @@ using MPanel = _min.Models.Panel;
 
 namespace _min_t7.Architect
 {
-    public partial class WebForm1 : System.Web.UI.Page
+    public partial class Show : System.Web.UI.Page
     {
         ISystemDriver sysDriver;
         IStats stats;
@@ -32,32 +32,54 @@ namespace _min_t7.Architect
 
         protected void Page_Init(object sender, EventArgs e)
         {
+            if (Page.RouteData.Values.ContainsKey("panelId") && Page.RouteData.Values["panelId"].ToString() == "0")
+                Page.RouteData.Values.Remove("panelId");
 
             //_min.Common.Environment.GlobalState = GlobalState.Architect;
 
+            if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
+                Session.Clear();
+            _min.Models.Panel architecture = null;
+            if (Session["Architecture"] is _min.Models.Panel)
+            {
+                architecture = (MPanel)Session["Architecture"];
+            }
+
             Dictionary<UserAction, int> currentPanelActionPanels = new Dictionary<UserAction, int>();
             string projectName = Page.RouteData.Values["projectName"] as string;
+
             sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
             _min.Common.Environment.project = sysDriver.getProject(projectName);
+
+
+            if (!sysDriver.ProposalExists())
+            {
+                Response.RedirectToRoute("ArchitectInitRoute", RouteData);
+                Response.End();
+                //return;
+            }
+            
             string WebDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
             stats = new StatsMySql(CE.project.connstringIS, WebDbName);
             webDriver = new WebDriverMySql(CE.project.connstringWeb);
             architect = new _min.Models.Architect(sysDriver, stats);
 
+            
+            sysDriver.InitArchitecture(architecture);
+            Session["Architecture"] = sysDriver.MainPanel;
 
+            if (Page.RouteData.Values.ContainsKey("panelId"))
+            {
+                activePanel = sysDriver.Panels[Int32.Parse(Page.RouteData.Values["panelId"].ToString())];
+            }
+
+            basePanel = sysDriver.MainPanel;
             if (!Page.IsPostBack)
             {
 
 
-                if (!sysDriver.ProposalExists())
-                {
-                    Response.RedirectToRoute("ArchitectInitRoute", RouteData);
-                    Response.End();
-                    //return;
-                }
 
-                basePanel = sysDriver.GetBasePanel();
-                Session["basePanel"] = basePanel;
+                //Session["basePanel"] = basePanel;
                 //Session["sysDriver"] = sysDriver;
                 //Session["stats"] = stats;
                 //Session["architect"] = architect;
@@ -77,11 +99,11 @@ namespace _min_t7.Architect
                 if (Page.RouteData.Values.ContainsKey("panelId"))
                 {
                     int panelId = Int32.Parse(Page.RouteData.Values["panelId"].ToString());
-                    activePanel = sysDriver.getPanel(panelId, false);
+                    
                     if(RouteData.Values.ContainsKey("itemKey")){
                         SetRoutedPKForPanel(activePanel, RouteData.Values["itemKey"] as string);
                     }
-                    Session["activePanel"] = activePanel;
+                    //Session["activePanel"] = activePanel;
                     currentPanelActionPanels = new Dictionary<UserAction, int>();
                     var controlTargetPanels = from _min.Models.Control c in activePanel.controls 
                                               select new { action = c.action, targetId = c.targetPanelId };
@@ -99,9 +121,9 @@ namespace _min_t7.Architect
                 //stats = (IStats)Session["stats"];
                 //sysDriver = (ISystemDriver)Session["sysDriver"];
                 //architect = (_min.Models.Architect)Session["architect"];
-                basePanel = (_min.Models.Panel)Session["basePanel"];
+                //basePanel = (_min.Models.Panel)Session["basePanel"];
                 currentPanelActionPanels = (Dictionary<UserAction, int>)Session["currentPanelActionpanels"];
-                activePanel = (_min.Models.Panel)Session["activePanel"];
+                //activePanel = (_min.Models.Panel)Session["activePanel"];
             }
             
             navigator = new Navigator(Response, currentPanelActionPanels);
@@ -111,10 +133,22 @@ namespace _min_t7.Architect
             baseMenu.ID = "baseMenu";
             baseMenu.EnableViewState = false;
             MainPanel.Controls.Add(baseMenu);
-                
+            LinkButton editMenuLink = new LinkButton();
+            editMenuLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditMenuRoute", new { projectName = projectName } );
+            editMenuLink.Text = "Edit menu structure";
+            MainPanel.Controls.Add(editMenuLink);
+
             if (Page.RouteData.Values.ContainsKey("panelId"))
             {
                 CreateWebControlsForPanel(activePanel, MainPanel);
+            }
+            else {
+                /*
+                _min.Controls.TreeBuilderControl tb = new _min.Controls.TreeBuilderControl();
+                tb.ID = "TB1";
+                tb.SetInitialState(((TreeControl)basePanel.controls[0]).storedHierarchyData, sysDriver.MainPanel);
+                MainPanel.Controls.Add(tb);
+                 */ 
             }
 
         }

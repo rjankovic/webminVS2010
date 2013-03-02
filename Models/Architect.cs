@@ -356,7 +356,6 @@ namespace _min.Models
         }
 
 
-
         /// <summary>
         /// get both edit and summary panel proposal for editable tables 
         /// and create base Panel with MenuDrop field for each editable table
@@ -395,6 +394,8 @@ namespace _min.Models
                         c.targetPanel = summaryPanel;
 
                     //Notice(this, new ArchitectNoticeEventArgs("Proposed summary navigation panel for table \"" + tableName + "\"."));
+                    editPanel.panelName = "Editation of " + tableName;
+                    summaryPanel.panelName = "Summary of " + tableName;
                     baseChildren.Add(editPanel);
                     baseChildren.Add(summaryPanel);
 

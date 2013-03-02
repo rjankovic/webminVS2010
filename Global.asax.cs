@@ -25,11 +25,15 @@ namespace _min_t7
             RouteTable.Routes.MapPageRoute("ArchitectShowPanelSpecRoute", "architect/show/{projectName}/{panelId}/{action}/{itemKey}", 
                 "~/Architect/Show.aspx");
 
+            RouteTable.Routes.MapPageRoute("ArchitectEditMenuRoute", "architect/editMenu/{projectName}", "~/Architect/EditMenu.aspx");
+            
             RouteTable.Routes.MapPageRoute("ProductionShowRoute", "show/{projectName}", "~/Production/Show.aspx");
             RouteTable.Routes.MapPageRoute("ProductionShowPanelDefaultRoute", "show/{projectName}/{panelId}", "~/Prouction/Show.aspx");
             RouteTable.Routes.MapPageRoute("ProductionShowPanelRoute", "show/{projectName}/{panelId}/{action}", "~/Prouction/Show.aspx");
             RouteTable.Routes.MapPageRoute("ProductionShowPanelSpecRoute", "show/{projectName}/{panelId}/{action}/{itemKey}", 
                 "~/Prouction/Show.aspx");
+
+            
         }
 
         void Application_End(object sender, EventArgs e)

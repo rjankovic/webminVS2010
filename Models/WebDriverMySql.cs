@@ -169,8 +169,9 @@ namespace _min.Models
                         
                         foreach (DataColumn col in c.data.Columns)
                         {
+                            //if(!c.data.PrimaryKeycol.Unique = false;
                             if (col.DataType == typeof(DateTime)) {
-                                foreach (DataRow r in rows) r[col] = DateTime.Today;
+                                foreach (DataRow r in rows) r[col] = DateTime.Now + new TimeSpan(rnd.Next() % 30, rnd.Next() % 24, rnd.Next() % 60, rnd.Next() % 60);
                             }
                             else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
                             {

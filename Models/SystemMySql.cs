@@ -19,11 +19,27 @@ namespace _min.Models
     class SystemDriverMySql : BaseDriverMySql, ISystemDriver
     {
 
+        public Panel MainPanel { get; private set; }
+        public Dictionary<int, Panel> Panels { get; private set; }
+
+
         private bool isInTransaction = false;
+        
+        
+        
         
         public SystemDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
             : base(connstring, logTable, writeLog)
-        { }
+        {
+        }
+
+        public void InitArchitecture(Panel mainPanel = null)
+        {
+            Panels = new Dictionary<int, Panel>();
+            if (mainPanel != null) MainPanel = mainPanel;
+            else MainPanel = getArchitectureInPanel();
+            FlattenPanel(MainPanel);
+        }
         /*
 
         public void saveLog()
@@ -48,6 +64,13 @@ namespace _min.Models
             }
         }
         */
+
+        private void FlattenPanel(Panel parentPanel) {
+            Panels.Add(parentPanel.panelId, parentPanel);
+            foreach (Panel p in parentPanel.children)
+                FlattenPanel(p);
+        }
+
         public void logUserAction(System.Data.DataRow data)
         {
             query("INSERT INTO log_users", data);
@@ -95,6 +118,7 @@ namespace _min.Models
             foreach(DataRow row in tbl.Rows){
 
                 DataContractSerializer serializer = new DataContractSerializer(typeof(Field));
+                
                 res.Add((Field)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string))));
 
                 }
@@ -109,6 +133,7 @@ namespace _min.Models
             {
                 DataContractSerializer serializer = new DataContractSerializer(typeof(Control));
                 Control c = (Control)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string)));
+                c.SetCreationId((int)row["id_control"]);    // !!
                 if (c is TreeControl) {
                     TreeControl c2 = c as TreeControl;
                     c2.storedHierarchyData = new HierarchyNavTable();
@@ -116,6 +141,8 @@ namespace _min.Models
                     {
                         c2.storedHierarchyData.Merge(c2.storedHierarchyDataSet.Tables[0]);
                         c2.storedHierarchyDataSet.Tables.Add(c2.storedHierarchyData);
+                        //if(!c2.storedHierarchyData.DataSet.Relations.Contains("Hierarchy")) // !!
+                        c2.storedHierarchyDataSet.Relations.Clear();
                         c2.storedHierarchyData.DataSet.Relations.Add("Hierarchy", 
                 c2.storedHierarchyData.Columns["Id"], c2.storedHierarchyData.Columns["ParentId"], false);
 
@@ -173,6 +200,22 @@ namespace _min.Models
             return res;
         }
 
+        private List<Panel> getPanelChildren(Panel basePanel, bool recursive = true)
+        {
+            DataTable ChildrenIds = new DataTable();
+            
+                ChildrenIds = fetchAll("SELECT id_panel FROM panels WHERE id_parent = " + basePanel.panelId);
+
+            Panel currentChild;
+            List<Panel> res = new List<Panel>();
+            foreach (DataRow row in ChildrenIds.AsEnumerable())
+            {
+                currentChild = getPanel((int)(row["id_panel"]), recursive, basePanel);
+                res.Add(currentChild);
+            }
+            return res;
+        }
+
         public void BindPanelChildrenFull(Panel basePanel) {
 
             DataTable childrenIds = new DataTable();
@@ -207,9 +250,12 @@ namespace _min.Models
                 control.panel = result;
             }
             */
+            result.panelId = panelId;
             result.AddControls(controls);
             result.AddFields(fields);
-            if(recursive) result.AddChildren(getVisiblePanelChildren(result, true));
+            if(recursive) result.AddChildren(getPanelChildren(result, true));
+            
+            //if(recursive) result.AddChildren(getVisiblePanelChildren(result, true));
             return result;
         }
 
@@ -224,15 +270,15 @@ namespace _min.Models
         public Panel getArchitectureInPanel() {        // !!! make sure there is only one panel with id_parent = NULL
             int basePanelId = (int)fetchSingle("SELECT id_panel FROM panels WHERE id_parent IS NULL AND id_project = ", 
                 CE.project.id);
-            Panel res = getPanel(basePanelId, false);
-            BindPanelChildrenFull(res);
+            Panel res = getPanel(basePanelId, true);
             return res;
         }
 
         public Panel GetBasePanel() {
             int basePanelId = (int)fetchSingle("SELECT id_panel FROM panels WHERE id_parent IS NULL AND id_project = ",
                 CE.project.id);
-            Panel res = getPanel(basePanelId, false);
+            // wel...
+            Panel res = getPanel(basePanelId, true);
             return res;
         }
 
@@ -495,7 +541,7 @@ namespace _min.Models
         public void RewriteControlDefinitions(Panel panel, bool recursive = true)
         {
             Dictionary<string, object> updateVals = new Dictionary<string, object>();
-
+           
             foreach (Control c in panel.controls)
             {
                 updateVals["content"] = c.Serialize();

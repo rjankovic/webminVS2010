@@ -166,6 +166,10 @@ namespace _min.Interfaces
     */
     public interface ISystemDriver : IBaseDriver // systemDB
     {
+        Panel MainPanel { get; }
+        Dictionary<int, Panel> Panels { get; }
+        void InitArchitecture(Panel mainPanel);
+
         void ProcessLogTable();
         void ProcessLogTable(DataTable data);
         void logUserAction(DataRow data);

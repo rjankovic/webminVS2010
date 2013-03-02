@@ -14,13 +14,17 @@ namespace _min.Models
             get { return (HierarchyRow)Rows[idx]; }
         }
 
+        public HierarchyRow Find(int key) {
+            return (HierarchyRow)Rows.Find(key);
+        }
+
         public HierarchyNavTable()
         {
             Columns.Add(new DataColumn("Id", typeof(int)));
             Columns.Add(new DataColumn("ParentId", typeof(int)));
             Columns.Add(new DataColumn("Caption", typeof(string)));
             Columns.Add(new DataColumn("NavId", typeof(int)));
-            PrimaryKey = new DataColumn[] { Columns["PK"] };
+            PrimaryKey = new DataColumn[] { Columns["Id"] };
             //Columns["ParentId"].AllowDBNull = true;   // should use NULL, not 0
             //Columns["NavId"].AllowDBNull = true;
             Columns["Id"].AutoIncrementSeed = 1;

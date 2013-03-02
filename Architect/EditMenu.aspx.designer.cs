@@ -10,7 +10,7 @@
 namespace _min_t7.Architect {
     
     
-    public partial class Show {
+    public partial class EditMenu {
         
         /// <summary>
         /// ScriptManager1 control.
