@@ -15,6 +15,7 @@ namespace _min.Models
 
         private Dictionary<string, DataColumnCollection> columnTypes = null;
         private Dictionary<string, List<string>> columnsToDisplay = null;
+        private Dictionary<string, List<M2NMapping>> mappings = null;
 
         public Dictionary<string, DataColumnCollection> ColumnTypes {
             get {
@@ -37,6 +38,30 @@ namespace _min.Models
             }
             private set {
                 columnsToDisplay = value;
+            }
+        }
+
+        public Dictionary<string, List<M2NMapping>> Mappings {
+            get {
+                if (mappings == null) {
+                    mappings = new Dictionary<string, List<M2NMapping>>();
+                    List<string> tables = TableList();
+                    foreach (string table in tables) {
+                        mappings[table] = new List<M2NMapping>();
+                    }
+                    List<M2NMapping> amp = findMappings();
+                    var grouped = from mp in amp
+                                  group mp by mp.myTable into g
+                                  select new
+                                  {
+                                      table = g.Key,
+                                      mappings = g.ToList<M2NMapping>()
+                                  };
+                    foreach (var group in grouped) {
+                        mappings[group.table] = group.mappings;
+                    }
+                }
+                return mappings;
             }
         }
 

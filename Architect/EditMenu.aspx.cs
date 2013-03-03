@@ -76,7 +76,9 @@ namespace _min_t7.Architect
             tc.storedHierarchyDataSet.Tables.Clear();
             tc.storedHierarchyDataSet.Tables.Add(tbc.Hierarchy);
             tc.storedHierarchyData = (HierarchyNavTable)tc.storedHierarchyDataSet.Tables[0];
+            sysDriver.StartTransaction();
             sysDriver.RewriteControlDefinitions(sysDriver.MainPanel, false);
+            sysDriver.CommitTransaction();
             tc.storedHierarchyData.DataSet.Relations.Add("Hierarchy",
                 tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], false);
             //Session.Clear();

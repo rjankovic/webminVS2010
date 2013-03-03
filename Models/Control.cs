@@ -20,7 +20,7 @@ namespace _min.Models
     [KnownType(typeof(NavTableControl))]
     public class Control
     {
-        [DataMember]
+        [IgnoreDataMember]
         public int? controlId { get; set; }  // better setter once...
         [DataMember]
         public int? panelId { get; set; }

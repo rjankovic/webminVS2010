@@ -23,8 +23,8 @@ namespace _min.Models
     {
         [IgnoreDataMember]
         protected System.Web.UI.Control myControl;
-        [DataMember]
-        public int? fieldId { get; private set; }
+        [IgnoreDataMember]
+        public int? fieldId { get; set; }       // better setter once
         [DataMember]
         public string column { get; private set; }
         [DataMember]
@@ -145,7 +145,7 @@ namespace _min.Models
                     //if(value is string)
                     //    resTxt.Text = (string)value;
                     //resTxt.ID = "Field" + fieldId.ToString();
-                    resTxt.Width = 200;
+                    resTxt.Width = 300;
                     res = resTxt;
                     break;
                 case FieldTypes.Text:
@@ -410,7 +410,7 @@ namespace _min.Models
 
         public M2NMappingField(int fieldId, string column, int panelId,
             M2NMapping mapping, string caption = null)
-            : base(fieldId, column, FieldTypes.M2NMapping, panelId)
+            : base(fieldId, column, FieldTypes.M2NMapping, panelId, caption)
         {
             this.Mapping = mapping;
             //if (mapping.options == null) mapping.options = new Dictionary<string, int>();

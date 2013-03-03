@@ -39,6 +39,7 @@ namespace _min_t7.Architect
 
             if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
                 Session.Clear();
+                
             _min.Models.Panel architecture = null;
             if (Session["Architecture"] is _min.Models.Panel)
             {
@@ -136,11 +137,20 @@ namespace _min_t7.Architect
             LinkButton editMenuLink = new LinkButton();
             editMenuLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditMenuRoute", new { projectName = projectName } );
             editMenuLink.Text = "Edit menu structure";
+            editMenuLink.CausesValidation = false;
             MainPanel.Controls.Add(editMenuLink);
 
             if (Page.RouteData.Values.ContainsKey("panelId"))
             {
                 CreateWebControlsForPanel(activePanel, MainPanel);
+                if (activePanel.type == PanelTypes.Editable) {
+                    LinkButton editEditableLink = new LinkButton();
+                    editEditableLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditEditableRoute", 
+                        new { projectName = projectName, panelid = Page.RouteData.Values["panelId"] });
+                    editEditableLink.Text = "Edit panel structure";
+                    editEditableLink.CausesValidation = false;
+                    MainPanel.Controls.Add(editEditableLink);
+                }
             }
             else {
                 /*
@@ -152,6 +162,8 @@ namespace _min_t7.Architect
             }
 
         }
+
+
 
 
         void SetRoutedPKForPanel(_min.Models.Panel panel, string PKval) {

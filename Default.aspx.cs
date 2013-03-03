@@ -40,8 +40,8 @@ namespace _min_t7
             //AdditionalArchitectNotice(architect, new ArchitectNoticeEventArgs("Checking proposal"));
             //Panel retrieved = sysDriver.getArchitectureInPanel();
             TextBox1.Text = "retrieved ";
-            bool correctness = architect.checkProposal();
-            TextBox1.Text += correctness;
+            //bool correctness = architect.checkPanelProposalProposal();
+            //TextBox1.Text += correctness;
             //List<string> diff = Common.Debug.ComparePanels(proposal, retrieved);
         }
 
@@ -58,7 +58,7 @@ namespace _min_t7
 
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            Session.Clear();
             
             DataSet ds = new DataSet();
             HierarchyNavTable hdt = new HierarchyNavTable();

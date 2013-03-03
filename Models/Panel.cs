@@ -41,7 +41,7 @@ namespace _min.Models
             }
         }
         
-        [DataMember]
+        [IgnoreDataMember]
         public int panelId { get; set; }
         [DataMember]
         public PanelTypes type { get; set; }

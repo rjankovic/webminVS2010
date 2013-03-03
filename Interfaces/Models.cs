@@ -151,6 +151,7 @@ namespace _min.Interfaces
         List<string> TablesMissingPK();
         Dictionary<string, List<string>> GlobalPKs();
         List<FK> selfRefFKs();
+        Dictionary<string, List<M2NMapping>> Mappings { get; }
     }
     /*
     public interface IArchitect  // systemDB, does not fill structures with data

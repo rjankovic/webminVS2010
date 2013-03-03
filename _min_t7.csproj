@@ -82,6 +82,7 @@
     <Content Include="Account\PasswordRecovery.aspx" />
     <Content Include="Account\Login.aspx" />
     <Content Include="Account\Register.aspx" />
+    <Content Include="Architect\EditEditable.aspx" />
     <Content Include="Architect\EditMenu.aspx" />
     <Content Include="Architect\InitProposal.aspx" />
     <Content Include="Architect\Show.aspx" />
@@ -145,6 +146,13 @@
     </Compile>
     <Compile Include="Account\Register.aspx.designer.cs">
       <DependentUpon>Register.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Architect\EditEditable.aspx.cs">
+      <DependentUpon>EditEditable.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Architect\EditEditable.aspx.designer.cs">
+      <DependentUpon>EditEditable.aspx</DependentUpon>
     </Compile>
     <Compile Include="Architect\EditMenu.aspx.cs">
       <DependentUpon>EditMenu.aspx</DependentUpon>

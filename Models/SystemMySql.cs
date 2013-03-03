@@ -118,8 +118,9 @@ namespace _min.Models
             foreach(DataRow row in tbl.Rows){
 
                 DataContractSerializer serializer = new DataContractSerializer(typeof(Field));
-                
-                res.Add((Field)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string))));
+                Field f = (Field)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string)));
+                f.fieldId = (int)row["id_field"];
+                res.Add(f);
 
                 }
 
@@ -133,7 +134,8 @@ namespace _min.Models
             {
                 DataContractSerializer serializer = new DataContractSerializer(typeof(Control));
                 Control c = (Control)(serializer.ReadObject(Functions.GenerateStreamFromString(row["content"] as string)));
-                c.SetCreationId((int)row["id_control"]);    // !!
+                c.controlId = (int)row["id_control"];
+                //c.SetCreationId((int)row["id_control"]);    // !!
                 if (c is TreeControl) {
                     TreeControl c2 = c as TreeControl;
                     c2.storedHierarchyData = new HierarchyNavTable();
@@ -326,12 +328,16 @@ namespace _min.Models
                 updateVals["id_parent"] = panel.parent;
             updateVals["content"] = panel.Serialize();
             query("UPDATE panels SET", updateVals, "WHERE id_panel = ", panel.panelId);
-
+            query("DELETE FROM fields WHERE id_panel = " + panel.panelId);
             foreach (Field field in panel.fields)
             {
-                updateField(field);
+                AddField(field);
             }
-
+            query("DELETE FROM controls WHERE id_panel = " + panel.panelId);
+            foreach (Control control in panel.controls)
+            {
+                AddControl(control);
+            }
             //RewritePanelProperties(panel);!!
 
             if (recursive) {
@@ -389,7 +395,7 @@ namespace _min.Models
             if (!IsInTransaction)
             {
                 StartTransaction();
-                query("INSERT INTO contols", insertVals);
+                query("INSERT INTO controls", insertVals);
                 control.SetCreationId(LastId());    // must be 0 in creation
                 CommitTransaction();
             }

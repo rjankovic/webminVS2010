@@ -426,12 +426,14 @@ namespace _min.Models
 
             Panel basePanel = new Panel(null, 0, PanelTypes.MenuDrop,
                 baseChildren, null, null, null);
+            basePanel.panelName = "Main page";
             basePanel.isBaseNavPanel = true;
             //systemDriver.query("TRUNCATE TABLE log_db");
             //Notice(this, new ArchitectNoticeEventArgs("Updating database..."));
             systemDriver.AddPanel(basePanel);
 
             SetControlPanelBindings(basePanel);
+            systemDriver.RewriteControlDefinitions(basePanel);  // to save the targetPanel
 
             TreeControl basePanelTreeControl = new TreeControl(basePanel.panelId, basePanelHierarchy,
                 "Id", "ParentId", "Caption", UserAction.View);
@@ -446,10 +448,11 @@ namespace _min.Models
             } 
 
             //AddControl! only.
+            /*
             systemDriver.AddControl(basePanelTreeControl);
             systemDriver.RewriteControlDefinitions(basePanel);  // to give it correct IDs in serialization
             systemDriver.RewriteFieldDefinitions(basePanel);
-
+            */
 
             // now children have everything set, even parentid 
             // as the parent was inserted first, his id was set and they took it from the object
@@ -457,7 +460,7 @@ namespace _min.Models
             List<Control> addedList = new List<Control>();
             addedList.Add(basePanelTreeControl);
             basePanel.AddControls(addedList);
-
+            systemDriver.AddControl(basePanelTreeControl);
 
 
             //systemDriver.updatePanel(basePanel, false); 
@@ -466,6 +469,7 @@ namespace _min.Models
             systemDriver.CommitTransaction();
             return basePanel;
         }
+
 
         /// <summary>
         /// checks if edited fields exist in webDB and their types are adequate, checks constraints on FKs and mapping tables,
@@ -476,78 +480,91 @@ namespace _min.Models
         /// <param name="proposalPanel"></param>
         /// <param name="recursive">run itself on panel children</param>
         /// <returns>true if no errors found, true othervise</returns>
-        public bool checkPanelProposal(Panel proposalPanel, bool recursive = true)
+        public bool checkPanelProposal(Panel proposalPanel, out List<string> errorMsgs)
         // non-recursive checking after the initial check - after panel modification
         {
-            string messageBeginning = "In panel " + proposalPanel.panelName +
-                "of type " + proposalPanel.type + " for " + proposalPanel.tableName + ": ";
+            errorMsgs = new List<string>();
 
             DataColumnCollection cols = stats.ColumnTypes[proposalPanel.tableName];
-            if (cols.Count == 0 && !proposalPanel.isBaseNavPanel)
-            {
-                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "table not found or has 0 columns",
-                    proposalPanel.tableName));
-                return false;
-            }
 
             List<FK> FKs = stats.foreignKeys(proposalPanel.tableName);
+            List<M2NMapping> mappings = stats.Mappings[proposalPanel.tableName];
 
             bool good = true;
-            if (proposalPanel.type == PanelTypes.Editable
-                || proposalPanel.type == PanelTypes.NavTable)
-            // this is indeed the only panelType containing fields
+            if (proposalPanel.type == PanelTypes.Editable)
+            // this is indeed the only panelType containing fields => only editable
             {
-                bool isNavTable = proposalPanel.type == PanelTypes.NavTable;
                 foreach (Field field in proposalPanel.fields)
                 {
+                    string messageBeginning = "Column " + field.column + " managed by field " + field.caption + " ";
                     if (field.type == FieldTypes.Holder)
                         continue;
-                    if (!cols.Contains(field.column))
+                    if (!(field is M2NMappingField) && !(cols.Contains(field.column)))
                     {
-                        Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column +
-                            "managed by the field does not exist in table", proposalPanel, field));
+                        errorMsgs.Add(messageBeginning + "does not exist in table");
                         good = false;
                     }
                     else
                     {
-                        if (!(field is FKField) && !(field is M2NMappingField) && !isNavTable)     // NavTable won`t be edited in the panel
+                        if (!(field is FKField) && !(field is M2NMappingField))     // NavTable won`t be edited in the panel
                         {
                             List<ValidationRules> r = field.validationRules;
-                            if (cols[field.column].AllowDBNull == false && !r.Contains(ValidationRules.Required))
+                            if (cols[field.column].AllowDBNull == false &&
+                                !cols[field.column].AutoIncrement &&
+                                !r.Contains(ValidationRules.Required))
                             {
-                                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column
-                                    + " cannot be set to null, but the coresponding field is not required", proposalPanel, field));
+                                errorMsgs.Add(messageBeginning
+                                    + "cannot be set to null, but the coresponding field is not required");
                                 good = false;
                             }
-
-                            if ((r.Contains(ValidationRules.Decimal) || r.Contains(ValidationRules.Ordinal))
+                            /*
+                            if (r.Contains(ValidationRules.Ordinal)
                                 && !(typeof(long).IsAssignableFrom(cols[field.column].DataType)))
                             {
-                                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column
-                                + " is of type " + cols[field.column].DataType.ToString()
-                                + ", thus cannot be edited as a decimalnumber", proposalPanel, field));
+                                errorMsgs.Add(messageBeginning + "is of type " + cols[field.column].DataType.ToString()
+                                        + ", thus cannot be edited as a number");
                                 good = false;
                             }
 
+                            if (r.Contains(ValidationRules.Decimal)
+                                && !(typeof(double).IsAssignableFrom(cols[field.column].DataType)))
+                            {
+                                errorMsgs.Add(messageBeginning + "is of type " + cols[field.column].DataType.ToString()
+                                        + ", thus cannot be edited as a decimal number");
+                                good = false;
+                            }
+                            */
                             if ((r.Contains(ValidationRules.Date) || r.Contains(ValidationRules.DateTime))
                                 && !(cols[field.column].DataType == typeof(DateTime)))
                             {
-                                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column
-                                + " is not a date / datetime, thus cannot be edited as a date", proposalPanel, field));
+                                errorMsgs.Add(messageBeginning +
+                                    "is not a date / datetime, thus cannot be edited as a date");
+                                good = false;
+                            }
+
+                            DataColumn fieldColumn = cols[field.column];
+                            if (field.type != FieldTypes.Varchar)
+                            {
+                                if (field.type == FieldTypes.Text && fieldColumn.DataType != typeof(string))
+                                {
+                                    errorMsgs.Add(messageBeginning + "- only text columns can be edited in a text editor");
+                                }
+                            }
+                            if (field.caption == null || field.caption == "") {
+                                errorMsgs.Add(messageBeginning + " must have a caption");
                                 good = false;
                             }
                         }
                         else if (field is M2NMappingField)
                         {
                             // just cannot occur in a NavTable, but just in case...
-                            if (isNavTable) throw new Exception("Cannot display a M2NMapping in NavTable");
                             M2NMapping thisMapping = ((M2NMappingField)field).Mapping;
-                            if (!mappings.Values.Contains(thisMapping))
+                            if (!mappings.Contains(thisMapping))
                             {
-                                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the schema " +
+                                errorMsgs.Add(messageBeginning + "- the schema " +
                                     "does not define an usual M2NMapping batween tables " + thisMapping.myTable +
                                     " and " + thisMapping.refTable + " using " + thisMapping.mapTable +
-                                    " as a map table", proposalPanel, field));
+                                    " as a map table");
                                 good = false;
                             }
                         }
@@ -556,17 +573,38 @@ namespace _min.Models
                             FK fieldFK = ((FKField)field).FK;
                             if (!FKs.Contains(fieldFK))
                             {
-                                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "the column " + field.column
-                                + " is not a foreign key representable by the FK field", proposalPanel, field));
+                                errorMsgs.Add(messageBeginning + "the column " + field.column
+                                + " managed by the field \"" + field.caption + "\""
+                                + " is not a foreign key representable by the FK field");
                                 good = false;
                             }
                         }
                     }
                 }
+                IEnumerable<string> requiredColsMissing = from DataColumn col in stats.ColumnTypes[proposalPanel.tableName]
+                                                       where col.AllowDBNull == false && col.DefaultValue == null && 
+                                                       !proposalPanel.fields.Exists(x => x.column == col.ColumnName) 
+                                                          select col.ColumnName;
+
+                foreach(string missingCol in requiredColsMissing){
+                    good = false;
+                    errorMsgs.Add("Column " + missingCol + " cannot be NULL and has no default value." + 
+                        " It must therefore be included in the panel");
+                }
+                if (proposalPanel.panelName == "") {
+                    errorMsgs.Add("Does this panel not deserve a name?");
+                    good = false;
+                }
+
+                if (proposalPanel.controls.Count == 0) {
+                    errorMsgs.Add("A panel with no controls would be useless...");
+                }
             }
+            else throw new Exception("Validation-non editable panel as an editable one.");
 
             // controls...
 
+            /*
             // not ideal
             if (!proposalPanel.isBaseNavPanel && proposalPanel.controls.Any(x => x.targetPanelId == null || x.targetPanel == null))
             {
@@ -597,17 +635,16 @@ namespace _min.Models
                     }
                 }
             }
-
+            */
             // TODO & TODO & TODO (CONTROLS & OTHER PROPERTIES)
             // OR allow the admin-user take valid steps only (?)
 
-            if (recursive && proposalPanel.children != null) foreach (Panel child in proposalPanel.children)
-                {
-                    good = good && checkPanelProposal(child, true);
-                }
+           
             return good;
         }
 
+
+        /*
         public bool checkPanelProposal(int panelId, bool recursive = true)  // on first load / reload request; also in production
         {
             Panel proposalPanel = systemDriver.getPanel(panelId, true);
@@ -619,7 +656,7 @@ namespace _min.Models
             Panel proposalPanel = systemDriver.getArchitectureInPanel();
             return checkPanelProposal(proposalPanel, true);
         }
-
+        */
         private void SetControlPanelBindings(Panel panel, bool recursive = true)
         {
             foreach (Control c in panel.controls)
