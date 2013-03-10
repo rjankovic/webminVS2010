@@ -84,7 +84,8 @@ namespace _min.Models
                         FKField fkf = field as FKField;
                         string[] options = Lipsum();
                         foreach (string s in options)
-                            fkf.FK.options.Add(s, rnd.Next());
+                            if(! fkf.FK.options.ContainsKey(s))
+                                fkf.FK.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.M2NMapping:
                         
@@ -147,20 +148,51 @@ namespace _min.Models
                          */
                         List<Tuple<string, string, string>> specSelect = new List<Tuple<string, string, string>>();
                         List<string> neededTables = new List<string>();
+                        // different FKs to teh same table - JOIN colision prevention
+                        Dictionary<string, int> countingForeignTableUse = new Dictionary<string, int>();
                         foreach (string col in toSelect) { 
                             FK correspondingFK = ntc.FKs.Where(x => x.myColumn == col).FirstOrDefault();
-                            if (correspondingFK is FK)
+                            if (correspondingFK is FK && ((FK)correspondingFK).refTable != panel.tableName) // dont join on itself
                             {
                                 neededTables.Add(correspondingFK.refTable);
-                                specSelect.Add(new Tuple<string, string, string>(correspondingFK.refTable, 
-                                    correspondingFK.displayColumn, col));
+
+                                if (!countingForeignTableUse.ContainsKey(correspondingFK.refTable))
+                                {
+                                    specSelect.Add(new Tuple<string, string, string>(correspondingFK.refTable,
+                                            correspondingFK.displayColumn, col));
+                                    countingForeignTableUse[correspondingFK.refTable] = 1;
+                                }
+                                else
+                                {
+                                    countingForeignTableUse[correspondingFK.refTable]++;
+                                    specSelect.Add(new Tuple<string, string, string>(correspondingFK.refTable 
+                                        + Common.Constants.SALT + countingForeignTableUse[correspondingFK.refTable],
+                                        correspondingFK.displayColumn, col));
+                                }
                             }
                             else {
                                 specSelect.Add(new Tuple<string, string, string>(panel.tableName, col, col));
                             }
                         }
 
-                        c.data = fetchSchema("SELECT ", specSelect, " FROM `" + panel.tableName + "`", ntc.FKs);
+                        if (countingForeignTableUse.Values.Any(x => x > 1))
+                        {
+                            // FK table aliases
+                            // not 100% solution - tables with suffix "1"...
+                            List<Tuple<FK, string>> realFKs = new List<Tuple<FK, string>>();
+                            ntc.FKs.Reverse();
+                            foreach (FK fk in ntc.FKs)    // so that the counter counts down
+                            {
+                                realFKs.Add(new Tuple<FK, string>(fk, fk.refTable +
+                                    (countingForeignTableUse[fk.refTable] > 1 ?
+                                    Common.Constants.SALT + (countingForeignTableUse[fk.refTable]--).ToString() : "")));
+                            }
+                            c.data = fetchSchema("SELECT ", specSelect, " FROM `" + panel.tableName + "`", realFKs);
+                        }
+                        else
+                        {
+                            c.data = fetchSchema("SELECT ", specSelect, " FROM `" + panel.tableName + "`", ntc.FKs);
+                        }
                         int n = rnd.Next() % 5 + 5;
                         DataRow[] rows = new DataRow[n];
                         for (int i = 0; i < n; i++)

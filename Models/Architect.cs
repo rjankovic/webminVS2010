@@ -134,9 +134,11 @@ namespace _min.Models
 
             DataColumnCollection cols = stats.ColumnTypes[tableName];
             List<FK> FKs = stats.foreignKeys(tableName);
-            List<string> PKCols = stats.primaryKeyCols(tableName);
-
-            if (cols.Count == 2 && FKs.Count == 2) return null; // seems like mapping table
+            List<string> PKCols = stats.PKs[tableName];
+            
+            if(FKs.Any(fk => PKCols.Contains(fk.myColumn))) return null;
+            // not strict enough
+            // if (cols.Count == 2 && FKs.Count == 2) return null; // seems like mapping table
             // FK ~> mapping ?
             List<Field> fields = new List<Field>();
             List<ValidationRules> validation = new List<ValidationRules>();
@@ -147,7 +149,6 @@ namespace _min.Models
                 List<string> displayColOrder = stats.ColumnsToDisplay[mapping.refTable];
                 mapping.displayColumn = displayColOrder[0];
                 fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
-
             }
 
             // standard FKs
@@ -159,9 +160,8 @@ namespace _min.Models
                 List<string> displayColOrder = stats.ColumnsToDisplay[actFK.refTable];
                 actFK.displayColumn = displayColOrder[0];
                 fields.Add(new FKField(0, actFK.myColumn, 0, actFK));
-
+                
                 cols.Remove(actFK.myColumn);    // will be edited as a foreign key
-
             }
 
             // editable fields in the order as defined in table; don`t edit AI
@@ -171,7 +171,7 @@ namespace _min.Models
 
                 validation = new List<ValidationRules>();
                 if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_EDITABLE)) continue;
-                if (!col.AllowDBNull) validation.Add(ValidationRules.Required);
+                if (!col.AllowDBNull && col.DataType != typeof(bool)) validation.Add(ValidationRules.Required);
                 FieldTypes fieldType;  // default => standard textBox
 
                 if (col.DataType == typeof(string))
@@ -179,12 +179,13 @@ namespace _min.Models
                     if (col.MaxLength <= 255) fieldType = FieldTypes.Varchar;
                     else fieldType = FieldTypes.Text;
                 }
-                else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
+                else if (col.DataType == typeof(int) || col.DataType == typeof(long) || 
+                    col.DataType == typeof(short) || col.DataType == typeof(sbyte))
                 {
                     fieldType = FieldTypes.Ordinal;
                     validation.Add(ValidationRules.Ordinal);
                 }
-                else if (col.DataType == typeof(float) || col.DataType == typeof(double))
+                else if (col.DataType == typeof(float) || col.DataType == typeof(double) || col.DataType == typeof(decimal))
                 {
                     fieldType = FieldTypes.Decimal;
                     validation.Add(ValidationRules.Decimal);
@@ -323,7 +324,8 @@ namespace _min.Models
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
                     new List<Control>(), displayColOrder);
                 res.displayAccessRights = 1;
-                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn, "View", UserAction.Update);
+                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn,
+                     displayColOrder[0], new List<UserAction> { UserAction.Update, UserAction.Delete });
                 Controls.Add(control);
                 /*
                 controlProps.Add(CC.CONTROL_HIERARCHY_SELF_FK_COL, selfRefFK.myColumn);
@@ -511,6 +513,7 @@ namespace _min.Models
                             List<ValidationRules> r = field.validationRules;
                             if (cols[field.column].AllowDBNull == false &&
                                 !cols[field.column].AutoIncrement &&
+                                !(field.type == FieldTypes.Bool) && 
                                 !r.Contains(ValidationRules.Required))
                             {
                                 errorMsgs.Add(messageBeginning
@@ -534,6 +537,12 @@ namespace _min.Models
                                 good = false;
                             }
                             */
+                            if (field.type == FieldTypes.Bool && r.Count > 0) {
+                                errorMsgs.Add(messageBeginning + ": no validation can be assigned to a checkbox. If needed," +
+                                    "set its default value true and remove it from the form.");
+                                good = false;                                
+                            }
+
                             if ((r.Contains(ValidationRules.Date) || r.Contains(ValidationRules.DateTime))
                                 && !(cols[field.column].DataType == typeof(DateTime)))
                             {

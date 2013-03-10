@@ -28,6 +28,7 @@ namespace _min.Controls
         
         private string _ID;
 
+
         public HierarchyNavTable Hierarchy {
             get {
                 return menuHierarchy;

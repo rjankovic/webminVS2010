@@ -17,7 +17,7 @@ namespace _min.Navigation
         public readonly MenuEventHandler MenuHandler;
         public readonly GridViewCommandEventHandler GridViewCommandHandler;
         public readonly CommandEventHandler CommandHandler;
-        public readonly EventHandler TreeHandler;
+        public readonly CommandEventHandler TreeHandler;
 
 
         public Navigator(HttpResponse response, Dictionary<UserAction, int> currentPanelActionPanels) {
@@ -39,17 +39,17 @@ namespace _min.Navigation
                 : "ProductionShowPanelDefaultRoute", new { panelId = e.Item.Value });
         }
 
-        public void TreeHandle(object sender, EventArgs e) {
-            TreeView tree = (TreeView)sender;
-            int navId = Int32.Parse(tree.SelectedValue);
+        public void TreeHandle(object sender, CommandEventArgs e) {
+            int navId = (int)(e.CommandArgument);
 
             response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
                 ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
                 new
                 {
-                    panelId = currentTableActionPanels[UserAction.Update],
-                    action = UserAction.Update.ToString(),
-                    itemKey = navId     // trees must have single-column int PKs
+
+                    panelId = currentTableActionPanels[UserAction.Multiple],
+                    action = e.CommandName,
+                    itemKey = navId    // trees must have single-column int PKs
                 });
         }
 
@@ -62,7 +62,8 @@ namespace _min.Navigation
             string command = e.CommandName.Substring(1);
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), command);
             RouteValueDictionary data = new RouteValueDictionary();
-            data.Add("panelId", currentTableActionPanels[action]);
+            
+            data.Add("panelId", currentTableActionPanels[UserAction.Multiple]);
             data.Add("action", command);
             //object[]
 
@@ -74,7 +75,7 @@ namespace _min.Navigation
 
                 response.RedirectToRoute(CE.GlobalState == GlobalState.Architect 
                     ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
-                    new { panelId = currentTableActionPanels[action], action = e.CommandName, 
+                    new { panelId = currentTableActionPanels[UserAction.Multiple], action = e.CommandName, 
                         itemKey = DataKey2Url(grid.DataKeys[selectedIndex]) } );
                 //new { panelId = currentTableActionPanels[action], action = e.CommandName, 
                 //    itemKey = (grid.DataKeys[selectedIndex].Values) } );

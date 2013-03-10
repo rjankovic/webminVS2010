@@ -33,6 +33,7 @@ namespace _min_t7
 
         private void ProposalReady(IAsyncResult result)
         {
+            Session.Clear();
             Task<Panel> taskResult = result as Task<Panel>;
             proposal = taskResult.Result;
             //AdditionalArchitectNotice(architect, new ArchitectNoticeEventArgs("Done."));

@@ -143,13 +143,22 @@ namespace _min_t7.Architect
             if (Page.RouteData.Values.ContainsKey("panelId"))
             {
                 CreateWebControlsForPanel(activePanel, MainPanel);
-                if (activePanel.type == PanelTypes.Editable) {
+                if (activePanel.type == PanelTypes.Editable)
+                {
                     LinkButton editEditableLink = new LinkButton();
-                    editEditableLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditEditableRoute", 
+                    editEditableLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditEditableRoute",
                         new { projectName = projectName, panelid = Page.RouteData.Values["panelId"] });
                     editEditableLink.Text = "Edit panel structure";
                     editEditableLink.CausesValidation = false;
                     MainPanel.Controls.Add(editEditableLink);
+                }
+                else {
+                    LinkButton editNavLink = new LinkButton();
+                    editNavLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditNavRoute",
+                        new { projectName = projectName, panelid = Page.RouteData.Values["panelId"] });
+                    editNavLink.Text = "Edit panel structure";
+                    editNavLink.CausesValidation = false;
+                    MainPanel.Controls.Add(editNavLink);
                 }
             }
             else {
@@ -194,6 +203,7 @@ namespace _min_t7.Architect
                 Table tbl = new Table();
                 tbl.EnableViewState = false;
                 //tbl.ID = "EditTbl";
+
                 
                 foreach (Field f in activePanel.fields)
                 {
@@ -220,8 +230,14 @@ namespace _min_t7.Architect
                     row.Cells.Add(fieldCell);
                     tbl.Rows.Add(row);
                 }
+
+
                 MainPanel.Controls.Add(tbl);
             }
+
+            
+
+
             //if (activePanel.type == PanelTypes.Editable) return;
             
 

@@ -20,7 +20,7 @@ using System.Data;
 
 namespace _min_t7.Architect
 {
-    public partial class EditEditable : System.Web.UI.Page
+    public partial class EditNavigation : System.Web.UI.Page
     {
         ISystemDriver sysDriver;
         IWebDriver webDriver;
@@ -283,7 +283,7 @@ namespace _min_t7.Architect
                         (UserAction)Enum.Parse(typeof(UserAction), item.Value));
                     c.targetPanel = actPanel.controls[0].targetPanel;
                     
-                    c.targetPanelId = actPanel.controls[0].targetPanelId;   // bad...really
+                    c.targetPanelId = actPanel.controls[0].targetPanelId;
                     
                     controls.Add(c);
                 }

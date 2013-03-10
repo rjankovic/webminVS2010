@@ -9,6 +9,7 @@ using System.IO;
 using _min.Interfaces;
 using _min.Common;
 using _min.Templates;
+using _min.Controls;
 
 using UControl = System.Web.UI.Control;
 using WC = System.Web.UI.WebControls;
@@ -150,18 +151,19 @@ namespace _min.Models
     public class NavTableControl : Control {
         [DataMember]
         public List<FK> FKs { get; private set; }
+        [DataMember]
         public List<UserAction> actions { get; private set; }
 
         public NavTableControl(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
             DataTable data, List<string> PKColNames, List<FK> Fks, List<UserAction> actions)
-            :base(panelId, panel, targetPanelId, targetPanel, data, PKColNames, actions[0])
+            :base(panelId, panel, targetPanelId, targetPanel, data, PKColNames, UserAction.Multiple)
         {
             this.FKs = Fks;
             this.actions = actions;
         }
 
         public NavTableControl(int panelId, DataTable data, List<string> PKColNames, List<FK> FKs, List<UserAction> actions)
-            :base(panelId, data, PKColNames, actions[0])
+            :base(panelId, data, PKColNames, UserAction.Multiple)
         {
             this.FKs = FKs;
             this.actions = actions;
@@ -176,7 +178,7 @@ namespace _min.Models
             
             grid.AutoGenerateColumns = false;
             grid.DataSource = data;
-
+            
             WC.TemplateField tf = new WC.TemplateField();
             tf.HeaderTemplate = new SummaryGridCommandColumn(WC.ListItemType.Header);
             tf.FooterTemplate = new SummaryGridCommandColumn(WC.ListItemType.Footer);
@@ -221,6 +223,8 @@ namespace _min.Models
     public class TreeControl : Control
     {
         [DataMember]
+        public List<UserAction> actions { get; private set; }
+        [DataMember]
         public string parentColName { get; private set; }
         [DataMember]
         public string displayColName { get; private set; }
@@ -252,22 +256,34 @@ namespace _min.Models
 
         public TreeControl(int panelId, HierarchyNavTable data, string PKColName,    // tree controls must have a single-column primary key
             string parentColName, string displayColName,
-            UserAction action)
-            : base(panelId, data, PKColName, action)
+            List<UserAction> actions)
+            : base(panelId, data, PKColName, UserAction.Multiple)
         {
+            this.actions = actions;
             this.parentColName = parentColName;
             this.displayColName = displayColName;
+            this.displayColumns = new List<string> { displayColName };
             ds = new DataSet();
             //this.data.DataSet = null;
             this.data.TableName = "data";
             ds.Tables.Add(this.data);
             storedHierarchyDataSet = storedHierarchyData.DataSet;
-            //storedHierarchyDataSet.Tables.Add(storedHierarchyData);
-            //storedHierarchyDataSet.Relations.Add("Hierarchy", 
-            //    storedHierarchyData.Columns["Id"], storedHierarchyData.Columns["ParentId"], false);
+        }
 
-            //reenable!!!
-            //ds.Relations.Add("hierarchy", ds.Tables[0].Columns["Id"], ds.Tables[0].Columns["ParentId"]);
+        public TreeControl(int panelId, HierarchyNavTable data, string PKColName,    // tree controls must have a single-column primary key
+    string parentColName, string displayColName,
+    UserAction action)
+            : base(panelId, data, PKColName, action)
+        {
+            this.actions = new List<UserAction> { action };
+            this.parentColName = parentColName;
+            this.displayColName = displayColName;
+            this.displayColumns = new List<string> { displayColName };
+            ds = new DataSet();
+            //this.data.DataSet = null;
+            this.data.TableName = "data";
+            ds.Tables.Add(this.data);
+            storedHierarchyDataSet = storedHierarchyData.DataSet;
         }
 
         public UControl ToUControl(WC.MenuEventHandler handler, string navigateUrl = null)
@@ -290,25 +306,11 @@ namespace _min.Models
             return res;
         }
 
-        public UControl ToUControl(EventHandler handler, string navigateUrl = null)
+        public override UControl ToUControl(WC.CommandEventHandler handler, string navigateUrl = null)
         {
-            if (panel.type != PanelTypes.NavTree) throw new ArgumentException(
-                 "This handler cannot handle events different from that fired by a TreeView in a NavtreePanel`s contorl");
-            WC.TreeView res = new WC.TreeView();
-            res.ShowLines = true;
-            WC.TreeNode item;
-            foreach (DataRow r in data.Rows)
-            {
-                if ((int)(r["ParentId"]) == 0)
-                {
-                    item = new WC.TreeNode(r["Caption"].ToString(), r["NavId"].ToString());
-                    AddSubtreeForItem(r, item);
-                    res.Nodes.Add(item);
-                }
-            }
-            res.SelectedNodeChanged += handler;
-            res.ID = "Control" + controlId;
-            return res;
+            TreeNavigatorControl tn = new TreeNavigatorControl(storedHierarchyData, actions);
+            tn.ActionChosen += handler;
+            return tn;
         }
 
         private void AddSubmenuForItem(DataRow row, WC.MenuItem item)
@@ -320,18 +322,6 @@ namespace _min.Models
                 childItem = new WC.MenuItem(child["Caption"].ToString(), child["NavId"].ToString());
                 item.ChildItems.Add(childItem);
                 AddSubmenuForItem(child, childItem);
-            }
-        }
-
-        private void AddSubtreeForItem(DataRow row, WC.TreeNode item)
-        {
-            DataRow[] children = row.GetChildRows("Hierarchy");
-            WC.TreeNode childItem;
-            foreach (DataRow child in children)
-            {
-                childItem = new WC.TreeNode(child["Caption"].ToString(), child["NavId"].ToString());
-                item.ChildNodes.Add(childItem);
-                AddSubtreeForItem(child, childItem);
             }
         }
     }

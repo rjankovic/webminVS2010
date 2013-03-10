@@ -11,7 +11,7 @@
         <ContentTemplate>
             <asp:Wizard ID="InitProposalWizard" runat="server" ActiveStepIndex="2" Height="159px"
                 Width="920px" BackColor="#EFF3FB" BorderColor="#B5C7DE" BorderWidth="1px" 
-                Font-Names="Verdana" Font-Size="0.8em" 
+                Font-Names="Verdana" Font-Size="Medium" 
                 onnextbuttonclick="InitProposalWizard_NextButtonClick" 
                 OnFinishButtonClick="InitProposalWizard_FinishButtonClick">
                 <HeaderStyle BackColor="#284E98" BorderColor="#EFF3FB" BorderStyle="Solid" 

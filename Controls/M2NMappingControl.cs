@@ -9,7 +9,7 @@ using System.Web.UI;
 
 namespace _min.Controls
 {
-    [ToolboxData("<{0}:M2NMapping runat=server></{0}:M2NMapping>")]
+    [ToolboxData("<{0}:M2NMappingControl runat=\"server\"></{0}:M2NMapping>")]
     public class M2NMappingControl : CompositeControl
     {
         private ListBox inList = new ListBox();
@@ -42,6 +42,14 @@ namespace _min.Controls
             outList.DataSource = vals;
             outList.DataTextField = "Key";
             outList.DataValueField = "Value";
+            EnsureChildControls();
+            inList.DataBind();
+            outList.DataBind();
+        }
+
+        public void SetOptions(List<string> vals)
+        {
+            outList.DataSource = vals;
             EnsureChildControls();
             inList.DataBind();
             outList.DataBind();

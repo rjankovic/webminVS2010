@@ -250,19 +250,18 @@ namespace _min.Models
         {
             List<WC.BaseValidator> res = new List<WC.BaseValidator>();
             UControl fieldControl = myControl;
-
+            
             foreach (ValidationRules rule in validationRules)
             {
                 switch (rule)
                 {
                     case ValidationRules.Required:
-                        WC.RequiredFieldValidator reqVal;
-                        reqVal = new WC.RequiredFieldValidator();
-                        reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
-                        reqVal.ErrorMessage = this.caption + " is required";
-                        reqVal.Display = WC.ValidatorDisplay.None;
-                        res.Add(reqVal);
-
+                            WC.RequiredFieldValidator reqVal;
+                            reqVal = new WC.RequiredFieldValidator();
+                            reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
+                            reqVal.ErrorMessage = this.caption + " is required";
+                            reqVal.Display = WC.ValidatorDisplay.None;
+                            res.Add(reqVal);
                         break;
                     case ValidationRules.Ordinal:
                         WC.RegularExpressionValidator regexVal = new WC.RegularExpressionValidator();

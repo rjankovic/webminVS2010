@@ -204,8 +204,20 @@ namespace _min.Models
                             }
                             else if(part is IEnumerable<FK>){    // inner join
                                 foreach(FK fk in (IEnumerable<FK>)part){
+                                    if (fk.refTable == fk.myTable) continue;    // self-ref FK
                                     resultQuery.Append(" JOIN `" + fk.refTable + "` ON `" + fk.myTable + "`.`" + fk.myColumn + 
                                         "` = `" + fk.refTable + "`.`" + fk.refColumn + "`"); 
+                                }
+                                handled = true;
+                            }
+                            else if(part is IEnumerable<Tuple<FK, string>>){    
+                                // table aliases because of multiple FKs to the same table 
+                                // causing JOIN name ambiguity otherwise 
+                                foreach(Tuple<FK,string> t in (IEnumerable<Tuple<FK,string>>)part){
+                                    if (t.Item1.refTable == t.Item1.myTable) continue;    // self-ref FK
+                                    resultQuery.Append(" JOIN `" + t.Item1.refTable + "` AS `" + 
+                                        t.Item2 + "` ON `" + t.Item1.myTable + "`.`" + t.Item1.myColumn + 
+                                        "` = `" + t.Item2 + "`.`" + t.Item1.refColumn + "`"); 
                                 }
                                 handled = true;
                             }

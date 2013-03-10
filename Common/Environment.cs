@@ -7,7 +7,7 @@ using System.Data;
 namespace _min.Common
 {
     public enum DbServer { MySql, MSSQL };
-    public enum UserAction { View, Insert, Update, Delete }
+    public enum UserAction { View, Insert, Update, Delete, Multiple }
     public enum AppRequest { ArchitectureReload, StopLogging, StartLogging }
     public enum PanelTypes { Editable, NavTable, NavTree, MenuDrop, MenuTabs, Monitor, Container }
     public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, Varchar, Text, Decimal, Ordinal, Bool, Enum }

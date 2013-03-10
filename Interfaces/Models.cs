@@ -152,6 +152,8 @@ namespace _min.Interfaces
         Dictionary<string, List<string>> GlobalPKs();
         List<FK> selfRefFKs();
         Dictionary<string, List<M2NMapping>> Mappings { get; }
+        Dictionary<string, List<string>> PKs { get; }
+        FK SelfRefFKStrict(string tableName);
     }
     /*
     public interface IArchitect  // systemDB, does not fill structures with data

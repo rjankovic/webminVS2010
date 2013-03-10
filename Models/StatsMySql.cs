@@ -16,6 +16,8 @@ namespace _min.Models
         private Dictionary<string, DataColumnCollection> columnTypes = null;
         private Dictionary<string, List<string>> columnsToDisplay = null;
         private Dictionary<string, List<M2NMapping>> mappings = null;
+        private Dictionary<string, List<string>> globalPKs = null;
+
 
         public Dictionary<string, DataColumnCollection> ColumnTypes {
             get {
@@ -65,6 +67,13 @@ namespace _min.Models
             }
         }
 
+        public Dictionary<string, List<string>> PKs {
+            get {
+                if (globalPKs == null) globalPKs = GlobalPKs();
+                return globalPKs;
+            }
+        }
+
         public StatsMySql(string connstring, string webDb, DataTable logTable = null, bool writeLog = false)
             :base(connstring, logTable, writeLog)
         { 
@@ -95,26 +104,38 @@ namespace _min.Models
         private void GetColumnTypes()   // extracts information from the COLUMNS table of INFORMATION_SCHEMA
         {
             DataTable tbl = null;
-            DataTable stats = fetchAll("SELECT * FROM COLUMNS WHERE TABLE_SCHEMA = \"" + webDb + "\" ORDER BY TABLE_NAME, ORDINAL_POSITION");
+            // uneffective
+            DataTable stats = fetchAll("SELECT COLUMNS.* FROM COLUMNS JOIN TABLES USING(TABLE_SCHEMA, TABLE_NAME) " +  
+                "WHERE TABLE_TYPE != \"VIEW\" AND TABLES.TABLE_SCHEMA = \"" + webDb + 
+                "\" ORDER BY COLUMNS.TABLE_NAME, ORDINAL_POSITION");
+            
             Dictionary<string, DataColumnCollection> res = new Dictionary<string, DataColumnCollection>();
+            foreach(string tableName in TableList()){
+                DataTable schema = fetchSchema("SELECT * FROM `" + webDb + "`.`" + tableName + "`");
+                schema.PrimaryKey = new DataColumn[] { };
+                schema.Constraints.Clear();
+                res[tableName] = schema.Columns;
+
+            }
 
             foreach (DataRow r in stats.Rows) {
+                /*
                 if (tbl == null || tbl.TableName != r["TABLE_NAME"].ToString())
                 {
                     tbl = new DataTable(r["TABLE_NAME"].ToString());
                     res.Add(tbl.TableName, tbl.Columns);
                 }
-
-                DataColumn col = new DataColumn(r["COLUMN_NAME"] as string);        // set ColumnName
+                */
+                DataColumn col = res[r["TABLE_NAME"] as string][r["COLUMN_NAME"] as string];        // set ColumnName
                 
-                col.ExtendedProperties.Add(Common.Constants.FIELD_POSITION, Convert.ToInt32(r["ORDINAL_POSITION"]));
-                string typeStr = r["DATA_TYPE"] as string;      // set DataType
-                Type representedType = typeof(object);
-                if (typeStr.EndsWith("text") || typeStr.EndsWith("char") || typeStr == "enum") { 
-                    representedType = typeof(string);
+                //col.ExtendedProperties.Add(Common.Constants.FIELD_POSITION, Convert.ToInt32(r["ORDINAL_POSITION"]));
+                //string typeStr = col.DataType.ToString() as string;      // set DataType
+                //Type representedType = typeof(object);
+                if (col.DataType == typeof(string)) { 
                     col.ExtendedProperties.Add("length", Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]));
                 }
-                else switch (typeStr) { 
+                /*
+                else switch (typeStr) {     // using fetchSchema instead
                     case "timestamp":
                     case "datetime":
                         representedType = typeof(DateTime);
@@ -153,7 +174,7 @@ namespace _min.Models
                         break;
                 }
                 col.DataType = representedType;
-                
+                */
                 string extra = r["EXTRA"] as string;    // set AutoIncrement
                 if (extra == "auto_increment")
                     col.AutoIncrement = true;
@@ -176,7 +197,7 @@ namespace _min.Models
                 col.AllowDBNull = ((string)r["IS_NULLABLE"]) == "YES";
                 if(!(r["CHARACTER_MAXIMUM_LENGTH"] is DBNull)) col.MaxLength = Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]);
 
-                tbl.Columns.Add(col);
+                //tbl.Columns.Add(col);
                 
             }       // for each row in stats
             columnTypes = res;
@@ -206,6 +227,27 @@ namespace _min.Models
                     r["REFERENCED_COLUMN_NAME"] as string, r["REFERENCED_COLUMN_NAME"] as string));
             }
             return res;
+        }
+
+        
+        // finds the hierarchical relation within table only if valid for use in a NavTree
+        public FK SelfRefFKStrict(string tableName)
+        {
+            List<FK> res = new List<FK>();
+            DataTable stats = fetchAll("SELECT * FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
+                + webDb + "\" AND TABLE_NAME = REFERENCED_TABLE_NAME AND REFERENCED_COLUMN_NAME IS NOT NULL AND TABLE_NAME = '" 
+                + tableName + "'");
+            foreach (DataRow r in stats.Rows)
+            {
+                res.Add(new FK(r["TABLE_NAME"] as string, r["COLUMN_NAME"] as string, r["REFERENCED_TABLE_NAME"] as string,
+                    r["REFERENCED_COLUMN_NAME"] as string, r["REFERENCED_COLUMN_NAME"] as string));
+            }
+
+            if (res.Count != 1) return null;
+            FK fk = res[0];
+            if (PKs[fk.myTable].Count != 1) return null;
+            if (fk.refColumn != PKs[fk.myTable][0]) return null;
+            return fk;
         }
 
         public List<List<string>> indexes(string tableName)
