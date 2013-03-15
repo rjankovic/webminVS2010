@@ -10,7 +10,7 @@
 namespace _min_t7.Architect {
     
     
-    public partial class EditMenu {
+    public partial class EditPanels {
         
         /// <summary>
         /// ScriptManager1 control.
@@ -31,13 +31,40 @@ namespace _min_t7.Architect {
         protected global::System.Web.UI.WebControls.Panel MainPanel;
         
         /// <summary>
-        /// tbc control.
+        /// UpdatePanel1 control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::_min.Controls.TreeBuilderControl tbc;
+        protected global::System.Web.UI.UpdatePanel UpdatePanel1;
+        
+        /// <summary>
+        /// TablesGrid control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView TablesGrid;
+        
+        /// <summary>
+        /// MappingsLabel control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label MappingsLabel;
+        
+        /// <summary>
+        /// MappingsCheck control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBoxList MappingsCheck;
         
         /// <summary>
         /// SaveButton control.
@@ -47,5 +74,14 @@ namespace _min_t7.Architect {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button SaveButton;
+        
+        /// <summary>
+        /// BackButton control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton BackButton;
     }
 }

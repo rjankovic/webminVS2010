@@ -31,6 +31,8 @@ namespace _min_t7
                 "~/Architect/EditEditable.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectEditNavRoute", "architect/editNav/{projectName}/{panelId}",
                 "~/Architect/EditNav.aspx");
+            RouteTable.Routes.MapPageRoute("ArchitectEditPanelsRoute", "architect/editPanels/{projectName}",
+                "~/Architect/EditPanels.aspx");
             
             RouteTable.Routes.MapPageRoute("ProductionShowRoute", "show/{projectName}", "~/Production/Show.aspx");
             RouteTable.Routes.MapPageRoute("ProductionShowPanelDefaultRoute", "show/{projectName}/{panelId}", "~/Prouction/Show.aspx");

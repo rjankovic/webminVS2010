@@ -20,6 +20,7 @@ namespace _min.Templates
             this.options.Add(UserAction.View);
             this.options.Add(UserAction.Insert);
             this.options.Add(UserAction.Delete);
+            this.options.Add(UserAction.Multiple);
             if (options != null)
                 this.options = options;
         }
@@ -40,14 +41,14 @@ namespace _min.Templates
                     if (options.Contains(UserAction.View))
                     {
                         LinkButton viewButton = new LinkButton();
-                        viewButton.Text = "Edit";
+                        viewButton.Text = "_Edit";
                         viewButton.CommandName = "_View";
                         container.Controls.Add(viewButton);
                     }
                     if (options.Contains(UserAction.Delete))
                     {
                         LinkButton delButton = new LinkButton();
-                        delButton.Text = "Delete";
+                        delButton.Text = "_Delete";
                         delButton.CommandName = "_Delete";
                         container.Controls.Add(delButton);
                     }

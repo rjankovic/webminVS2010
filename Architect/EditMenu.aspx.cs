@@ -23,7 +23,6 @@ namespace _min_t7.Architect
     {
         ISystemDriver sysDriver;
         IWebDriver webDriver;
-        TreeBuilderControl tbc;
 
 
         protected void Page_Init(object sender, EventArgs e)
@@ -33,13 +32,8 @@ namespace _min_t7.Architect
 
             //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
             //    Session.Clear();
-            _min.Models.Panel architecture = null;
-            if (Session["Architecture"] is _min.Models.Panel)
-            {
-                architecture = (MPanel)Session["Architecture"];
-            }
+            
 
-            Dictionary<UserAction, int> currentPanelActionPanels = new Dictionary<UserAction, int>();
             string projectName = Page.RouteData.Values["projectName"] as string;
 
             sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
@@ -50,30 +44,22 @@ namespace _min_t7.Architect
             webDriver = new WebDriverMySql(CE.project.connstringWeb);
             
             
-            sysDriver.InitArchitecture(architecture);
-            Session["Architecture"] = sysDriver.MainPanel;
+            if (!Page.IsPostBack)
+            {
+                sysDriver.InitArchitecture();
+                tbc.SetInitialState(((TreeControl)sysDriver.MainPanel.controls[0]).storedHierarchyData, sysDriver.MainPanel);
+                
+            }
 
-            tbc = new _min.Controls.TreeBuilderControl();
-            tbc.ID = "TBC";
-            tbc.SetInitialState(((TreeControl)sysDriver.MainPanel.controls[0]).storedHierarchyData, sysDriver.MainPanel);
-            MainPanel.Controls.Add(tbc);
-
-            Button SaveButton = new Button();
-            SaveButton.Text = "Save";
-            SaveButton.Click += OnSaveButtonClicked;
-            MainPanel.Controls.Add(SaveButton);
-
-            LinkButton BackButton = new LinkButton();
-            BackButton.Text = "Back";
-            BackButton.PostBackUrl = BackButton.GetRouteUrl("ArchitectShowRoute", new { projectName = projectName });
-            MainPanel.Controls.Add(BackButton);
 
         }
 
         protected void OnSaveButtonClicked(object sender, EventArgs e) {
+            sysDriver.InitArchitectureBasePanel();
             TreeControl tc = ((TreeControl)(sysDriver.MainPanel.controls[0]));
             tc.storedHierarchyDataSet.Relations.Clear();
             tc.storedHierarchyDataSet.Tables.Clear();
+            tbc.FreeTables();
             tc.storedHierarchyDataSet.Tables.Add(tbc.Hierarchy);
             tc.storedHierarchyData = (HierarchyNavTable)tc.storedHierarchyDataSet.Tables[0];
             sysDriver.StartTransaction();

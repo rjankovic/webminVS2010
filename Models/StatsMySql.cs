@@ -17,6 +17,8 @@ namespace _min.Models
         private Dictionary<string, List<string>> columnsToDisplay = null;
         private Dictionary<string, List<M2NMapping>> mappings = null;
         private Dictionary<string, List<string>> globalPKs = null;
+        private Dictionary<string, List<FK>> globalFKs = null;
+        private List<string> tables = null;
 
 
         public Dictionary<string, DataColumnCollection> ColumnTypes {
@@ -71,6 +73,22 @@ namespace _min.Models
             get {
                 if (globalPKs == null) globalPKs = GlobalPKs();
                 return globalPKs;
+            }
+        }
+
+        public Dictionary<string, List<FK>> FKs {
+            get {
+                if (globalFKs == null)
+                    globalFKs = AllForeignKeys();
+                return globalFKs;
+            }
+        }
+
+        public List<string> Tables {
+            get {
+                if (tables == null)
+                    tables = TableList();
+                return tables;
             }
         }
 
@@ -217,6 +235,24 @@ namespace _min.Models
             return res;
         }
 
+        public Dictionary<string, List<FK>> AllForeignKeys() {
+            Dictionary<string, List<FK>> res = new Dictionary<string, List<FK>>();
+            DataTable stats = fetchAll("SELECT * FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
+                + webDb + "\" AND REFERENCED_COLUMN_NAME IS NOT NULL");
+
+            foreach (string tblName in Tables) {
+                res[tblName] = new List<FK>();
+            }
+
+            foreach (DataRow r in stats.Rows)
+            {
+                string tbl = r["TABLE_NAME"] as string;
+                res[tbl].Add(new FK(tbl, r["COLUMN_NAME"] as string, r["REFERENCED_TABLE_NAME"] as string,
+                    r["REFERENCED_COLUMN_NAME"] as string, ColumnsToDisplay[r["REFERENCED_TABLE_NAME"] as string][0]));
+            }
+            return res;        
+        }
+
         public List<FK> selfRefFKs() {
             List<FK> res = new List<FK>();
             DataTable stats = fetchAll("SELECT * FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
@@ -286,14 +322,15 @@ namespace _min.Models
             return new List<string>(from row in stats.AsEnumerable() select row["TABLE_NAME"] as string);
         }
 
-        public List<string> TwoColumnTables() {
-            DataTable tab = fetchAll("SELECT TABLE_NAME FROM COLUMNS WHERE TABLE_SCHEMA =  '" + webDb  + "' GROUP BY TABLE_NAME " +
-                "HAVING COUNT( * ) = 2");
-            return new List<string>( from row in tab.AsEnumerable() select row["TABLE_NAME"] as string );
-        }
-
         public List<string> TableList() {
             DataTable tab = fetchAll("SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA = '" + webDb + "' AND TABLE_TYPE = \"BASE TABLE\" ORDER BY CREATE_TIME");
+            return new List<string>(from row in tab.AsEnumerable() select row["TABLE_NAME"] as string);
+        }
+
+        public List<string> TwoColumnTables()
+        {
+            DataTable tab = fetchAll("SELECT TABLE_NAME FROM COLUMNS WHERE TABLE_SCHEMA =  '" + webDb + "' GROUP BY TABLE_NAME " +
+                "HAVING COUNT( * ) = 2");
             return new List<string>(from row in tab.AsEnumerable() select row["TABLE_NAME"] as string);
         }
 

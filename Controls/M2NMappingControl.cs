@@ -9,7 +9,7 @@ using System.Web.UI;
 
 namespace _min.Controls
 {
-    [ToolboxData("<{0}:M2NMappingControl runat=\"server\"></{0}:M2NMapping>")]
+    [ToolboxData("<{0}:M2NMappingControl runat=\"server\"></{0}:M2NMappingControl>")]
     public class M2NMappingControl : CompositeControl
     {
         private ListBox inList = new ListBox();

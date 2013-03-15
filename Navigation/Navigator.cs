@@ -42,12 +42,13 @@ namespace _min.Navigation
         public void TreeHandle(object sender, CommandEventArgs e) {
             int navId = (int)(e.CommandArgument);
 
+            UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
             response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
                 ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
                 new
                 {
-
-                    panelId = currentTableActionPanels[UserAction.Multiple],
+                    
+                    panelId = currentTableActionPanels[currentTableActionPanels.ContainsKey(action)?action:UserAction.Multiple],
                     action = e.CommandName,
                     itemKey = navId    // trees must have single-column int PKs
                 });
@@ -63,7 +64,7 @@ namespace _min.Navigation
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), command);
             RouteValueDictionary data = new RouteValueDictionary();
             
-            data.Add("panelId", currentTableActionPanels[UserAction.Multiple]);
+            data.Add("panelId", currentTableActionPanels[currentTableActionPanels.ContainsKey(action)?action:UserAction.Multiple]);
             data.Add("action", command);
             //object[]
 
@@ -75,7 +76,7 @@ namespace _min.Navigation
 
                 response.RedirectToRoute(CE.GlobalState == GlobalState.Architect 
                     ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
-                    new { panelId = currentTableActionPanels[UserAction.Multiple], action = e.CommandName, 
+                    new { panelId = currentTableActionPanels[action], action = e.CommandName, 
                         itemKey = DataKey2Url(grid.DataKeys[selectedIndex]) } );
                 //new { panelId = currentTableActionPanels[action], action = e.CommandName, 
                 //    itemKey = (grid.DataKeys[selectedIndex].Values) } );

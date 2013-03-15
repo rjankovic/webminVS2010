@@ -75,6 +75,12 @@ namespace _min.Models
         [DataMember]
         public List<string> displayColumns { get; set; }
 
+        public virtual Dictionary<UserAction, int> ActionsDicitionary {
+            get {
+                return new Dictionary<UserAction, int> { { action, (int)targetPanelId } };
+            }
+        }
+
         public Control(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
             DataTable data, List<string> PKColNames, UserAction action)
         {
@@ -153,6 +159,18 @@ namespace _min.Models
         public List<FK> FKs { get; private set; }
         [DataMember]
         public List<UserAction> actions { get; private set; }
+
+        public override Dictionary<UserAction, int> ActionsDicitionary
+        {
+            get
+            {
+                Dictionary<UserAction, int> res = new Dictionary<UserAction, int>();
+                foreach (UserAction u in actions) {
+                    res.Add(u, (int)targetPanelId);
+                }
+                return res;
+            }
+        }
 
         public NavTableControl(int panelId, Panel panel, int targetPanelId, Panel targetPanel,
             DataTable data, List<string> PKColNames, List<FK> Fks, List<UserAction> actions)
@@ -253,6 +271,19 @@ namespace _min.Models
         public string recursiveFKCol { get; private set; }
         [DataMember]
         public readonly bool storeHierarchy;
+
+        public override Dictionary<UserAction, int> ActionsDicitionary
+        {
+            get
+            {
+                Dictionary<UserAction, int> res = new Dictionary<UserAction, int>();
+                foreach (UserAction u in actions)
+                {
+                    res.Add(u, (int)targetPanelId);
+                }
+                return res;
+            }
+        }
 
         public TreeControl(int panelId, HierarchyNavTable data, string PKColName,    // tree controls must have a single-column primary key
             string parentColName, string displayColName,

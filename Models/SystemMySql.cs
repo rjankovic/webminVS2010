@@ -40,6 +40,14 @@ namespace _min.Models
             else MainPanel = getArchitectureInPanel();
             FlattenPanel(MainPanel);
         }
+
+        public void InitArchitectureBasePanel(Panel mainPanel = null)
+        {
+            Panels = new Dictionary<int, Panel>();
+            if (mainPanel != null) MainPanel = mainPanel;
+            else MainPanel = GetBasePanel();
+            Panels[MainPanel.panelId] = MainPanel;
+        }
         /*
 
         public void saveLog()

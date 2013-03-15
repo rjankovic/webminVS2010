@@ -13,7 +13,7 @@ using System.Data;
 
 namespace _min.Controls
 {
-    [ToolboxData("<{0}:TreeBuilder runat=server></{0}:M2NMapping>")]
+    [ToolboxData("<{0}:TreeBuilderControl runat=\"server\"></{0}:TreeBuilderControl>")]
     public class TreeBuilderControl : CompositeControl
     {
         private ListBox panelList = new ListBox();
@@ -24,10 +24,38 @@ namespace _min.Controls
         private Button bindButton = new Button();
         private Button unbindButton = new Button();
         private Button renameButton = new Button();
-        private HierarchyNavTable menuHierarchy = new HierarchyNavTable();
-        
-        private string _ID;
+        private DataSet hierarchyDataset = new DataSet();
+        private HierarchyNavTable menuHierarchy = null;
+        private DataTable panelsTable = null;
 
+        public void SetInitialState(DataTable hierarchy, MPanel basePanel)
+        {
+            hierarchyDataset = new DataSet();
+            menuHierarchy = new HierarchyNavTable();
+            panelsTable = new DataTable();
+            panelsTable.Columns.Add("Id", typeof(int));
+            panelsTable.Columns.Add("Name", typeof(string));
+            menuHierarchy.TableName = "menuHierarchy";
+            menuHierarchy.Merge(hierarchy);
+            hierarchyDataset.Tables.Add(menuHierarchy);
+            hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], false));
+            /*
+            hierarchy.DataSet.Relations.Clear();
+            hierarchy.DataSet.Tables.Remove(hierarchy);
+            hierarchyDataset.Tables.Add(hierarchy);
+            */ 
+            AddPanelToList(basePanel);
+            panelsTable.TableName = "panelsTable";
+            hierarchyDataset.Tables.Add(panelsTable);
+            ViewState["hierarchyDS"] = hierarchyDataset;
+        }
+
+        private string _ID;
+        public override string ID
+        {
+            get { return _ID; }
+            set { _ID = value; }
+        }
 
         public HierarchyNavTable Hierarchy {
             get {
@@ -48,28 +76,21 @@ namespace _min.Controls
             }
         }
 
-        private void AddPanelToList(MPanel panel, int level) {
-            ListItem newItem = new ListItem((new string(' ', level * 4)) + panel.panelName, panel.panelId.ToString());
-            panelList.Items.Add(newItem);
+        private void AddPanelToList(MPanel panel, int level = 0) {
+            DataRow r = panelsTable.NewRow();
+            r["Id"] = panel.panelId;
+            r["Name"] = panel.panelName;
+            panelsTable.Rows.Add(r);
             foreach(MPanel chp in panel.children){
                 AddPanelToList(chp, level+1);
             }
         }
-         
-        public void SetInitialState(HierarchyNavTable hierarchy, MPanel basePanel){
-            this.menuHierarchy = hierarchy;
-
-            panelList = new ListBox();
-            AddPanelToList(basePanel, 0);
-        }
-        
 
         protected override void CreateChildControls()
         {
 
-
             menuTree = new TreeView();
-            foreach (HierarchyRow r in menuHierarchy.Rows)
+            foreach (HierarchyRow r in ((HierarchyNavTable)hierarchyDataset.Tables[0]).Rows)
             {
                 if (r.ParentId == 0)
                 {
@@ -79,26 +100,30 @@ namespace _min.Controls
                 }
             }
 
-
+            
             //inList.EnableViewState = true;
             //outList.EnableViewState = true;
+            panelList.DataSource = panelsTable;
+            panelList.DataValueField = "Id";
+            panelList.DataTextField = "Name";
+            panelList.DataBind();
+            panelList.ID = "panelList";
             removeButton.Text = "Remove selected";
             renameButton.Text = "Rename selected";
             addButton.Text = "AddNode";
             bindButton.Text = "Bind To Panel";
             unbindButton.Text = "Unbind Panel";
-
+            
             menuTree.SelectedNodeChanged += OnSelectedNodeChanged;
             bindButton.Click += OnBindButtonClicked;
             unbindButton.Click += OnUnbindButtonClicked;
             addButton.Click += OnAddButtonClicked;
             removeButton.Click += OnRemoveButtonClicked;
             renameButton.Click += OnRenameButtonClicked;
-
+            
             panelList.Height = 500;
             menuTree.ShowLines = true;
             menuTree.CollapseAll();
-
             this.Controls.Clear();
             this.Controls.Add(menuTree);
             this.Controls.Add(panelList);
@@ -108,11 +133,30 @@ namespace _min.Controls
             this.Controls.Add(addButton);
             this.Controls.Add(removeButton);
             this.Controls.Add(renameButton);
+             
+            
+             
+        }
+
+        protected override void LoadViewState(object savedState)
+        {
+            base.LoadViewState(savedState);
+            hierarchyDataset = (DataSet)ViewState["hierarchyDS"];
+            hierarchyDataset.Relations.Clear();
+            menuHierarchy = new HierarchyNavTable();
+            menuHierarchy.Merge(hierarchyDataset.Tables["menuHierarchy"]);
+            menuHierarchy.TableName = "menuHierarchy";
+            panelsTable = hierarchyDataset.Tables["panelsTable"];
+            
+            hierarchyDataset.Tables.Clear();
+            hierarchyDataset.Tables.Add(menuHierarchy);
+            hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], false));
+            hierarchyDataset.Tables.Add(panelsTable); 
         }
 
         protected void OnSelectedNodeChanged(object sender, EventArgs e)
         {
-            int navId = menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue)).NavId;
+            int navId = ((HierarchyNavTable)hierarchyDataset.Tables[0]).Find(Int32.Parse(menuTree.SelectedValue)).NavId;
             if (navId != 0)
             {
                 ListItem item = panelList.Items.FindByValue(navId.ToString());
@@ -135,6 +179,7 @@ namespace _min.Controls
                 panelList.SelectedIndex = -1;
             }
         }
+
 
         protected void OnAddButtonClicked(object sender, EventArgs e) {
             if(newLabelTB.Text == "") return;
@@ -183,12 +228,18 @@ namespace _min.Controls
             HierarchyRow toRename = menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue));
             toRename.Caption = newLabelTB.Text;
             
-            //RecreateChildControls();
+            RecreateChildControls();
+        }
+
+        public void FreeTables() {
+            hierarchyDataset.Relations.Clear();
+            hierarchyDataset.Tables.Clear();
         }
        
 
         protected override void Render(HtmlTextWriter writer)
         {
+
             AddAttributesToRender(writer);
             writer.AddAttribute(HtmlTextWriterAttribute.Cellpadding, "10", false);
             writer.RenderBeginTag(HtmlTextWriterTag.Table);

@@ -154,6 +154,8 @@ namespace _min.Interfaces
         Dictionary<string, List<M2NMapping>> Mappings { get; }
         Dictionary<string, List<string>> PKs { get; }
         FK SelfRefFKStrict(string tableName);
+        Dictionary<string, List<FK>> FKs { get; }
+        List<string> Tables { get; }
     }
     /*
     public interface IArchitect  // systemDB, does not fill structures with data
@@ -171,7 +173,6 @@ namespace _min.Interfaces
     {
         Panel MainPanel { get; }
         Dictionary<int, Panel> Panels { get; }
-        void InitArchitecture(Panel mainPanel);
 
         void ProcessLogTable();
         void ProcessLogTable(DataTable data);
@@ -202,6 +203,10 @@ namespace _min.Interfaces
         DataTable GetProjects();
         void UpdateProject(int id, Dictionary<string, object> data);
         void InsertProject(Dictionary<string, object> data);
+
+        void InitArchitecture(Panel mainPanel = null);
+        void InitArchitectureBasePanel(Panel mainPanel = null);
+        
         //Dictionary<UserAction, int> GetPanelActionPanels(int currentPanel);
     }
 }

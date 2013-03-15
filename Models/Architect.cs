@@ -92,7 +92,7 @@ namespace _min.Models
 
         private ISystemDriver systemDriver;
         private IStats stats;
-        public Dictionary<string, M2NMapping> mappings;
+        public List<M2NMapping> mappings;
         public List<string> hierarchies;
 
 
@@ -118,10 +118,11 @@ namespace _min.Models
             return new List<string>(from col in colList select col.ColumnName);
         }
         */
+        /*
         public Panel getArchitectureInPanel()
         {
             return systemDriver.getArchitectureInPanel();
-        }
+        }*/
         /// <summary>
         /// propose the editable panel for a table, if table will probably not be self-editable
         /// (such as an M2N mapping), return null
@@ -142,15 +143,15 @@ namespace _min.Models
             // FK ~> mapping ?
             List<Field> fields = new List<Field>();
             List<ValidationRules> validation = new List<ValidationRules>();
-            if (mappings.ContainsKey(tableName))
-            {
-                M2NMapping mapping = mappings[tableName];
-                // no potentional field from cols is removed by this, though
+
+
+            foreach (M2NMapping mapping in mappings) {
+                if (mapping.myTable != tableName) continue;
                 List<string> displayColOrder = stats.ColumnsToDisplay[mapping.refTable];
                 mapping.displayColumn = displayColOrder[0];
                 fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
             }
-
+            
             // standard FKs
             foreach (FK actFK in FKs)
             {
@@ -196,17 +197,17 @@ namespace _min.Models
                 }
                 else if (col.DataType == typeof(DateTime))
                 {
-                    if (col.ExtendedProperties.ContainsKey(CC.FIELD_DATE_ONLY))
-                        fieldType = FieldTypes.Date;
+                    //if (col.ExtendedProperties.ContainsKey(CC.FIELD_DATE_ONLY))
+                    //    fieldType = FieldTypes.Date;
                     // should DATETIME, BUT DATETIME is usually used for date only...or is it?
-                    else fieldType = FieldTypes.Date;
+                    fieldType = FieldTypes.Date;
                     validation.Add(ValidationRules.Date);
                 }
                 else if (col.DataType == typeof(Enum))
                 {
                     // cannot happen, since column properties are taken from Stats
-                    if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_ENUM_VALUES))
-                        throw new Exception("Missing enum options for field " + col.ColumnName);
+                    //if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_ENUM_VALUES))
+                    //    throw new Exception("Missing enum options for field " + col.ColumnName);
                     fieldType = FieldTypes.Enum;
                 }
                 else
@@ -296,7 +297,7 @@ namespace _min.Models
         /// </summary>
         /// <param name="tableName">string</param>
         /// <returns>Panel</returns>
-        private Panel proposeSummaryPanel(string tableName)
+        public Panel proposeSummaryPanel(string tableName)
         {
             DataColumnCollection cols = stats.ColumnTypes[tableName];
             List<FK> FKs = stats.foreignKeys(tableName);
@@ -322,10 +323,10 @@ namespace _min.Models
             if (selfRefFK != null)
             {
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
-                    new List<Control>(), displayColOrder);
+                    new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn,
-                     displayColOrder[0], new List<UserAction> { UserAction.Update, UserAction.Delete });
+                     displayColOrder[0], new List<UserAction> { UserAction.Delete, UserAction.View });
                 Controls.Add(control);
                 /*
                 controlProps.Add(CC.CONTROL_HIERARCHY_SELF_FK_COL, selfRefFK.myColumn);

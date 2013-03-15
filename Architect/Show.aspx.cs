@@ -75,28 +75,8 @@ namespace _min_t7.Architect
             }
 
             basePanel = sysDriver.MainPanel;
-            if (!Page.IsPostBack)
-            {
-
-
-
-                //Session["basePanel"] = basePanel;
-                //Session["sysDriver"] = sysDriver;
-                //Session["stats"] = stats;
-                //Session["architect"] = architect;
-                
-                
-                //currentPanelActionPanels = 
-                //    RouteData.Values.ContainsKey("panelId") ? sysDriver.GetPanelActionPanels(Int32.Parse(RouteData.Values["panelId"].ToString())) : null;
-                //Session["currentPanelActionPanels"] = currentPanelActionPanels;
-                //navigator = new Navigator(Response, currentPanelActionPanels);
-
-                //baseMenu.ID = "BaseMenu";
-                //baseMenu.EnableViewState = true;
-                
-                // TODO: bind hanlers!!
-                
-                //MainPanel.Controls.Add(basePanel.controls[0].ToUControl());
+            //basePanel = sysDriver.MainPanel;
+            
                 if (Page.RouteData.Values.ContainsKey("panelId"))
                 {
                     int panelId = Int32.Parse(Page.RouteData.Values["panelId"].ToString());
@@ -107,25 +87,15 @@ namespace _min_t7.Architect
                     //Session["activePanel"] = activePanel;
                     currentPanelActionPanels = new Dictionary<UserAction, int>();
                     var controlTargetPanels = from _min.Models.Control c in activePanel.controls 
-                                              select new { action = c.action, targetId = c.targetPanelId };
+                                              select c.ActionsDicitionary;
                     foreach (var x in controlTargetPanels) {
-                        // TODO: targetPanelId should be specified for every control - this cast should not be here
-                        currentPanelActionPanels.Add(x.action, (int)x.targetId);
+                        foreach(KeyValuePair<UserAction, int> item in x){
+                            currentPanelActionPanels.Add(item.Key, item.Value);
+                        }
                     }
-                    Session["currentPanelActionPanels"] = currentPanelActionPanels;
-                    //CreateWebControlsForPanel(activePanel, MainPanel);
+
                 }
 
-            }
-            else
-            {
-                //stats = (IStats)Session["stats"];
-                //sysDriver = (ISystemDriver)Session["sysDriver"];
-                //architect = (_min.Models.Architect)Session["architect"];
-                //basePanel = (_min.Models.Panel)Session["basePanel"];
-                currentPanelActionPanels = (Dictionary<UserAction, int>)Session["currentPanelActionpanels"];
-                //activePanel = (_min.Models.Panel)Session["activePanel"];
-            }
             
             navigator = new Navigator(Response, currentPanelActionPanels);
 
@@ -139,6 +109,12 @@ namespace _min_t7.Architect
             editMenuLink.Text = "Edit menu structure";
             editMenuLink.CausesValidation = false;
             MainPanel.Controls.Add(editMenuLink);
+
+            LinkButton editPanelsLink = new LinkButton();
+            editPanelsLink.PostBackUrl = editPanelsLink.GetRouteUrl("ArchitectEditPanelsRoute", new { projectName = projectName });
+            editPanelsLink.Text = "Edit panels structure";
+            editPanelsLink.CausesValidation = false;
+            MainPanel.Controls.Add(editPanelsLink);
 
             if (Page.RouteData.Values.ContainsKey("panelId"))
             {

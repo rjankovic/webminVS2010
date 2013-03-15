@@ -106,17 +106,17 @@ namespace _min_t7.Architect
             WaitLabel.Visible = true;
 
             CheckBox ItemCheckBox;
-            Dictionary<string, M2NMapping> mappingsDictionary = new Dictionary<string, M2NMapping>();
             List<M2NMapping> mappingsList = (List<M2NMapping>)Session["mappings"];
             int i = 0;
+            List<M2NMapping> finMappingsList = new List<M2NMapping>();
             foreach (RepeaterItem item in MappingsChoiceRepeater.Items)
             {
                 ItemCheckBox = (CheckBox)item.FindControl("ItemCheckBox");
                 if (ItemCheckBox.Checked)
-                    mappingsDictionary[mappingsList[i].myTable] = mappingsList[i];
+                    finMappingsList.Add(mappingsList[i]);
                 i++;
             }
-            architect.mappings = mappingsDictionary;
+            architect.mappings = finMappingsList;
             architect.hierarchies = (List<string>)Session["goodHierarchies"];
             _min.Models.Panel proposal = architect.propose();       // saved within proposing
             //sysDriver.AddPanel(proposal);

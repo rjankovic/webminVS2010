@@ -83,7 +83,7 @@ namespace _min.Controls
             
             if (tree.SelectedNode == null) return;
             if (radios.SelectedIndex < 0) return;
-            CommandEventArgs command = new CommandEventArgs(radios.SelectedValue, Int32.Parse(tree.SelectedValue));
+            CommandEventArgs command = new CommandEventArgs("_" + radios.SelectedValue, Int32.Parse(tree.SelectedValue));
             
             ActionChosen(this, command);
         }

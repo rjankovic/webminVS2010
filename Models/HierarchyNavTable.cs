@@ -57,6 +57,7 @@ namespace _min.Models
         {
             return new HierarchyRow(builder);
         }
+
     }
 
     public class HierarchyRow : DataRow
