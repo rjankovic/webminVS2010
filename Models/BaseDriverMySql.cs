@@ -12,6 +12,12 @@ using System.Text.RegularExpressions;
 
 namespace _min.Models
 {
+    class InStr {       // input string 
+        public string s {get; set;}
+        InStr(string s){
+            this.s = s;
+        }
+    }
 
     class BaseDriverMySql : IBaseDriver
     {
@@ -60,7 +66,7 @@ namespace _min.Models
                 this.logTable.Columns.Add("time", typeof(int));
             }
         }
-
+        /*
         public static string escape(object o) {
             if (o == null) return " NULL ";
             if (o is DateTime) return String.Format("'{0:yyyy-MM-dd HH:mm:ss}'", (DateTime)o);
@@ -69,7 +75,7 @@ namespace _min.Models
             if(double.TryParse(o.ToString(), out parsed)) return parsed.ToString();
             return "\"" + MySqlHelper.EscapeString(o.ToString()) + "\"";
         }
-
+        */
         private QueryType getQueryType(string query) {
             string firstWord = query.Split(' ').First();
             switch (firstWord.ToUpper())
@@ -106,8 +112,11 @@ namespace _min.Models
         
 
         /* translate dibi-style query to string */
-        protected string translate(params object[] parts) {
+        protected MySqlCommand translate(params object[] parts) {
 
+            int paramCount = 0;
+            MySqlCommand resultCmd = new MySqlCommand();
+            
             // expects single value, other expectations are array-wise
             Expectations expect = Expectations.Single;
             StringBuilder resultQuery = new StringBuilder();
@@ -127,7 +136,8 @@ namespace _min.Models
                 }
                 else
                     if(part is int || part is long || part is float || part is double){
-                        resultQuery.Append(" " + part + " ");
+                        resultQuery.Append(" @param" + paramCount + " ");
+                        resultCmd.Parameters.Add("@param" + paramCount++, part); 
                     }
                 else{
                     bool handled = false;
@@ -278,6 +288,7 @@ namespace _min.Models
 
         public System.Data.DataTable fetchSchema(params object[] parts)
         {
+            
             string query = this.translate(parts);
             QueryType type = this.getQueryType(query);
             if (type != QueryType.Select)

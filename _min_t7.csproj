@@ -82,6 +82,7 @@
     <Content Include="Account\PasswordRecovery.aspx" />
     <Content Include="Account\Login.aspx" />
     <Content Include="Account\Register.aspx" />
+    <Content Include="Administer\Browse.aspx" />
     <Content Include="Architect\EditPanels.aspx" />
     <Content Include="Architect\EditNav.aspx" />
     <Content Include="Architect\EditEditable.aspx" />
@@ -148,6 +149,13 @@
     </Compile>
     <Compile Include="Account\Register.aspx.designer.cs">
       <DependentUpon>Register.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Administer\Browse.aspx.cs">
+      <DependentUpon>Browse.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Administer\Browse.aspx.designer.cs">
+      <DependentUpon>Browse.aspx</DependentUpon>
     </Compile>
     <Compile Include="Architect\EditPanels.aspx.cs">
       <DependentUpon>EditPanels.aspx</DependentUpon>
@@ -217,7 +225,10 @@
     <Compile Include="Interfaces\Presenters.cs" />
     <Compile Include="Interfaces\Views.cs" />
     <Compile Include="Models\Architect.cs" />
-    <Compile Include="Models\BaseDriverMySql.cs" />
+    <Compile Include="..\..\..\..\..\..\Administrator\Desktop\BaseDriverMySql.cs">
+      <Link>Models\BaseDriverMySql.cs</Link>
+    </Compile>
+    <Compile Include="Models\DbDeployableMySql.cs" />
     <Compile Include="Models\HierarchyNavTable.cs">
       <SubType>Component</SubType>
     </Compile>

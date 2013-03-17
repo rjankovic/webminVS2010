@@ -18,7 +18,7 @@ namespace _min.Models
 {
     class SystemDriverMySql : BaseDriverMySql, ISystemDriver
     {
-
+        private DbDeployableMySql dbe = new DbDeployableMySql();
         public Panel MainPanel { get; private set; }
         public Dictionary<int, Panel> Panels { get; private set; }
 
@@ -200,7 +200,7 @@ namespace _min.Models
             DataTable visibleChildrenIds = new DataTable();
             if(basePanel.fields.Count > 0)
                 visibleChildrenIds = fetchAll("SELECT id_panel FROM panels WHERE id_holder IN", 
-                    (IEnumerable)(from Field f in basePanel.fields select f.fieldId));
+                    dbe.InList(new List<object>(from Field f in basePanel.fields select (object)f.fieldId)));
     
             Panel currentChild;
             List<Panel> res = new List<Panel>();
@@ -303,12 +303,12 @@ namespace _min.Models
             if (!IsInTransaction)
             {
                 StartTransaction();
-                query("INSERT INTO panels ", insertVals);
+                query("INSERT INTO panels ", dbe.InsVals(insertVals));
                 panel.SetCreationId(LastId());
                 CommitTransaction();
             }
             else {
-                query("INSERT INTO panels ", insertVals);
+                query("INSERT INTO panels ", dbe.InsVals(insertVals));
                 panel.SetCreationId(LastId());
             }
 
@@ -368,12 +368,12 @@ namespace _min.Models
             if (!IsInTransaction)
             {
                 StartTransaction();
-                query("INSERT INTO fields", insertVals);
+                query("INSERT INTO fields", dbe.InsVals(insertVals));
                 field.SetCreationId(LastId());    // must be 0 in creation
                 CommitTransaction();
             }
             else {
-                query("INSERT INTO fields", insertVals);
+                query("INSERT INTO fields", dbe.InsVals(insertVals));
                 field.SetCreationId(LastId());    // must be 0 in creation
             }
 
@@ -403,13 +403,13 @@ namespace _min.Models
             if (!IsInTransaction)
             {
                 StartTransaction();
-                query("INSERT INTO controls", insertVals);
+                query("INSERT INTO controls", dbe.InsVals(insertVals));
                 control.SetCreationId(LastId());    // must be 0 in creation
                 CommitTransaction();
             }
             else
             {
-                query("INSERT INTO controls", insertVals);
+                query("INSERT INTO controls", dbe.InsVals(insertVals));
                 control.SetCreationId(LastId());    // must be 0 in creation
             }
 
@@ -480,11 +480,11 @@ namespace _min.Models
             return res;
         }
         public void UpdateProject(int id, Dictionary<string,object> data) {
-            query("UPDATE projects SET ", data, " WHERE id_project = ", id); 
+            query("UPDATE projects SET ", dbe.UpdVals(data), " WHERE id_project = ", id); 
         }
 
         public void InsertProject(Dictionary<string, object> data) {
-            query("INSERT INTO projects ", data);
+            query("INSERT INTO projects ", dbe.UpdVals(data));
         }
 
         /*
@@ -545,7 +545,7 @@ namespace _min.Models
                 insertVals["count"] = queryGroup.Count;
                 insertVals["total_time"] = queryGroup.TotalTime;
                 insertVals["max_time"] = queryGroup.MaxTime;
-                query("INSERT INTO log_db", insertVals);
+                query("INSERT INTO log_db", dbe.InsVals(insertVals));
             }
             data.Clear();
 
@@ -559,7 +559,7 @@ namespace _min.Models
             foreach (Control c in panel.controls)
             {
                 updateVals["content"] = c.Serialize();
-                query("UPDATE controls SET ", updateVals, " WHERE id_control = ", c.controlId);
+                query("UPDATE controls SET ", dbe.UpdVals(updateVals), " WHERE id_control = ", c.controlId);
             }
 
             if (recursive)
@@ -574,7 +574,7 @@ namespace _min.Models
             foreach (Field f in panel.fields)
             {
                 updateVals["content"] = f.Serialize();
-                query("UPDATE fields SET ", updateVals, " WHERE id_field = ", f.fieldId);
+                query("UPDATE fields SET ", dbe.UpdVals(updateVals), " WHERE id_field = ", f.fieldId);
             }
 
             if (recursive)

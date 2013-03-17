@@ -8,7 +8,8 @@ using _min.Interfaces;
 
 namespace _min.Models
 {
-    class ConditionMySql : ICondition
+    
+    class ConditionMySql : IMySqlQueryDeployable 
     {
             private DataRow lowerBounds;
             private DataRow upperBounds;    // optional
@@ -19,34 +20,39 @@ namespace _min.Models
                 upperBounds = uBounds;
             }
 
-            public string Translate()
+            public void Deoploy(MySql.Data.MySqlClient.MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
-                StringBuilder result = new StringBuilder();
-                bool first = true;
-
-                if(upperBounds == null){
-                    foreach(DataColumn col in lowerBounds.Table.Columns){
-                        result.Append(first?"":" AND ");
-                        result.Append(" `" + col.ColumnName + "` = " 
-                            + BaseDriverMySql.escape(lowerBounds[col.ColumnName]));
+                
+                if (upperBounds == null)
+                {
+                    bool first = true;
+                    foreach (DataColumn col in lowerBounds.Table.Columns)
+                    {
+                        sb.Append(first ? "" : " AND ");
+                        sb.Append(" `" + col.ColumnName + "` = @param" + paramCount);
+                        cmd.Parameters.AddWithValue("@param" + paramCount++, lowerBounds[col]);
+                        first = false;
                     }
                 }
-                else{
-                    foreach(DataColumn col in lowerBounds.Table.Columns){
-                        result.Append(first?"":" AND `" + col.ColumnName + "` ");
-                        if(col.DataType == typeof(int) || col.DataType == typeof(double)){
-                            result.Append("BETWEEN " + lowerBounds[col.ColumnName] 
-                                + " AND " + upperBounds[col.ColumnName]);
+                else
+                {
+                    bool first = true;
+                    foreach (DataColumn col in lowerBounds.Table.Columns)
+                    {
+                        sb.Append(first ? " `" : " AND `" + col.ColumnName + "` ");
+                        if (col.DataType == typeof(int) || col.DataType == typeof(double))
+                        {
+                            sb.Append("BETWEEN @param" + paramCount + " AND @param" + paramCount+1);
                         }
-                        else{
-                            result.Append(" <= " + BaseDriverMySql.escape(lowerBounds[col.ColumnName]) 
-                                + " AND `" + col.ColumnName + "` >= "
-                                + BaseDriverMySql.escape(upperBounds[col.ColumnName]));
+                        else
+                        {
+                            sb.Append(" <= @param" + paramCount + " AND `" + col.ColumnName + "` >= @param" + paramCount+1);
                         }
-                    }                
+                        cmd.Parameters.AddWithValue("@param" + paramCount++, lowerBounds[col]);
+                        cmd.Parameters.AddWithValue("@param" + paramCount++, upperBounds[col]);
+                        first = false;
+                    }
                 }
-
-                return result.ToString();
             }
-        }
     }
+}

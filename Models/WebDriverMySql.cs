@@ -5,16 +5,19 @@ using System.Text;
 using System.Data;
 using _min.Interfaces;
 using NLipsum;
+using _min.Models;
 
 namespace _min.Models
 {
     class WebDriverMySql : BaseDriverMySql, IWebDriver
     {
 
-        
+        private DbDeployableMySql dbe = new DbDeployableMySql();
         public WebDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
             : base(connstring, logTable, writeLog)
         { }
+
+
 
 
         public void FillPanel(Panel panel)
@@ -23,25 +26,44 @@ namespace _min.Models
             { // editable Panel, fetch the DataRow, simple controls
                 var columns = panel.fields.Select(x => x.column);
                 DataTable table = fetchAll("SELECT ", columns, " FROM ", panel.tableName, "WHERE", new ConditionMySql(panel.PK));
-                if (table.Rows.Count > 1) throw new Exception("PK not unique");
+                if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new Exception("No data fullfill the condition");
                 DataRow row = table.Rows[0];
                 foreach (Field field in panel.fields)
                 {
                     field.value = row[field.column];
+
+                    if (field is FKField || field is M2NMappingField) {     // M2NMapping is derived from FK
+                        FK fk = field is FKField ? ((FKField)field).FK : ((M2NMappingField)field).Mapping;
+                        DataTable options = fetchFKOptions(fk);
+                        foreach (DataRow r in options.Rows) {
+                            fk.options.Add(r[fk.displayColumn] as string, (int)r[fk.refColumn]);
+                        }
+                    }
                 }
             }
 
             foreach (Control c in panel.controls)
             {
-                if (c.data.Rows.Count == 0)
+                if (c is NavTableControl)
                 {
-                    List<string> columns = new List<string>();
-                    foreach (DataColumn col in c.data.Columns)
-                        columns.Add(col.ColumnName);
-                    c.data = fetchAll("SELECT ", columns, " FROM ", panel.tableName, "WHERE", new ConditionMySql(panel.PK));
+                    AssignDataForNavTable((NavTableControl)c, false);
                 }
-                if (c.data.Rows.Count == 0) throw new Exception("No data fullfill the condition");
+                else if (c is TreeControl && c.data is DataTable) {
+                    TreeControl tc = (TreeControl)c;
+                    tc.data.Rows.Clear();
+                    HierarchyNavTable hierarchy = (HierarchyNavTable)(tc.data);
+                    DataTable fetched = fetchAll("SELECT ", tc.PKColNames[0], tc.parentColName, tc.displayColName);
+                    foreach(DataRow fetchedRow in fetched.Rows)
+                    {
+                        HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
+                        r.Id = (int)fetchedRow[tc.PKColNames[0]];
+                        r.ParentId = (int)fetchedRow[tc.parentColName];
+                        r.Caption = fetchedRow[tc.displayColName] as string;
+                        r.NavId = r.Id;
+                        c.data.Rows.Add(r);
+                    }
+                }
             }
 
             foreach (Panel p in panel.children)
@@ -49,7 +71,8 @@ namespace _min.Models
         }
 
 
-        private string[] Lipsum() {
+        private string[] Lipsum()
+        {
             Random rnd = new Random();
             int a = rnd.Next() % 5 + 5;
             string[] res = new string[a];
@@ -58,7 +81,8 @@ namespace _min.Models
             return res;
         }
 
-        private string LWord() {
+        private string LWord()
+        {
             return NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Words, "{0}", NLipsum.Core.Lipsums.TheRaven);
         }
 
@@ -67,7 +91,8 @@ namespace _min.Models
             return NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Sentences, "{0}", NLipsum.Core.Lipsums.RobinsonoKruso);
         }
 
-        private string LText() {
+        private string LText()
+        {
             return NLipsum.Core.LipsumGenerator.GenerateHtml(3);
         }
 
@@ -84,19 +109,19 @@ namespace _min.Models
                         FKField fkf = field as FKField;
                         string[] options = Lipsum();
                         foreach (string s in options)
-                            if(! fkf.FK.options.ContainsKey(s))
+                            if (!fkf.FK.options.ContainsKey(s))
                                 fkf.FK.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.M2NMapping:
-                        
-                        
+
+
                         M2NMappingField m2nf = field as M2NMappingField;
                         //if (m2nf.Mapping.options.Count == 0)
                         //    break;
                         string[] opts = Lipsum();
                         //m2nf.Mapping.options.Clear();
                         foreach (string s in opts)
-                            if(!m2nf.Mapping.options.ContainsKey(s))
+                            if (!m2nf.Mapping.options.ContainsKey(s))
                                 m2nf.Mapping.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.Date:
@@ -139,78 +164,26 @@ namespace _min.Models
 
                     if (c is NavTableControl)
                     {
-                        NavTableControl ntc = (NavTableControl)c;
-                        List<string> toSelect = ntc.displayColumns.Union(c.PKColNames).ToList();
-                        /*
-                        foreach(string s in c.PKColNames)
-                            if(!toSelect.Contains(s))
-                                toSelect.Add(s);
-                         */
-                        List<Tuple<string, string, string>> specSelect = new List<Tuple<string, string, string>>();
-                        List<string> neededTables = new List<string>();
-                        // different FKs to teh same table - JOIN colision prevention
-                        Dictionary<string, int> countingForeignTableUse = new Dictionary<string, int>();
-                        foreach (string col in toSelect) { 
-                            FK correspondingFK = ntc.FKs.Where(x => x.myColumn == col).FirstOrDefault();
-                            if (correspondingFK is FK && ((FK)correspondingFK).refTable != panel.tableName) // dont join on itself
-                            {
-                                neededTables.Add(correspondingFK.refTable);
-
-                                if (!countingForeignTableUse.ContainsKey(correspondingFK.refTable))
-                                {
-                                    specSelect.Add(new Tuple<string, string, string>(correspondingFK.refTable,
-                                            correspondingFK.displayColumn, col));
-                                    countingForeignTableUse[correspondingFK.refTable] = 1;
-                                }
-                                else
-                                {
-                                    countingForeignTableUse[correspondingFK.refTable]++;
-                                    specSelect.Add(new Tuple<string, string, string>(correspondingFK.refTable 
-                                        + Common.Constants.SALT + countingForeignTableUse[correspondingFK.refTable],
-                                        correspondingFK.displayColumn, col));
-                                }
-                            }
-                            else {
-                                specSelect.Add(new Tuple<string, string, string>(panel.tableName, col, col));
-                            }
-                        }
-
-                        if (countingForeignTableUse.Values.Any(x => x > 1))
-                        {
-                            // FK table aliases
-                            // not 100% solution - tables with suffix "1"...
-                            List<Tuple<FK, string>> realFKs = new List<Tuple<FK, string>>();
-                            ntc.FKs.Reverse();
-                            foreach (FK fk in ntc.FKs)    // so that the counter counts down
-                            {
-                                realFKs.Add(new Tuple<FK, string>(fk, fk.refTable +
-                                    (countingForeignTableUse[fk.refTable] > 1 ?
-                                    Common.Constants.SALT + (countingForeignTableUse[fk.refTable]--).ToString() : "")));
-                            }
-                            c.data = fetchSchema("SELECT ", specSelect, " FROM `" + panel.tableName + "`", realFKs);
-                        }
-                        else
-                        {
-                            c.data = fetchSchema("SELECT ", specSelect, " FROM `" + panel.tableName + "`", ntc.FKs);
-                        }
+                        AssignDataForNavTable((NavTableControl)c, true);
                         int n = rnd.Next() % 5 + 5;
                         DataRow[] rows = new DataRow[n];
                         for (int i = 0; i < n; i++)
                             rows[i] = c.data.NewRow();
-                            //c.data.Rows.Add(c.data.NewRow());
-                        
+                        //c.data.Rows.Add(c.data.NewRow());
+
                         foreach (DataColumn col in c.data.Columns)
                         {
                             //if(!c.data.PrimaryKeycol.Unique = false;
-                            if (col.DataType == typeof(DateTime)) {
+                            if (col.DataType == typeof(DateTime))
+                            {
                                 foreach (DataRow r in rows) r[col] = DateTime.Now + new TimeSpan(rnd.Next() % 30, rnd.Next() % 24, rnd.Next() % 60, rnd.Next() % 60);
                             }
                             else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
                             {
                                 foreach (DataRow r in rows) r[col] = rnd.Next() % 10000;
                             }
-                            else if (col.DataType == typeof(float) 
-                                || col.DataType == typeof(double) 
+                            else if (col.DataType == typeof(float)
+                                || col.DataType == typeof(double)
                                 || col.DataType == typeof(decimal))
                             {
                                 foreach (DataRow r in rows) r[col] = rnd.NextDouble() % 100000;
@@ -224,7 +197,8 @@ namespace _min.Models
                                 foreach (DataRow r in rows)
                                 {
                                     string s = LSentence();
-                                    if (col.MaxLength > -1 && col.MaxLength < s.Length) {
+                                    if (col.MaxLength > -1 && col.MaxLength < s.Length)
+                                    {
                                         s = s.Substring(0, col.MaxLength);
                                     }
                                     r[col] = s;
@@ -234,11 +208,13 @@ namespace _min.Models
                         foreach (DataRow r in rows)
                             c.data.Rows.Add(r);
                     }
-                    if (c.panel.type == Common.PanelTypes.NavTree && c.data is DataTable) {
+                    if (c.panel.type == Common.PanelTypes.NavTree && c.data is DataTable)
+                    {
                         c.data.Rows.Clear();
                         int n = rnd.Next() % 10 + 10;
                         HierarchyNavTable hierarchy = (HierarchyNavTable)(c.data);
-                        for(int i = 0; i < n; i++){
+                        for (int i = 0; i < n; i++)
+                        {
                             HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
                             r.Id = i + 1;
                             r.ParentId = rnd.Next() % (i + 1);
@@ -254,6 +230,78 @@ namespace _min.Models
                 FillPanelArchitect(p);
         }
 
+
+        delegate DataTable FetchMethod(params object[] parts);
+
+        private void AssignDataForNavTable(NavTableControl ntc, bool schemaOnly)
+        {
+
+            List<string> toSelect = ntc.displayColumns.Union(ntc.PKColNames).ToList();
+            /*
+            foreach(string s in c.PKColNames)
+                if(!toSelect.Contains(s))
+                    toSelect.Add(s);
+             */
+            List<IDbCol> specSelect = new List<IDbCol>();
+            //List<Tuple<string, string, string>> specSelect = new List<Tuple<string, string, string>>();
+            List<string> neededTables = new List<string>();
+            // different FKs to teh same table - JOIN colision prevention
+            Dictionary<string, int> countingForeignTableUse = new Dictionary<string, int>();
+            foreach (string col in toSelect)
+            {
+                FK correspondingFK = ntc.FKs.Where(x => x.myColumn == col).FirstOrDefault();
+                if (correspondingFK is FK && ((FK)correspondingFK).refTable != ntc.panel.tableName) // dont join on itself
+                {
+                    neededTables.Add(correspondingFK.refTable);
+
+                    if (!countingForeignTableUse.ContainsKey(correspondingFK.refTable))
+                    {
+                        specSelect.Add(dbe.Col(correspondingFK.refTable,
+                                correspondingFK.displayColumn, col));
+                        countingForeignTableUse[correspondingFK.refTable] = 1;
+                    }
+                    else
+                    {
+                        countingForeignTableUse[correspondingFK.refTable]++;
+                        specSelect.Add(dbe.Col(correspondingFK.refTable + Common.Constants.SALT + countingForeignTableUse[correspondingFK.refTable],
+                            correspondingFK.displayColumn, col));
+                    }
+                }
+                else
+                {
+                    specSelect.Add(dbe.Col(ntc.panel.tableName, col, col));
+                }
+            }
+
+            FetchMethod fetchAccordingly;
+            if (schemaOnly)
+                fetchAccordingly = fetchSchema;
+            else
+                fetchAccordingly = fetchAll;
+
+            if (countingForeignTableUse.Values.Any(x => x > 1))
+            {
+                // FK table aliases
+                // not 100% solution - tables with suffix "1"...
+                List<IDbJoin> joins = new List<IDbJoin>();
+                ntc.FKs.Reverse();
+                foreach (FK fk in ntc.FKs)    // so that the counter counts down
+                {
+                    string alias = fk.refTable +
+                        (countingForeignTableUse[fk.refTable] > 1 ?
+                        Common.Constants.SALT + (countingForeignTableUse[fk.refTable]--).ToString() : "");
+                    joins.Add(dbe.Join(fk, alias));
+                }
+                ntc.data = fetchAccordingly("SELECT ", specSelect, " FROM `" + ntc.panel.tableName + "`", joins);
+            }
+            else
+            {
+                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM `" + ntc.panel.tableName + "`", dbe.Joins(ntc.FKs));
+            }
+        }
+
+
+
         public int insertPanel(Panel panel, DataRow values)
         {
             return query("INSERT INTO " + panel.tableName + " ", values);
@@ -262,7 +310,7 @@ namespace _min.Models
         public void updatePanel(Panel panel, DataRow values)
         {
             StartTransaction();
-            int affected = query("UPDATE " + panel.tableName + " SET ", values, " WHERE ", panel.PK);
+            int affected = query("UPDATE " + panel.tableName + " SET ", values, " WHERE ", dbe.Condition(panel.PK));
             if (affected > 1)
             {
                 RollbackTransaction();
@@ -274,7 +322,7 @@ namespace _min.Models
         public void deletePanel(Panel panel)
         {
             StartTransaction();
-            int affected = query("DELETE FROM `" + panel.tableName + "` WHERE", panel.PK);
+            int affected = query("DELETE FROM `" + panel.tableName + "` WHERE", dbe.Condition(panel.PK));
             if (affected > 1)
             {
                 RollbackTransaction();
@@ -285,8 +333,9 @@ namespace _min.Models
 
         public DataTable fetchFKOptions(FK fk)
         {
-            return fetchAll("SELECT `" + fk.displayColumn + "`.`" + fk.refColumn + "` FROM `" + fk.refTable);
+            return fetchAll("SELECT `" + fk.displayColumn + "`, `" + fk.refColumn + "` FROM `" + fk.refTable);
         }
+
 
         public void UnmapM2NMappingKey(M2NMapping mapping, int key)
         {
@@ -303,13 +352,14 @@ namespace _min.Models
             {
                 row[0] = key;
                 row[1] = val;
-                query("INSERT INTO", mapping.mapTable, row);
+                query("INSERT INTO", mapping.mapTable, dbe.InsVals(row));
             }
         }
 
 
-        public DataRow PKColRowFormat(Panel panel) {
-            return fetchSchema("SELECT ", panel.PKColNames, " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
+        public DataRow PKColRowFormat(Panel panel)
+        {
+            return fetchSchema("SELECT ", dbe.Cols(panel.PKColNames), " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
         }
     }
 }

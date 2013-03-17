@@ -104,7 +104,7 @@ namespace _min.Navigation
             System.Web.Routing.RouteData routeData = new System.Web.Routing.RouteData();
             routeData.DataTokens.Add("action", action);
             routeData.DataTokens.Add("panelId", currentTableActionPanels[action]);
-            if(e.CommandArgument.ToString() != ""){   // TODO ...
+            if(e.CommandArgument.ToString() != ""){   // TODO ... but this should not happen (buttons are in edit panels or as "Isnert")
                 routeData.DataTokens.Add("itemKey", e.CommandArgument);
                 response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
                     new { action = action, panelId = currentTableActionPanels[action], itemKey = e.CommandArgument } );
