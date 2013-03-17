@@ -12,15 +12,15 @@ using System.Text.RegularExpressions;
 
 namespace _min.Models
 {
-    class InStr {       // input string 
-        public string s {get; set;}
-        InStr(string s){
-            this.s = s;
-        }
-    }
+
 
     class BaseDriverMySql : IBaseDriver
     {
+            // empty space always at the beggining of appended command!
+            // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong
+
+    
+
         private MySqlConnection conn;
         // logTable declared in Environment, defined here as string query, int time (miliseconds)
         public DataTable logTable { get; private set; }
@@ -66,17 +66,9 @@ namespace _min.Models
                 this.logTable.Columns.Add("time", typeof(int));
             }
         }
-        /*
-        public static string escape(object o) {
-            if (o == null) return " NULL ";
-            if (o is DateTime) return String.Format("'{0:yyyy-MM-dd HH:mm:ss}'", (DateTime)o);
-            //if (o is double || o is long) return o.ToString();
-            double parsed;
-            if(double.TryParse(o.ToString(), out parsed)) return parsed.ToString();
-            return "\"" + MySqlHelper.EscapeString(o.ToString()) + "\"";
-        }
-        */
+
         private QueryType getQueryType(string query) {
+            query = query.Trim();
             string firstWord = query.Split(' ').First();
             switch (firstWord.ToUpper())
             {
@@ -101,202 +93,47 @@ namespace _min.Models
                 logTable.Rows.Add(logInfo);
         }
 
-        private Dictionary<string, object> DataRowToDictionary(DataRow row) {
-            Dictionary<string, object> res = new Dictionary<string, object>();
-            foreach (DataColumn col in row.Table.Columns)
-            {
-                res[col.ColumnName] = row[col.ColumnName];
-            }
-            return res; 
-        }
-        
-
         /* translate dibi-style query to string */
         protected MySqlCommand translate(params object[] parts) {
 
             int paramCount = 0;
             MySqlCommand resultCmd = new MySqlCommand();
-            
-            // expects single value, other expectations are array-wise
-            Expectations expect = Expectations.Single;
             StringBuilder resultQuery = new StringBuilder();
 
             foreach(object part in parts){
-                if(part is string){ // strings are directly appended
+                if (part is string)
+                {         // strings are directly appended
                     string pString = (string)part;
-                    resultQuery.Append(pString);
-                    string[] words = pString.Split(' ');
-                    foreach (string word in words)
-                    {
-                        if (lastWordsDecoder.ContainsKey(word))
-                        {
-                            expect = lastWordsDecoder[word];
-                        }
-                    }
+                    resultQuery.Append(" " + pString);
+                    
                 }
-                else
-                    if(part is int || part is long || part is float || part is double){
-                        resultQuery.Append(" @param" + paramCount + " ");
-                        resultCmd.Parameters.Add("@param" + paramCount++, part); 
-                    }
-                else{
-                    bool handled = false;
-                    object dictionarizedPart = part;
-                    Dictionary<string, object> dict;
-                    switch (expect) { 
-                        case Expectations.InsertValues:
-                            if (part is DataRow)
-                            {
-                                dictionarizedPart = DataRowToDictionary(part as DataRow);    
-                            }
-                            if (dictionarizedPart is Dictionary<string, object>) {
-                                resultQuery.Append(" ( ");
-                                dict = (Dictionary<string, object>)dictionarizedPart;
-                                bool first = true;
-                                StringBuilder valuesPart = new StringBuilder();
-                                foreach (string key in dict.Keys)
-                                {
-                                    resultQuery.Append((first ? "" : ", ") + "`" + key + "`");
-                                    valuesPart.Append((first ? "" : ", ") + escape(dict[key]));
-                                    first = false;
-                                }
-                                resultQuery.Append(") VALUES ( ");
-                                resultQuery.Append(valuesPart.ToString());
-                                resultQuery.Append(")");
-                                handled = true;
-                            }    
-                            break;
-                        case Expectations.UpdateValues:
-                            if (part is DataRow)
-                            {
-                                dictionarizedPart = DataRowToDictionary(part as DataRow);    
-                            }
-                            if (dictionarizedPart is Dictionary<string, object>)
-                            {
-                                dict = (Dictionary<string, object>)dictionarizedPart;
-                                bool first = true;
-                                foreach (string col in dict.Keys)
-                                {
-                                    resultQuery.Append((first ? "" : ", ") +
-                                        "`" + col + "` = " +
-                                        escape(dict[col]));
-                                    first = false;
-                                }
-                                handled = true;
-                            }
-                            break;
-                        case Expectations.InList:
-                            if (part is IEnumerable)
-                            {
-                                resultQuery.Append("(");
-                                bool first = true;
-                                foreach(object item in (part as IEnumerable))
-                                {
-                                    resultQuery.Append((first ? "" : ", ") +
-                                        escape(item));
-                                    first = false;
-                                }
-                                resultQuery.Append(") ");
-                                handled = true;
-                            }
-                            break;
-                        case Expectations.Conditions:
-                            if (part is ConditionMySql)
-                            {
-                                resultQuery.Append(((ConditionMySql)part).Translate());
-                                handled = true;
-                            }
-                            break;
-                        case Expectations.Tables:
-                            if (part is string) { 
-                                resultQuery.Append(" `" + part.ToString() + "` ");
-                                handled = true;
-                            }
-                            else if(part is IEnumerable<FK>){    // inner join
-                                foreach(FK fk in (IEnumerable<FK>)part){
-                                    if (fk.refTable == fk.myTable) continue;    // self-ref FK
-                                    resultQuery.Append(" JOIN `" + fk.refTable + "` ON `" + fk.myTable + "`.`" + fk.myColumn + 
-                                        "` = `" + fk.refTable + "`.`" + fk.refColumn + "`"); 
-                                }
-                                handled = true;
-                            }
-                            else if(part is IEnumerable<Tuple<FK, string>>){    
-                                // table aliases because of multiple FKs to the same table 
-                                // causing JOIN name ambiguity otherwise 
-                                foreach(Tuple<FK,string> t in (IEnumerable<Tuple<FK,string>>)part){
-                                    if (t.Item1.refTable == t.Item1.myTable) continue;    // self-ref FK
-                                    resultQuery.Append(" JOIN `" + t.Item1.refTable + "` AS `" + 
-                                        t.Item2 + "` ON `" + t.Item1.myTable + "`.`" + t.Item1.myColumn + 
-                                        "` = `" + t.Item2 + "`.`" + t.Item1.refColumn + "`"); 
-                                }
-                                handled = true;
-                            }
-                            break;
-                        case Expectations.Single:
-                        case Expectations.Columns:
-                            if (part is IEnumerable)    // column
-                            {
-                                bool first = true;
-                                foreach (object item in (IEnumerable)(part))
-                                {
-                                    if (item is Tuple<string, string, string>)
-                                    {
-                                        Tuple<string, string, string> st = (Tuple<string, string, string>)item;
-                                        if (!first) resultQuery.Append(", ");
-                                        resultQuery.Append("`" + st.Item1 + "`.`" + st.Item2 + "` AS `" + st.Item3 + "`");
-                                        first = false;
-                                    }
-                                    else
-                                    {
-                                        resultQuery.Append(first ? "" : ", ");
-                                        resultQuery.Append("`" + (item as string) + "`");
-                                        first = false;
-                                    }
-                                    //else throw new Exception("Unexpected collection type");
-                                }
-                                handled = true;
-                            }
-                            else {  // single
-                                if (part is DateTime)
-                                {
-                                    DateTime timePart = (DateTime)part;
-                                    string formatted = String.Format("'{0:yyyy-MM-dd HH:mm:ss}'", timePart);
-                                    resultQuery.Append(formatted);
-                                    handled = true;
-                                }
-                                if (part is int || part is double)
-                                {
-                                    resultQuery.Append(part.ToString());
-                                    handled = true;
-                                }
-                                if(part is Tuple<string, string, string>)       // explicit table name an alias
-                                {
-                                    handled = true;
-                                    Tuple<string, string, string> st = (Tuple<string, string, string>)part;
-                                    resultQuery.Append("`" + st.Item1 + "`.`" + st.Item2 + "` AS `" + st.Item3 + "`");
-                                }
-                            }
-                            break;
-                    }
-                    if (!handled) throw new FormatException("Unrecognized non-string part in query");
-                    // because it is not a string nor suits the Expectations
+                else if (part is IMySqlQueryDeployable)
+                {
+                    ((IMySqlQueryDeployable)part).Deoploy(resultCmd, resultQuery, ref paramCount);
                 }
+                else if (part is ValueType)
+                {
+                    resultQuery.Append(" @param" + paramCount);
+                    resultCmd.Parameters.AddWithValue("@param" + paramCount++, part);
+                }
+                else throw new FormatException("Unrecognised query part " + part.GetType().ToString());
             }
-            
-            return resultQuery.ToString();
+
+            resultCmd.CommandText = resultQuery.ToString();
+            return resultCmd;
         }
 
         public System.Data.DataTable fetchSchema(params object[] parts)
         {
-            
-            string query = this.translate(parts);
-            QueryType type = this.getQueryType(query);
+            MySqlCommand cmd = translate(parts);
+            cmd.Connection = conn;
+            QueryType type = this.getQueryType(cmd.CommandText);
             if (type != QueryType.Select)
             {
                 throw new Exception("Trying to fetch from a non-select query");
             }
             DataTable result = new DataTable();
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
+            MySqlDataAdapter adapter = new MySqlDataAdapter(cmd);
             Stopwatch watch = new Stopwatch();
             if (logTable is DataTable)
             {
@@ -314,7 +151,7 @@ namespace _min.Models
             if (writeLog)
             {
                 watch.Stop();
-                this.log(query, watch);
+                this.log(cmd.CommandText, watch);
             }
             return result;
         }
@@ -322,14 +159,15 @@ namespace _min.Models
         
         public System.Data.DataTable fetchAll(params object[] parts)
         {
-            string query = this.translate(parts);
-            QueryType type = this.getQueryType(query);
+            MySqlCommand cmd = translate(parts);
+            cmd.Connection = conn;
+            QueryType type = this.getQueryType(cmd.CommandText);
             if (type != QueryType.Select)
             {
                 throw new Exception("Trying to fetch from a non-select query");
             }
             DataTable result = new DataTable();
-            MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
+            MySqlDataAdapter adapter = new MySqlDataAdapter(cmd);
             Stopwatch watch = new Stopwatch();
             if (logTable is DataTable) {
                 watch.Start();
@@ -344,7 +182,7 @@ namespace _min.Models
             }
             if (writeLog) {
                 watch.Stop();
-                this.log(query, watch);
+                this.log(cmd.CommandText, watch);
             }
             return result;
         }
@@ -369,10 +207,10 @@ namespace _min.Models
 
         public int query(params object[] parts)
         {
-            string query = this.translate(parts);
+            MySqlCommand cmd = this.translate(parts);
+            cmd.Connection = conn;
             int rowsAffected = 0;
 
-            MySqlCommand cmd = new MySqlCommand(query, conn);
             Stopwatch watch = new Stopwatch();
             if (logTable is DataTable)
             {
@@ -389,7 +227,7 @@ namespace _min.Models
             if (writeLog)
             {
                 watch.Stop();
-                this.log(query, watch);
+                this.log(cmd.CommandText, watch);
             }
             return rowsAffected;
         }

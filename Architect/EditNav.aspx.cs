@@ -5,18 +5,17 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Data;
-using _min.Common;
-using _min.Interfaces;
-using _min.Models;
 using System.Configuration;
 using System.Text.RegularExpressions;
 
+using _min.Common;
+using _min.Interfaces;
+using _min.Models;
 using _min.Navigation;
+using _min.Controls;
 using CC = _min.Common.Constants;
 using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
-using _min.Controls;
-using System.Data;
 
 namespace _min_t7.Architect
 {
@@ -35,7 +34,7 @@ namespace _min_t7.Architect
 
             ValidationResult.Items.Clear();
 
-            //_min.Common.Environment.GlobalState = GlobalState.Architect;
+            _min.Common.Environment.GlobalState = GlobalState.Architect;
 
             //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
             //    Session.Clear();
@@ -126,6 +125,7 @@ namespace _min_t7.Architect
                 if(item.Selected) actions.Add((UserAction)Enum.Parse(typeof(UserAction), item.Text));
             }
 
+            ValidationResult.Items.Clear();
             if (panelName == ".")
             {
                 ValidationResult.Items.Add("Give the pannel a name, please.");

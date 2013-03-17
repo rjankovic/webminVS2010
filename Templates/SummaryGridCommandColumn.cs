@@ -41,14 +41,14 @@ namespace _min.Templates
                     if (options.Contains(UserAction.View))
                     {
                         LinkButton viewButton = new LinkButton();
-                        viewButton.Text = "_Edit";
+                        viewButton.Text = "Edit";
                         viewButton.CommandName = "_View";
                         container.Controls.Add(viewButton);
                     }
                     if (options.Contains(UserAction.Delete))
                     {
                         LinkButton delButton = new LinkButton();
-                        delButton.Text = "_Delete";
+                        delButton.Text = "Delete";
                         delButton.CommandName = "_Delete";
                         container.Controls.Add(delButton);
                     }

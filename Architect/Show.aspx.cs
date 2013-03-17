@@ -35,7 +35,7 @@ namespace _min_t7.Architect
             if (Page.RouteData.Values.ContainsKey("panelId") && Page.RouteData.Values["panelId"].ToString() == "0")
                 Page.RouteData.Values.Remove("panelId");
 
-            //_min.Common.Environment.GlobalState = GlobalState.Architect;
+            _min.Common.Environment.GlobalState = GlobalState.Architect;
 
             if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
                 Session.Clear();

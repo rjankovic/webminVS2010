@@ -34,7 +34,7 @@ namespace _min_t7.Architect
         protected void Page_Init(object sender, EventArgs e)
         {
 
-            //_min.Common.Environment.GlobalState = GlobalState.Architect;
+            _min.Common.Environment.GlobalState = GlobalState.Architect;
 
             //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
             //    Session.Clear();
@@ -79,7 +79,7 @@ namespace _min_t7.Architect
             
             foreach (DataColumn col in cols) {          // std. fields (incl. FKs)
 
-                Field f = actPanel.fields.Find(x => x.column == col.ColumnName);
+                Field f = actPanel.fields.Find(x => x.column == col.ColumnName && !(x is M2NMappingField));
                 
                 TableRow r = new TableRow();
                 r.ID = col.ColumnName;

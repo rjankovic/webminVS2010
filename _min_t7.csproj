@@ -225,9 +225,7 @@
     <Compile Include="Interfaces\Presenters.cs" />
     <Compile Include="Interfaces\Views.cs" />
     <Compile Include="Models\Architect.cs" />
-    <Compile Include="..\..\..\..\..\..\Administrator\Desktop\BaseDriverMySql.cs">
-      <Link>Models\BaseDriverMySql.cs</Link>
-    </Compile>
+    <Compile Include="Models\BaseDriverMySql.cs" />
     <Compile Include="Models\DbDeployableMySql.cs" />
     <Compile Include="Models\HierarchyNavTable.cs">
       <SubType>Component</SubType>

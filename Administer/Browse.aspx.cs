@@ -16,14 +16,13 @@ using CC = _min.Common.Constants;
 using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
 
-namespace _min_t7.Architect
+namespace _min_t7.Administer
 {
     public partial class Browse : System.Web.UI.Page
     {
         ISystemDriver sysDriver;
         IStats stats;
         _min.Models.Architect architect;
-        DataTable dbLog;
         _min.Models.Panel basePanel;
         _min.Models.Panel activePanel;
         Navigator navigator;
@@ -36,7 +35,7 @@ namespace _min_t7.Architect
             if (Page.RouteData.Values.ContainsKey("panelId") && Page.RouteData.Values["panelId"].ToString() == "0")
                 Page.RouteData.Values.Remove("panelId");
 
-            //_min.Common.Environment.GlobalState = GlobalState.Architect;
+            _min.Common.Environment.GlobalState = GlobalState.Production;
 
             if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
                 Session.Clear();
@@ -76,7 +75,7 @@ namespace _min_t7.Architect
             }
 
             basePanel = sysDriver.MainPanel;
-            //basePanel = sysDriver.MainPanel;
+            
             
                 if (Page.RouteData.Values.ContainsKey("panelId"))
                 {
@@ -105,22 +104,22 @@ namespace _min_t7.Architect
             baseMenu.ID = "baseMenu";
             baseMenu.EnableViewState = false;
             
-            //MainPanel.Controls.Add(baseMenu);
+            MainPanel.Controls.Add(baseMenu);
             LinkButton editMenuLink = new LinkButton();
             editMenuLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditMenuRoute", new { projectName = projectName } );
             editMenuLink.Text = "Edit menu structure";
             editMenuLink.CausesValidation = false;
-            //MainPanel.Controls.Add(editMenuLink);
+            MainPanel.Controls.Add(editMenuLink);
 
             LinkButton editPanelsLink = new LinkButton();
             editPanelsLink.PostBackUrl = editPanelsLink.GetRouteUrl("ArchitectEditPanelsRoute", new { projectName = projectName });
             editPanelsLink.Text = "Edit panels structure";
             editPanelsLink.CausesValidation = false;
-            //MainPanel.Controls.Add(editPanelsLink);
+            MainPanel.Controls.Add(editPanelsLink);
 
             if (Page.RouteData.Values.ContainsKey("panelId"))
             {
-                //CreateWebControlsForPanel(activePanel, MainPanel);
+                CreateWebControlsForPanel(activePanel, MainPanel);
                 if (activePanel.type == PanelTypes.Editable)
                 {
                     LinkButton editEditableLink = new LinkButton();
@@ -128,7 +127,7 @@ namespace _min_t7.Architect
                         new { projectName = projectName, panelid = Page.RouteData.Values["panelId"] });
                     editEditableLink.Text = "Edit panel structure";
                     editEditableLink.CausesValidation = false;
-                    //MainPanel.Controls.Add(editEditableLink);
+                    MainPanel.Controls.Add(editEditableLink);
                 }
                 else {
                     LinkButton editNavLink = new LinkButton();
@@ -136,7 +135,7 @@ namespace _min_t7.Architect
                         new { projectName = projectName, panelid = Page.RouteData.Values["panelId"] });
                     editNavLink.Text = "Edit panel structure";
                     editNavLink.CausesValidation = false;
-                    //MainPanel.Controls.Add(editNavLink);
+                    MainPanel.Controls.Add(editNavLink);
                 }
             }
             else {
@@ -200,7 +199,7 @@ namespace _min_t7.Architect
                     
                     foreach (BaseValidator v in validators) {
                         this.Form.Controls.Add(v);
-                        //MainPanel.Controls.Add(v);
+                        MainPanel.Controls.Add(v);
                     }
                 
                     c.EnableViewState = true;
@@ -235,16 +234,16 @@ namespace _min_t7.Architect
             //if (activePanel.type == PanelTypes.Editable) return;
             foreach (AjaxControlToolkit.ExtenderControlBase extender in extenders) {
                 extender.EnableClientState = false;
-                //MainPanel.Controls.Add(extender);
+                MainPanel.Controls.Add(extender);
             }
 
             foreach (BaseValidator validator in validators) {
-                //MainPanel.Controls.Add(validator);
+                MainPanel.Controls.Add(validator);
             }
 
             ValidationSummary validationSummary = new ValidationSummary();
             validationSummary.BorderWidth = 1;
-            //MainPanel.Controls.Add(validationSummary);
+            MainPanel.Controls.Add(validationSummary);
 
 
             if (Page.RouteData.Values.ContainsKey("panelId"))

@@ -17,14 +17,14 @@ namespace _min.Common
 
     public static class Environment
     {
-        private static GlobalState _globalState = Common.GlobalState.Architect;
+        private static GlobalState _globalState = Common.GlobalState.Unknown;
         public static GlobalState GlobalState
         {
             get { return _globalState; }
             set {
-                if (_globalState == Common.GlobalState.Unknown)
+                //if (_globalState == Common.GlobalState.Unknown)
                     _globalState = value;
-                else throw new Exception("Global state already set");
+                //else throw new Exception("Global state already set");
             }
         }
 

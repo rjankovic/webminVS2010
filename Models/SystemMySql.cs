@@ -335,7 +335,7 @@ namespace _min.Models
             if (panel.parent != null)
                 updateVals["id_parent"] = panel.parent;
             updateVals["content"] = panel.Serialize();
-            query("UPDATE panels SET", updateVals, "WHERE id_panel = ", panel.panelId);
+            query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
             query("DELETE FROM fields WHERE id_panel = " + panel.panelId);
             foreach (Field field in panel.fields)
             {

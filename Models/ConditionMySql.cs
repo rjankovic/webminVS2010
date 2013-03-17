@@ -8,12 +8,13 @@ using _min.Interfaces;
 
 namespace _min.Models
 {
-    
-    class ConditionMySql : IMySqlQueryDeployable 
+    public partial class DbDeployableMySql : IDbDeployableFactory
     {
+        class ConditionMySql : IMySqlQueryDeployable
+        {
             private DataRow lowerBounds;
             private DataRow upperBounds;    // optional
-            
+
             public ConditionMySql(DataRow lBounds, DataRow uBounds = null)
             {
                 lowerBounds = lBounds;
@@ -22,7 +23,7 @@ namespace _min.Models
 
             public void Deoploy(MySql.Data.MySqlClient.MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
-                
+
                 if (upperBounds == null)
                 {
                     bool first = true;
@@ -42,11 +43,11 @@ namespace _min.Models
                         sb.Append(first ? " `" : " AND `" + col.ColumnName + "` ");
                         if (col.DataType == typeof(int) || col.DataType == typeof(double))
                         {
-                            sb.Append("BETWEEN @param" + paramCount + " AND @param" + paramCount+1);
+                            sb.Append("BETWEEN @param" + paramCount + " AND @param" + paramCount + 1);
                         }
                         else
                         {
-                            sb.Append(" <= @param" + paramCount + " AND `" + col.ColumnName + "` >= @param" + paramCount+1);
+                            sb.Append(" <= @param" + paramCount + " AND `" + col.ColumnName + "` >= @param" + paramCount + 1);
                         }
                         cmd.Parameters.AddWithValue("@param" + paramCount++, lowerBounds[col]);
                         cmd.Parameters.AddWithValue("@param" + paramCount++, upperBounds[col]);
@@ -54,5 +55,6 @@ namespace _min.Models
                     }
                 }
             }
+        }
     }
 }

@@ -12,7 +12,7 @@ namespace _min.Models
 {
 
 
-    public class DbDeployableMySql : IDbDeployableFactory
+    public partial class DbDeployableMySql : IDbDeployableFactory
     {
         // empty space always at the beggining of appended command!
         // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong

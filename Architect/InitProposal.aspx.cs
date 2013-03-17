@@ -25,8 +25,11 @@ namespace _min_t7.Architect
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            _min.Common.Environment.GlobalState = GlobalState.Architect;
             if (!Page.IsPostBack)
             {
+                
+
                 InitProposalWizard.ActiveStepIndex = 0;
                 string projectName = Page.RouteData.Values["projectName"] as string;
                 sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
