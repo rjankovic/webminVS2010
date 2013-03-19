@@ -13,7 +13,7 @@ namespace _min.Common
     public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, Varchar, Text, Decimal, Ordinal, Bool, Enum }
     public enum PropertyConcerns { Control, Validation, View }
     public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, ZIP }
-    public enum GlobalState { Unknown, Architect, Production }
+    public enum GlobalState { Unknown, Architect, Administer }
 
     public static class Environment
     {

@@ -187,13 +187,14 @@ namespace _min.Interfaces
     public interface IWebDriver : IBaseDriver     // webDB
     {
         void FillPanel(Panel panel);
+        void FillPanelFKOptions(Panel panel);
         void FillPanelArchitect(Panel panel);
-        int insertPanel(Panel panel, DataRow values);  // returns insertedId
-        void updatePanel(Panel panel, DataRow values);
+        int insertPanel(Panel panel);  // returns insertedId
+        void updatePanel(Panel panel);
         void deletePanel(Panel panel);
-        DataTable fetchFKOptions(FK fk);
-        void MapM2NVals(M2NMapping mapping, int key, int[] vals);
-        void UnmapM2NMappingKey(M2NMapping mapping, int key);
+        //DataTable fetchFKOptions(FK fk);
+        //void MapM2NVals(M2NMapping mapping, int key, int[] vals);
+        //void UnmapM2NMappingKey(M2NMapping mapping, int key);
         DataRow PKColRowFormat(Panel panel);
     }
 

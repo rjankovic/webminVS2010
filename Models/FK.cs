@@ -15,6 +15,7 @@ namespace _min.Models
     [KnownType(typeof(M2NMapping))]
     public class FK : IEquatable<FK>
     {
+        /*
         [IgnoreDataMember]
         public IWebDriver driver { 
             get {
@@ -25,6 +26,7 @@ namespace _min.Models
                 driver = value;
             }
         }
+         */ 
         [DataMember]
         public string myTable { get; protected set; }
         [DataMember]
@@ -35,8 +37,8 @@ namespace _min.Models
         public string refColumn { get; protected set; }
         [DataMember]
         public string displayColumn { get; set; }
-        [IgnoreDataMember]
-        public Dictionary<string, int> options { get; set; }
+        //[IgnoreDataMember]
+        //public Dictionary<string, int> options { get; set; }
 
 
         public FK(//string fk_table, string fk_column, 
@@ -52,7 +54,7 @@ namespace _min.Models
         }
 
         //these three methods are the only real meaning of this class
-
+        /*
         public bool  validateInput(string inputValue)
         {
             return options.ContainsKey(inputValue);
@@ -61,6 +63,7 @@ namespace _min.Models
         public int valueForInput(string inputValue) {
             return options[inputValue];
         }
+         */ 
         /*
         public string CaptionForValue(int value) {
             if (driver == null) throw new NullReferenceException("No driver assigned");
@@ -130,9 +133,9 @@ namespace _min.Models
             this.mapTable = mapTable;
             this.mapMyColumn = mapMyColumn;
             this.mapRefColumn = mapRefColumn;
-            options = new Dictionary<string, int>();
+            //options = new Dictionary<string, int>();
         }
-
+        /*
         public bool validateWholeInput(List<string> inputValues)
         {
             foreach (string iv in inputValues)
@@ -140,9 +143,9 @@ namespace _min.Models
                     return false;
             return true;
         }
-
+        */
         
-
+        /*
         public void unMap(int key) {        // clears mapping for given key
             if (driver == null) throw new NullReferenceException("No driver assigned");
             driver.UnmapM2NMappingKey(this, key);
@@ -153,7 +156,7 @@ namespace _min.Models
             driver.MapM2NVals(this, key, vals);
             DataTable table = new DataTable();
         }
-
+        */
 
         // initial redefined becase of Architect.checkPanelProposal checking whether matching FKs still exist in the db
         public bool Equals(M2NMapping other)

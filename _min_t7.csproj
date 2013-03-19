@@ -82,13 +82,12 @@
     <Content Include="Account\PasswordRecovery.aspx" />
     <Content Include="Account\Login.aspx" />
     <Content Include="Account\Register.aspx" />
-    <Content Include="Administer\Browse.aspx" />
     <Content Include="Architect\EditPanels.aspx" />
     <Content Include="Architect\EditNav.aspx" />
     <Content Include="Architect\EditEditable.aspx" />
     <Content Include="Architect\EditMenu.aspx" />
     <Content Include="Architect\InitProposal.aspx" />
-    <Content Include="Architect\Show.aspx" />
+    <Content Include="Shared\Show.aspx" />
     <Content Include="Styles\Site.css" />
     <Content Include="Default.aspx" />
     <Content Include="Global.asax" />
@@ -150,13 +149,6 @@
     <Compile Include="Account\Register.aspx.designer.cs">
       <DependentUpon>Register.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Administer\Browse.aspx.cs">
-      <DependentUpon>Browse.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Administer\Browse.aspx.designer.cs">
-      <DependentUpon>Browse.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Architect\EditPanels.aspx.cs">
       <DependentUpon>EditPanels.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -192,11 +184,11 @@
     <Compile Include="Architect\InitProposal.aspx.designer.cs">
       <DependentUpon>InitProposal.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Architect\Show.aspx.cs">
+    <Compile Include="Shared\Show.aspx.cs">
       <DependentUpon>Show.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Architect\Show.aspx.designer.cs">
+    <Compile Include="Shared\Show.aspx.designer.cs">
       <DependentUpon>Show.aspx</DependentUpon>
     </Compile>
     <Compile Include="Common\Debug.cs" />
@@ -273,6 +265,7 @@
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
     <None Include="ClassDiagram2.cd" />
+    <None Include="ClassDiagram3.cd" />
     <None Include="DataSet1.xsc">
       <DependentUpon>DataSet1.xsd</DependentUpon>
     </None>

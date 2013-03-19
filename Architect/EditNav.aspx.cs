@@ -151,7 +151,7 @@ namespace _min_t7.Architect
                 }
                 else {
                     c = new TreeControl(actPanel.panelId, new HierarchyNavTable(), stats.PKs[actPanel.tableName][0], 
-                        hierarchy.refColumn, displayCols[0], actions);
+                        hierarchy.myColumn, displayCols[0], actions);
                 }
                 controls.Add(c);
                 

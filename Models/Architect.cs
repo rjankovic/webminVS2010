@@ -325,8 +325,10 @@ namespace _min.Models
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
-                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.refColumn,
+                control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.myColumn,
                      displayColOrder[0], new List<UserAction> { UserAction.Delete, UserAction.View });
+                Controls.Add(control);
+                control = new Control(0, null, PKCols, UserAction.Insert);
                 Controls.Add(control);
                 /*
                 controlProps.Add(CC.CONTROL_HIERARCHY_SELF_FK_COL, selfRefFK.myColumn);
@@ -405,10 +407,10 @@ namespace _min.Models
                     HierarchyRow tableRow = (HierarchyRow)basePanelHierarchy.NewRow();
                     HierarchyRow tableEditRow = (HierarchyRow)basePanelHierarchy.NewRow();
                     HierarchyRow tableSummaryRow = (HierarchyRow)basePanelHierarchy.NewRow();
-                    tableRow.ParentId = 0;
+                    tableRow.ParentId = null;
                     tableSummaryRow.ParentId = tableRow.Id;
                     tableEditRow.ParentId = tableRow.Id;
-                    tableRow.NavId = 0;
+                    tableRow.NavId = null;
                     //tableSummaryRow.NavId = summaryPanel.panelId;
                     //tableEditRow.NavId = editPanel.panelId;
                     tableRow.Caption = tableName;

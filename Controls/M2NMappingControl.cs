@@ -16,6 +16,7 @@ namespace _min.Controls
         private ListBox outList = new ListBox();
         private string _ID;
 
+
         public ListItemCollection IncludedItems {
             get {
                 EnsureChildControls();
@@ -55,9 +56,19 @@ namespace _min.Controls
             outList.DataBind();
         }
 
-        public void SetIncludedOptions(List<string> included) {
-            foreach (string s in included) {
-                ListItem item = outList.Items.FindByText(s);
+        public void SetIncludedOptions(List<string> included)
+        {
+            foreach (string s in included)
+            {
+                ListItem item = outList.Items.FindByText(s.ToString());
+                inList.Items.Add(item);
+                outList.Items.Remove(item);
+            }
+        }
+
+        public void SetIncludedOptions(List<int> included) {
+            foreach (int i in included) {
+                ListItem item = outList.Items.FindByValue(i.ToString());
                 inList.Items.Add(item);
                 outList.Items.Remove(item);
             }
@@ -79,6 +90,10 @@ namespace _min.Controls
         protected void OnINListSelectedItemChanged(object sender, EventArgs e) {
             //if (inList.SelectedIndex == -1) return;
             outList.Items.Add(inList.SelectedItem);
+            /*
+            included.Remove(inList.SelectedItem.Text);
+            ViewState["included"] = included;
+             */ 
             inList.Items.Remove(inList.SelectedItem);
             outList.SelectedIndex = -1; // the selected item moves
         }
@@ -86,6 +101,10 @@ namespace _min.Controls
         {
             //if (outList.SelectedIndex == -1) return;
             inList.Items.Add(outList.SelectedItem);
+            /*
+            included.Add(outList.SelectedItem.Text);
+            ViewState["included"] = included;
+            */
             outList.Items.Remove(outList.SelectedItem);
             inList.SelectedIndex = -1;  // the selected item moves
         }

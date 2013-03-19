@@ -24,21 +24,19 @@ namespace _min.Models
         {
             if (panel.fields.Count() > 0)
             { // editable Panel, fetch the DataRow, simple controls
-                var columns = panel.fields.Select(x => x.column);
-                DataTable table = fetchAll("SELECT ", columns, " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
+                var columns = panel.fields.Select(x => x.column).ToList<string>();
+                DataTable table = fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new Exception("No data fullfill the condition");
                 DataRow row = table.Rows[0];
                 foreach (Field field in panel.fields)
                 {
-                    field.value = row[field.column];
-
-                    if (field is FKField || field is M2NMappingField) {     // M2NMapping is derived from FK
-                        FK fk = field is FKField ? ((FKField)field).FK : ((M2NMappingField)field).Mapping;
-                        DataTable options = fetchFKOptions(fk);
-                        foreach (DataRow r in options.Rows) {
-                            fk.options.Add(r[fk.displayColumn] as string, (int)r[fk.refColumn]);
-                        }
+                    if (!(field is M2NMappingField))        // value
+                        field.value = row[field.column];
+                    else
+                    {
+                        M2NMappingField m2nf = (M2NMappingField)field;
+                        m2nf.value = fetchMappingValues(m2nf.Mapping, (int)panel.PK[0]);
                     }
                 }
             }
@@ -50,20 +48,23 @@ namespace _min.Models
                     AssignDataForNavTable((NavTableControl)c, false);
                 }
                 // always gets the whole table, save in session
-                else if (c is TreeControl && c.data is DataTable) {
+                else if (c is TreeControl && c.data is DataTable)
+                {
                     TreeControl tc = (TreeControl)c;
+                    tc.data.DataSet.EnforceConstraints = false;
                     tc.data.Rows.Clear();
                     HierarchyNavTable hierarchy = (HierarchyNavTable)(tc.data);
-                    DataTable fetched = fetchAll("SELECT ", tc.PKColNames[0], tc.parentColName, tc.displayColName);
-                    foreach(DataRow fetchedRow in fetched.Rows)
-                    {
-                        HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
-                        r.Id = (int)fetchedRow[tc.PKColNames[0]];
-                        r.ParentId = (int)fetchedRow[tc.parentColName];
-                        r.Caption = fetchedRow[tc.displayColName] as string;
-                        r.NavId = r.Id;
-                        c.data.Rows.Add(r);
-                    }
+
+                    List<IDbCol> selectCols = new List<IDbCol>();
+                    selectCols.Add(dbe.Col(tc.PKColNames[0], "Id"));
+                    selectCols.Add(dbe.Col(tc.parentColName, "ParentId"));
+                    selectCols.Add(dbe.Col(tc.displayColName, "Caption"));
+                    selectCols.Add(dbe.Col(tc.PKColNames[0], "NavId"));
+                    DataTable fetched = fetchAll("SELECT", dbe.Cols(selectCols), "FROM", panel.tableName);
+
+                    hierarchy.Merge(fetched);
+                    tc.data.DataSet.EnforceConstraints = true;
+
                 }
             }
 
@@ -71,6 +72,24 @@ namespace _min.Models
                 FillPanel(p);
         }
 
+        public void FillPanelFKOptions(Panel panel)
+        {
+            foreach (Field field in panel.fields)
+            {
+                if (field is FKField)
+                {     // FK options
+                    FKField fkf = (FKField)field;
+                    fkf.options = fetchFKOptions(fkf.FK);
+                }
+                else if (field is M2NMappingField)
+                {
+                    M2NMappingField m2nf = (M2NMappingField)field;
+                    m2nf.options = fetchFKOptions((FK)m2nf.Mapping);
+                }
+            }
+            //foreach (Panel p in panel.children)
+            //FillPanelFks(p);
+        }
 
         private string[] Lipsum()
         {
@@ -109,21 +128,23 @@ namespace _min.Models
                     case _min.Common.FieldTypes.FK:
                         FKField fkf = field as FKField;
                         string[] options = Lipsum();
+                        fkf.options = new SortedDictionary<string, int>();
                         foreach (string s in options)
-                            if (!fkf.FK.options.ContainsKey(s))
-                                fkf.FK.options.Add(s, rnd.Next());
+                            if (!fkf.options.ContainsKey(s))
+                                fkf.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.M2NMapping:
 
 
                         M2NMappingField m2nf = field as M2NMappingField;
+                        m2nf.options = new SortedDictionary<string, int>();
                         //if (m2nf.Mapping.options.Count == 0)
                         //    break;
                         string[] opts = Lipsum();
                         //m2nf.Mapping.options.Clear();
                         foreach (string s in opts)
-                            if (!m2nf.Mapping.options.ContainsKey(s))
-                                m2nf.Mapping.options.Add(s, rnd.Next());
+                            if (!m2nf.options.ContainsKey(s))
+                                m2nf.options.Add(s, rnd.Next());
                         break;
                     case _min.Common.FieldTypes.Date:
                         field.value = DateTime.Now;
@@ -211,7 +232,9 @@ namespace _min.Models
                     }
                     if (c.panel.type == Common.PanelTypes.NavTree && c.data is DataTable)
                     {
+                        c.data.DataSet.EnforceConstraints = false;
                         c.data.Rows.Clear();
+                        c.data.DataSet.EnforceConstraints = true;
                         int n = rnd.Next() % 10 + 10;
                         HierarchyNavTable hierarchy = (HierarchyNavTable)(c.data);
                         for (int i = 0; i < n; i++)
@@ -219,8 +242,9 @@ namespace _min.Models
                             HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
                             r.Id = i + 1;
                             r.ParentId = rnd.Next() % (i + 1);
+                            if ((int)(r.ParentId) == 0) r.ParentId = null;
                             r.Caption = LWord();
-                            r.NavId = 0;
+                            r.NavId = r.Id;
                             c.data.Rows.Add(r);
                         }
                     }
@@ -297,27 +321,50 @@ namespace _min.Models
             }
             else
             {
-                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM `" + ntc.panel.tableName + "`", dbe.Joins(ntc.FKs));
+                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM `" + ntc.panel.tableName + "`", 
+                    dbe.Joins(ntc.FKs.Where(x => x.refTable != x.myTable).ToList<FK>()));
             }
         }
 
 
 
-        public int insertPanel(Panel panel, DataRow values)
-        {
-            return query("INSERT INTO " + panel.tableName + " ", values);
-        }
-
-        public void updatePanel(Panel panel, DataRow values)
+        public int insertPanel(Panel panel)
         {
             StartTransaction();
-            int affected = query("UPDATE " + panel.tableName + " SET ", values, " WHERE ", dbe.Condition(panel.PK));
+            query("INSERT INTO " + panel.tableName + " ", dbe.InsVals(panel.RetrievedInsertData));
+            int ID = LastId();
+            CommitTransaction();
+            foreach (Field f in panel.fields) {
+                if (f is M2NMappingField)
+                {
+                    M2NMappingField m2nf = (M2NMappingField)f;
+                    MapM2NVals(m2nf.Mapping, ID, m2nf.ValueList);
+                }
+            }
+            return ID;
+        }
+
+        public void updatePanel(Panel panel)
+        {
+            StartTransaction();
+            int affected = query("UPDATE " + panel.tableName + " SET ", dbe.UpdVals(panel.RetrievedData), " WHERE ", dbe.Condition(panel.PK));
             if (affected > 1)
             {
                 RollbackTransaction();
                 throw new Exception("Panel PK not unique, trying to update more rows at a time!");
             }
             CommitTransaction();
+
+            foreach (Field f in panel.fields)
+            {
+                if (f is M2NMappingField)
+                {
+                    M2NMappingField m2nf = (M2NMappingField)f;
+                    int ID = (int)panel.PK[m2nf.Mapping.myColumn];
+                    UnmapM2NMappingKey(m2nf.Mapping, ID);
+                    MapM2NVals(m2nf.Mapping, ID, m2nf.ValueList);
+                }
+            }
         }
 
         public void deletePanel(Panel panel)
@@ -332,18 +379,25 @@ namespace _min.Models
             CommitTransaction();
         }
 
-        public DataTable fetchFKOptions(FK fk)
+        private SortedDictionary<string, int> fetchFKOptions(FK fk)
         {
-            return fetchAll("SELECT `" + fk.displayColumn + "`, `" + fk.refColumn + "` FROM `" + fk.refTable);
+            DataTable tbl = fetchAll("SELECT `" + fk.displayColumn + "`, `" + fk.refColumn + "` FROM `" + fk.refTable + "`");
+            SortedDictionary<string, int> res = new SortedDictionary<string, int>();
+            foreach (DataRow r in tbl.Rows)
+            {
+                if (r[0] == DBNull.Value || r[0].ToString() == "") continue;
+                res.Add(r[0] as string, (int)r[1]);
+            }
+            return res;
         }
 
 
-        public void UnmapM2NMappingKey(M2NMapping mapping, int key)
+        private void UnmapM2NMappingKey(M2NMapping mapping, int key)
         {
-            query("DELETE FROM `", mapping.mapTable, "` WHERE `", mapping.mapMyColumn, "` = ", key);
+            query("DELETE FROM `" + mapping.mapTable + "` WHERE ", dbe.Col(mapping.mapMyColumn), " = ", key);
         }
 
-        public void MapM2NVals(M2NMapping mapping, int key, int[] vals)
+        private void MapM2NVals(M2NMapping mapping, int key, List<int> vals)
         {
             DataTable table = new DataTable();
             table.Columns.Add(mapping.mapMyColumn, typeof(int));
@@ -355,6 +409,15 @@ namespace _min.Models
                 row[1] = val;
                 query("INSERT INTO", mapping.mapTable, dbe.InsVals(row));
             }
+        }
+
+        private List<int> fetchMappingValues(M2NMapping mapping, int key)
+        {
+            DataTable tbl = fetchAll("SELECT", dbe.Col(mapping.mapRefColumn), "FROM", mapping.mapTable, "WHERE", dbe.Col(mapping.mapMyColumn), " = ", key);
+            List<int> res = new List<int>();
+            foreach (DataRow r in tbl.Rows)
+                res.Add((int)(r[0]));
+            return res;
         }
 
 

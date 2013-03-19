@@ -144,7 +144,7 @@ namespace _min.Models
         {
             WC.Button button = new WC.Button();
             button.Text = this.action.ToString();
-            button.CommandName = action.ToString();
+            button.CommandName = "_" + action.ToString();
             button.Command += (WC.CommandEventHandler)handler;
             button.ID = "Control" + controlId;
             return button;
@@ -196,7 +196,10 @@ namespace _min.Models
             
             grid.AutoGenerateColumns = false;
             grid.DataSource = data;
-            
+
+            grid.AllowPaging = grid.Rows.Count > 15;
+            grid.PageSize = 15;
+
             WC.TemplateField tf = new WC.TemplateField();
             tf.HeaderTemplate = new SummaryGridCommandColumn(WC.ListItemType.Header);
             tf.FooterTemplate = new SummaryGridCommandColumn(WC.ListItemType.Footer);
@@ -324,11 +327,11 @@ namespace _min.Models
             WC.Menu res = new WC.Menu();
             res.Orientation = WC.Orientation.Horizontal;
             WC.MenuItem item;
-            foreach (DataRow r in storedHierarchyData.Rows)
+            foreach (HierarchyRow r in storedHierarchyData.Rows)
             {
-                if ((int)(r["ParentId"]) == 0)
+                if (r.ParentId == null)
                 {
-                    item = new WC.MenuItem(r["Caption"].ToString(), r["NavId"].ToString());
+                    item = new WC.MenuItem(r.Caption, r.NavId.ToString());
                     AddSubmenuForItem(r, item);
                     res.Items.Add(item);
                 }
@@ -344,13 +347,13 @@ namespace _min.Models
             return tn;
         }
 
-        private void AddSubmenuForItem(DataRow row, WC.MenuItem item)
+        private void AddSubmenuForItem(HierarchyRow row, WC.MenuItem item)
         {
             DataRow[] children = row.GetChildRows("Hierarchy");
             WC.MenuItem childItem;
-            foreach (DataRow child in children)
+            foreach (HierarchyRow child in children)
             {
-                childItem = new WC.MenuItem(child["Caption"].ToString(), child["NavId"].ToString());
+                childItem = new WC.MenuItem(child.Caption, child.NavId.ToString());
                 item.ChildItems.Add(childItem);
                 AddSubmenuForItem(child, childItem);
             }

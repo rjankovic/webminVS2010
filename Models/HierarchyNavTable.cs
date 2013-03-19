@@ -22,8 +22,10 @@ namespace _min.Models
         {
             Columns.Add(new DataColumn("Id", typeof(int)));
             Columns.Add(new DataColumn("ParentId", typeof(int)));
+            Columns["ParentId"].AllowDBNull = true;
             Columns.Add(new DataColumn("Caption", typeof(string)));
             Columns.Add(new DataColumn("NavId", typeof(int)));
+            Columns["NavId"].AllowDBNull = true;
             PrimaryKey = new DataColumn[] { Columns["Id"] };
             //Columns["ParentId"].AllowDBNull = true;   // should use NULL, not 0
             //Columns["NavId"].AllowDBNull = true;
@@ -68,16 +70,39 @@ namespace _min.Models
             set { base["Id"] = value; }
         }
 
-        public int NavId
+        public int? NavId
         {
-            get { return (int)base["NavId"]; }
-            set { base["NavId"] = (int)value; }
+            get
+            {
+                if (base["NavId"] != DBNull.Value)
+                    return (int)base["NavId"];
+                return null;
+            }
+            set
+            {
+                if (value != null)
+                    base["NavId"] = (int)value;
+                else
+                    base["NavId"] = DBNull.Value;
+            }
         }
 
-        public int ParentId
+        public int? ParentId
         {
-            get { return (int)base["ParentId"]; }
-            set { base["ParentId"] = (int)value; }
+            get
+            {
+                if (base["ParentId"] != DBNull.Value)
+                    return (int)base["ParentId"];
+                else
+                    return null;
+            }
+            set
+            {
+                if (value != null)
+                    base["ParentId"] = (int)value;
+                else
+                    base["ParentId"] = DBNull.Value;
+            }
         }
 
         public string Caption
@@ -96,5 +121,16 @@ namespace _min.Models
             Caption = string.Empty;
              */
         }
+
+        public HierarchyRow[] GetHierarchyChildRows(string relationName) { 
+            DataRow[] children = GetChildRows(relationName);
+            HierarchyRow[] typedChildren = new HierarchyRow[children.Length];
+            for (int i = 0; i < children.Length; i++) {
+                typedChildren[i] = (HierarchyRow)(children[i]);
+            }
+            return typedChildren;
+        }
+
+          
     }
 }

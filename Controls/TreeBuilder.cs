@@ -38,7 +38,7 @@ namespace _min.Controls
             menuHierarchy.TableName = "menuHierarchy";
             menuHierarchy.Merge(hierarchy);
             hierarchyDataset.Tables.Add(menuHierarchy);
-            hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], false));
+            hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], true));
             /*
             hierarchy.DataSet.Relations.Clear();
             hierarchy.DataSet.Tables.Remove(hierarchy);
@@ -64,13 +64,14 @@ namespace _min.Controls
         }
 
 
-        private void AddSubtreeForItem(DataRow row, WC.TreeNode item)
+        private void AddSubtreeForItem(HierarchyRow row, WC.TreeNode item)
         {
-            DataRow[] children = row.GetChildRows("Hierarchy");
+            HierarchyRow[] children = row.GetHierarchyChildRows("Hierarchy");
+            
             WC.TreeNode childItem;
-            foreach (DataRow child in children)
+            foreach (HierarchyRow child in children)
             {
-                childItem = new WC.TreeNode(child["Caption"].ToString(), child["Id"].ToString());
+                childItem = new WC.TreeNode(child.Caption, child.Id.ToString());
                 item.ChildNodes.Add(childItem);
                 AddSubtreeForItem(child, childItem);
             }
@@ -85,14 +86,14 @@ namespace _min.Controls
                 AddPanelToList(chp, level+1);
             }
         }
-
         protected override void CreateChildControls()
         {
 
             menuTree = new TreeView();
-            foreach (HierarchyRow r in ((HierarchyNavTable)hierarchyDataset.Tables[0]).Rows)
+            menuTree.SelectedNodeStyle.Font.Bold = true;
+            foreach (HierarchyRow r in (hierarchyDataset.Tables[0]).Rows)
             {
-                if (r.ParentId == 0)
+                if (r.ParentId == null)
                 {
                     TreeNode item = new TreeNode(r.Caption, r.Id.ToString());
                     menuTree.Nodes.Add(item);
@@ -133,9 +134,6 @@ namespace _min.Controls
             this.Controls.Add(addButton);
             this.Controls.Add(removeButton);
             this.Controls.Add(renameButton);
-             
-            
-             
         }
 
         protected override void LoadViewState(object savedState)
@@ -150,13 +148,13 @@ namespace _min.Controls
             
             hierarchyDataset.Tables.Clear();
             hierarchyDataset.Tables.Add(menuHierarchy);
-            hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], false));
+            hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], true));
             hierarchyDataset.Tables.Add(panelsTable); 
         }
 
         protected void OnSelectedNodeChanged(object sender, EventArgs e)
         {
-            int navId = ((HierarchyNavTable)hierarchyDataset.Tables[0]).Find(Int32.Parse(menuTree.SelectedValue)).NavId;
+            int? navId = ((HierarchyNavTable)hierarchyDataset.Tables[0]).Find(Int32.Parse(menuTree.SelectedValue)).NavId;
             if (navId != 0)
             {
                 ListItem item = panelList.Items.FindByValue(navId.ToString());
@@ -175,7 +173,7 @@ namespace _min.Controls
         {
             if (panelList.SelectedIndex != -1 && menuTree.SelectedNode != null)
             {
-                menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue)).NavId = 0;
+                menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue)).NavId = null;
                 panelList.SelectedIndex = -1;
             }
         }
@@ -185,40 +183,22 @@ namespace _min.Controls
             if(newLabelTB.Text == "") return;
             HierarchyRow newRow = (HierarchyRow)(menuHierarchy.NewRow());
             newRow.Caption = newLabelTB.Text;
-            newRow.NavId = 0;
-            newRow.ParentId = 0;
+            newRow.NavId = null;
+            newRow.ParentId = null;
             if (menuTree.SelectedNode != null)
                 newRow.ParentId = Int32.Parse(menuTree.SelectedValue);
             menuHierarchy.Rows.Add(newRow);
             
-            //EnsureChildControls();
             RecreateChildControls();
 
-            /*
-            TreeNode newNode = new TreeNode(newRow.Caption, newRow.Id.ToString());
-            if (menuTree.SelectedNode != null)
-                menuTree.SelectedNode.ChildNodes.Add(newNode);
-            else
-                menuTree.Nodes.Add(newNode);
-             */ 
         }
 
         protected void OnRemoveButtonClicked(object sender, EventArgs e) {
             if (menuTree.SelectedNode == null) return;
             HierarchyRow toRemove = menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue));
-            CascadeHierarchy(toRemove);
+            hierarchyDataset.Relations["Hierarchy"].ChildKeyConstraint.DeleteRule = Rule.Cascade;
             menuHierarchy.Rows.Remove(toRemove);
-            
-            //menuTree.Nodes.Remove(menuTree.SelectedNode);
             RecreateChildControls();
-        }
-
-        private void CascadeHierarchy(HierarchyRow toRemove) {
-            DataRow[] children = toRemove.GetChildRows("Hierarchy");
-            foreach (DataRow r in children) {
-                CascadeHierarchy((HierarchyRow)r);
-                menuHierarchy.Remove((HierarchyRow)r);
-            }
         }
 
         protected void OnRenameButtonClicked(object sender, EventArgs e)
@@ -235,7 +215,6 @@ namespace _min.Controls
             hierarchyDataset.Relations.Clear();
             hierarchyDataset.Tables.Clear();
         }
-       
 
         protected override void Render(HtmlTextWriter writer)
         {

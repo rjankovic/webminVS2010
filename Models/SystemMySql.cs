@@ -154,7 +154,7 @@ namespace _min.Models
                         //if(!c2.storedHierarchyData.DataSet.Relations.Contains("Hierarchy")) // !!
                         c2.storedHierarchyDataSet.Relations.Clear();
                         c2.storedHierarchyData.DataSet.Relations.Add("Hierarchy", 
-                c2.storedHierarchyData.Columns["Id"], c2.storedHierarchyData.Columns["ParentId"], false);
+                c2.storedHierarchyData.Columns["Id"], c2.storedHierarchyData.Columns["ParentId"], true);
 
                     }
 
@@ -510,7 +510,6 @@ namespace _min.Models
         */
         public bool ProposalExists() {
             object res = fetchSingle("SELECT COUNT(*) FROM panels WHERE id_project = ", CE.project.id);
-            
             return (Convert.ToInt32(res) > 0);
         }
 

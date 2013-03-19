@@ -50,7 +50,7 @@ namespace _min.Models
         }
         [DataMember]
         public int? panelId { get; private set; }
-        [DataMember]
+        [IgnoreDataMember]
         public virtual object value { get; set; }
         [DataMember]
         public string caption { get; private set; }
@@ -80,19 +80,6 @@ namespace _min.Models
             ser.WriteObject(ms, this);
 
             return Functions.StreamToString(ms);
-        }
-
-        //todo validation
-        public virtual bool Validate(object value)
-        {
-            return true;
-        }
-
-
-        public virtual bool ValidateSelf()
-        {
-            return true;
-
         }
 
 
@@ -182,7 +169,6 @@ namespace _min.Models
             switch (type)
             {
                 case FieldTypes.Date:
-
                     WC.TextBox resCal = (WC.TextBox)myControl;
                     DateTime date = DateTime.MinValue;
                     DateTime.TryParse(resCal.Text, out date);
@@ -215,7 +201,7 @@ namespace _min.Models
 
         public virtual void SetControlData()
         {
-            if (value == null) return;
+            if (value == null || value == DBNull.Value) return;
             switch (type)
             {
                 case FieldTypes.Date:
@@ -298,7 +284,10 @@ namespace _min.Models
     [DataContract]
     class FKField : Field
     {
-        private object _value;
+        [IgnoreDataMember]
+        private int? _value;
+        [IgnoreDataMember]
+        public SortedDictionary<string, int> options = null;
         public override object value
         {
 
@@ -308,10 +297,13 @@ namespace _min.Models
             }
             set
             {
-                if (!(value is string) && !(value == null))
-                    throw new ArgumentException("Value of a mapping field must be string or null");
+                if (value == null || value == DBNull.Value)
+                    this._value = null;
                 else
-                    this._value = value;
+                if (!(value is int))
+                    throw new ArgumentException("Value of a FK field must be int or null");
+                else
+                    this._value = (int)value;
             }
         }
         [DataMember]
@@ -321,8 +313,6 @@ namespace _min.Models
         {
             get
             {
-                if (fk.options == null)
-                    fk.options = new Dictionary<string, int>();
                 return fk;
             }
 
@@ -339,34 +329,38 @@ namespace _min.Models
             this.fk = fk;
         }
 
-        public override bool ValidateSelf()
-        {
-            return fk.validateInput((string)value);
-        }
 
+        public void SetOptions(SortedDictionary<string, int> options) {
+            if (this.options == null) this.options = options;
+            else throw new Exception("FK Options already set");
+        } 
+        
         public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
         {
             WC.DropDownList res = new WC.DropDownList();
-            res.DataSource = fk.options;
-            res.DataValueField = "Value";
-            res.DataTextField = "Key";
-            res.DataBind();
-            myControl = res;
+            res.ID = "Field" + fieldId;
+            this.myControl = res;
             return res;
         }
 
         public override void RetrieveData()
         {
             WC.DropDownList ddl = (WC.DropDownList)myControl;
-            value = ddl.SelectedValue;
+            int v = Int32.Parse(ddl.SelectedValue);
+            if (v == int.MinValue) value = null;
+            else value = v;
         }
 
         public override void SetControlData()
         {
-            if (value == null) return;
             WC.DropDownList ddl = (WC.DropDownList)myControl;
-            ddl.DataSource = fk.options.Keys;
-            ddl.SelectedIndex = ddl.Items.IndexOf(ddl.Items.FindByText((string)value));
+            ddl.DataTextField = "Key";
+            ddl.DataValueField = "Value";
+            if (!validationRules.Contains(ValidationRules.Required)) options[""] = int.MinValue;
+            ddl.DataSource = options;
+            ddl.DataBind();
+            if (value == null) return;
+            ddl.SelectedIndex = ddl.Items.IndexOf(ddl.Items.FindByValue(value.ToString()));
         }
 
     }
@@ -374,7 +368,10 @@ namespace _min.Models
     [DataContract]
     class M2NMappingField : Field
     {
-        private object _value = new List<string>();
+        [IgnoreDataMember]
+        public SortedDictionary<string, int> options = null;
+        [IgnoreDataMember]
+        private List<int> _value = null;
         public override object value
         {
             get
@@ -383,27 +380,24 @@ namespace _min.Models
             }
             set
             {
-                if (!(value is List<string>) && !(value == null))
-                    throw new ArgumentException("Value of a mapping field must be List<string> or null");
-                else
-                    this._value = value;
+                if (!(value is List<int>) && !(value == null))
+                    throw new ArgumentException("Value of a mapping field must be List<int> or null");
+                else if(value != null) _value = (List<int>)value;
+                else _value = new List<int>();
+            }
+        }
+
+        public List<int> ValueList {
+            get {
+                return _value;
             }
         }
 
         [DataMember]
         private M2NMapping mapping;
-        public M2NMapping Mapping
-        {
-            get
-            {
-                if (mapping.options == null)
-                    mapping.options = new Dictionary<string, int>();
-                return mapping;
-            }
-            private set
-            {
-                mapping = value;
-            }
+        public M2NMapping Mapping { 
+            get { return mapping; }
+            set { mapping = value; }
         }
 
 
@@ -416,11 +410,12 @@ namespace _min.Models
             //if(mapping == null) this.mapping = new M2NMapping(;
         }
 
-        public override bool ValidateSelf()
+        public void SetOptions(SortedDictionary<string, int> options)
         {
-            return Mapping.validateWholeInput((List<string>)value);
+            if (this.options == null) this.options = options;
+            else throw new Exception("FK Options already set");
+        } 
 
-        }
 
         public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
         {
@@ -434,17 +429,15 @@ namespace _min.Models
         public override void RetrieveData()
         {
             M2NMappingControl c = (M2NMappingControl)myControl;
-            value = (from WC.ListItem item in c.IncludedItems select item.Text).ToList();
+            value = (from WC.ListItem item in c.IncludedItems select Int32.Parse(item.Value)).ToList<int>();
         }
 
         public override void SetControlData()
         {
-
             M2NMappingControl c = (M2NMappingControl)myControl;
-            c.SetOptions(this.mapping.options);
-
+            c.SetOptions(options);
             if (value == null) return;
-            c.SetIncludedOptions((List<string>)value);
+            c.SetIncludedOptions((List<int>)value);
         }
     }
 

@@ -174,10 +174,12 @@ namespace _min.Models
             }
             try
             {
-                conn.Open();
+                if(!IsInTransaction)
+                    conn.Open();
                 adapter.Fill(result);
             }
             finally {
+                if(!IsInTransaction)
                 conn.Close();
             }
             if (writeLog) {
@@ -218,11 +220,13 @@ namespace _min.Models
             }
             try
             {
-                conn.Open();
+                if(!IsInTransaction)
+                    conn.Open();
                 rowsAffected = cmd.ExecuteNonQuery();
             }
             finally {
-                conn.Close();
+                if(!IsInTransaction)    // wrong?
+                    conn.Close();
             }
             if (writeLog)
             {
@@ -233,18 +237,33 @@ namespace _min.Models
         }
 
         public void StartTransaction() {
-            query("START TRANSACTION");
+            if (IsInTransaction) throw new Exception("Already in transaction");
+            MySqlCommand cmd = new MySqlCommand();
+            cmd.Connection = conn;
+            cmd.CommandText = "START TRANSACTION";
+            conn.Open();
+            cmd.ExecuteNonQuery();
             IsInTransaction = true;
         }
 
         public void CommitTransaction()
         {
-            query("COMMIT");
+            if (!IsInTransaction) throw new Exception("Mot in transaction");
+            MySqlCommand cmd = new MySqlCommand();
+            cmd.Connection = conn;
+            cmd.CommandText = "COMMIT";
+            cmd.ExecuteNonQuery();
+            conn.Close();
             IsInTransaction = false;
         }
         public void RollbackTransaction()
         {
-            query("ROLLBACK");
+            if (!IsInTransaction) throw new Exception("Mot in transaction");
+            MySqlCommand cmd = new MySqlCommand();
+            cmd.Connection = conn;
+            cmd.CommandText = "ROLLBACK";
+            cmd.ExecuteNonQuery();
+            conn.Close();
             IsInTransaction = false;
         }
 

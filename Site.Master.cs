@@ -12,6 +12,14 @@ namespace _min_t7
     public partial class SiteMaster : System.Web.UI.MasterPage
     {
         protected void Page_Init(object sender, EventArgs e) {
+            if (Request.Url.LocalPath.StartsWith("/architect"))
+            {
+                _min.Common.Environment.GlobalState = GlobalState.Architect;
+            }
+            else {
+                _min.Common.Environment.GlobalState = GlobalState.Administer;
+            }
+            
             if (!Page.IsPostBack)
             {
                 MembershipUser u = null;

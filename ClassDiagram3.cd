@@ -1,0 +1,587 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="_min_t7.About" Collapsed="true">
+    <Position X="18.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>About.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.DataSet1" Collapsed="true">
+    <Position X="18.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAwAAAAJABAAAQAAAAAgCQBgAAAAAAAEABBA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7._Default" Collapsed="true">
+    <Position X="17" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAQAgkAAAAAQBAAAEgAAAAQQAABAAAAAAIACAA=</HashCode>
+      <FileName>Default.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Global" Collapsed="true">
+    <Position X="22.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAACAAAAAAAAAAAAAAAECIBAAAAAAAAAA=</HashCode>
+      <FileName>Global.asax.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.SiteMaster" Collapsed="true">
+    <Position X="25.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAACABAACAAAAAAQAAAAABAAAAAAIAAAA=</HashCode>
+      <FileName>Site.Master.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Account.ChangePassword" Collapsed="true">
+    <Position X="17" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAIAAAA=</HashCode>
+      <FileName>Account\ChangePassword.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Account.ChangePasswordSuccess" Collapsed="true">
+    <Position X="18.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>Account\ChangePasswordSuccess.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Account.Login" Collapsed="true">
+    <Position X="22.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAIAAAE=</HashCode>
+      <FileName>Account\Login.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Account.PasswordRecovery" Collapsed="true">
+    <Position X="18.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAIAAAA=</HashCode>
+      <FileName>Account\PasswordRecovery.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Account.Register" Collapsed="true">
+    <Position X="22.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAIAAAAAAAAAAAAAAAAAABAAAAAAAAIAAAA=</HashCode>
+      <FileName>Account\Register.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Administer.Browse" Collapsed="true">
+    <Position X="24" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAQICgAAAAAUBCAAEIAAAAAIEABAAAAAAIACgA=</HashCode>
+      <FileName>Administer\Browse.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Architect.EditEditable" Collapsed="true">
+    <Position X="22.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BEAAAAAYECgAAFAAUAEAAEAAAQAIAAgBAAIAAAIAiAA=</HashCode>
+      <FileName>Architect\EditEditable.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Architect.EditMenu" Collapsed="true">
+    <Position X="24" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACgAABACEAAAAEgAAAAAAAABAAAAAAIACAA=</HashCode>
+      <FileName>Architect\EditMenu.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Architect.EditNav" Collapsed="true">
+    <Position X="25.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAABQUCgAAAAAUAEBAUgAAAAAACABAAIIAAIAGAA=</HashCode>
+      <FileName>Architect\EditNav.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Architect.EditPanels" Collapsed="true">
+    <Position X="17" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAIAAIACgBAAAQEAABAEgAAAgIAAABAAAAAAYAgAA=</HashCode>
+      <FileName>Architect\EditPanels.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Architect.InitProposal" Collapsed="true">
+    <Position X="20.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAQIAgAQABoUBgAAAAAAEgACAQAAAAEAAMAAAA=</HashCode>
+      <FileName>Architect\InitProposal.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Architect.Show" Collapsed="true">
+    <Position X="24" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAQICgAAAAAUBCAAEIAAAAAIEQBAAAAAAIACgA=</HashCode>
+      <FileName>Architect\Show.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.DataProperty&lt;T&gt;" Collapsed="true">
+    <Position X="6.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAgAAAAAAAAAAAAAAAAAAQAAgAAAAAAA=</HashCode>
+      <FileName>Common\DataProperty.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Common.ParsedDataProperty&lt;T&gt;" Collapsed="true">
+    <Position X="7.75" Y="10.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common\DataProperty.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.RequiredDataProperty&lt;T&gt;" Collapsed="true">
+    <Position X="5.5" Y="10.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Common\DataProperty.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.RequiredParsedDataProperty&lt;T&gt;" Collapsed="true">
+    <Position X="5.5" Y="12.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common\DataProperty.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.Environment" Collapsed="true">
+    <Position X="18.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAEAAAAAAAAAAAACAAAAAAAAgAEIAAAAAAAAAAAQA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.Constants" Collapsed="true">
+    <Position X="17" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ICjAACAEACBUgkMQACBAAQgUCIKIAAAEAAACAAhOAGA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.Functions" Collapsed="true">
+    <Position X="20.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAAAAAAAIAAA=</HashCode>
+      <FileName>Common\Functions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Common.ColumnDisplayComparer" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="25.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAA=</HashCode>
+      <FileName>Common\Functions.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="_min.Controls.M2NMappingControl" Collapsed="true">
+    <Position X="24" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>JABAQAgAAAAAgBAAAIAAAAAAAAAAABAAABAAIAAEAAA=</HashCode>
+      <FileName>Controls\M2NMappingControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Controls.TreeBuilderControl" Collapsed="true">
+    <Position X="18.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BQAAAAAAoAAgoBgAEAALAAAAQIQFgAAAgDBgCAAEAQA=</HashCode>
+      <FileName>Controls\TreeBuilder.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Controls.TreeNavigatorControl" Collapsed="true">
+    <Position X="20.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgDAAgAAAAAAAAAAAACAAABAiSAAEAAA=</HashCode>
+      <FileName>Controls\TreeNavigator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.ArchitectQuestionEventArgs" Collapsed="true">
+    <Position X="22.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.ArchitectureErrorEventArgs" Collapsed="true">
+    <Position X="1.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AACAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAQAAACA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.ArchitectWarningEventArgs" Collapsed="true">
+    <Position X="0.5" Y="11" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.ArchitectNoticeEventArgs" Collapsed="true">
+    <Position X="2.75" Y="11" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.Architect" Collapsed="true">
+    <Position X="20.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAYBAAAAQAAAAAAABDAAAAAAAAEgASAhIAAAAE=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.BaseDriverMySql" Collapsed="true">
+    <Position X="3" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAOAAAEAAACCFhAEQAAAAAAACIEAAAJAA=</HashCode>
+      <FileName>Models\BaseDriverMySql.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Models.DbDeployableMySql" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="20.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAIACIAAgAAAAAAIAAAAEEAAAAIAAAAAAAAAA=</HashCode>
+      <FileName>Models\ConditionMySql.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="_min.Models.Control" Collapsed="true">
+    <Position X="9.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEABAAgABAIQAgCAgAAAAAADKAQAAggCAAQAYBAAAE=</HashCode>
+      <FileName>Models\Control.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.NavTableControl" Collapsed="true">
+    <Position X="8.5" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAIACAAAAAAAAAAAAAAAAAAAAIAAABAAAA=</HashCode>
+      <FileName>Models\Control.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.TreeControl" Collapsed="true">
+    <Position X="10.75" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAIACAAAABAAAAAAAAAAhIAAAASAABAAAQ=</HashCode>
+      <FileName>Models\Control.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.Field" Collapsed="true">
+    <Position X="9.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAIgCAAABCIQQAAAAACIAAAQCQRBCAAAAAAAYwAAAA=</HashCode>
+      <FileName>Models\Field.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.FKField" Collapsed="true">
+    <Position X="8.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAAAAAAAIAQAAAAACAAAAAAAABCAAAAIAAAAAgAA=</HashCode>
+      <FileName>Models\Field.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.M2NMappingField" Collapsed="true">
+    <Position X="10.75" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAAAAAAAJAQAAAQACAAAAAAAABCAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Field.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.FK" Collapsed="true">
+    <Position X="10.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AUAAAAQIAAAAAAAAgAAAAAiAAAAAAIBAAAAAAAgBAAA=</HashCode>
+      <FileName>Models\FK.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Models.M2NMapping" Collapsed="true">
+    <Position X="10.5" Y="10.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAggABACAAAAEAAIBAQAAAAAAAAAA=</HashCode>
+      <FileName>Models\FK.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Models.HierarchyNavTable" Collapsed="true">
+    <Position X="24" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAACAAAAAACAAABAAAAAAIAAEAAIAAAAAAAAA=</HashCode>
+      <FileName>Models\HierarchyNavTable.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.HierarchyRow" Collapsed="true">
+    <Position X="25.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAQAAAAAAAAAAAAAAAAAAAAEAAAACgAAAAAAAAA=</HashCode>
+      <FileName>Models\HierarchyNavTable.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.Panel" Collapsed="true">
+    <Position X="17" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AACCAAgEADABEERAAgQAAAIQCCABACABAAIACIQAAAA=</HashCode>
+      <FileName>Models\Panel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Models.StatsMySql" Collapsed="true">
+    <Position X="0.75" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AggAAChsICAhAABIABAAQAACAAAAAAAAiAIACAIJACI=</HashCode>
+      <FileName>Models\StatsMySql.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Models.SystemDriverMySql" Collapsed="true">
+    <Position X="3" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgEIgEQMCCcRAIggAACAACAAIgSAACgBABAIAhFQQAA=</HashCode>
+      <FileName>Models\SystemMySql.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Models.WebDriverMySql" Collapsed="true">
+    <Position X="5.25" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAEAAAAQBAgAAEAAAAAAgEQAAAQAAEAABAEABEA=</HashCode>
+      <FileName>Models\WebDriverMySql.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="_min.Navigation.Navigator" Collapsed="true">
+    <Position X="25.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CUQAAEAAAAAAIAAAAAAAAEAAAAAAEAAAAAAQACAAIAA=</HashCode>
+      <FileName>Navigation\Navigator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Sys.Projects" Collapsed="true">
+    <Position X="20.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAkAAAAAAAAAACBAAAIAAAAAFBAAAMIAAIA=</HashCode>
+      <FileName>Sys\Projects.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min_t7.Sys.WebForm1" Collapsed="true">
+    <Position X="22.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEAAAIAAQAAAAAAAAAAIAAQAAAAAIAAEEAAAEIAAAQ=</HashCode>
+      <FileName>Sys\Users.aspx.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="_min.Templates.SummaryGridCommandColumn" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="17" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAEAA=</HashCode>
+      <FileName>Templates\SummaryGridCommandColumn.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Interface Name="_min.Common.IDataProperty" Collapsed="true">
+    <Position X="17" Y="6.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common\DataProperty.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IMySqlQueryDeployable">
+    <Position X="7.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IBaseDriver">
+    <Position X="3" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAEAAAAAAAACEBAAAAAAAAAACIAAAAIAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbDeployableFactory" Collapsed="true">
+    <Position X="18.75" Y="6.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAIACIAAgAAAAAAIAAAAEEAAAAIAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbInStr">
+    <Position X="1" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbVals">
+    <Position X="3.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbCol">
+    <Position X="5.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAAAAAAABAAAAAAAAAQAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbCols">
+    <Position X="7.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbJoin">
+    <Position X="10" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbJoins">
+    <Position X="12.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IDbInList">
+    <Position X="14.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IWebDriver">
+    <Position X="0.75" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAEAAAAAAAgAAAAAAAAAAEQAAAQAAAAABAEABEA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IStats">
+    <Position X="3" Y="9.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AggAACBEICAAAAAIAAAAQAACAAAAAAAAiAIACAABAAI=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.ISystemDriver">
+    <Position X="5.25" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEIgAQEACcBAIgAAAAAAAAAIgQAAAgBABAIAgFQQAA=</HashCode>
+      <FileName>Interfaces\Models.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.Presenter" Collapsed="true">
+    <Position X="22.25" Y="6.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAACAAAAAAAAACAAIAAAAAAAAAAAAAAABAAA=</HashCode>
+      <FileName>Interfaces\Presenters.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="_min.Interfaces.IView" Collapsed="true">
+    <Position X="20.5" Y="6.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AGAAAAAAAAAAAAASABAAAAAAAAAEAAAAAAgAAAAAAAA=</HashCode>
+      <FileName>Interfaces\Views.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="_min.Common.DbServer" Collapsed="true">
+    <Position X="18.75" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAACAAAgAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.UserAction" Collapsed="true">
+    <Position X="17" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAEAAAAAAAAAAEAAAAAAAAAEBAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.AppRequest" Collapsed="true">
+    <Position X="17" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEAAEA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.PanelTypes" Collapsed="true">
+    <Position X="24" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAAAAAIAAAAACAAAAAAAAAAAAAAAACAAAFAEA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.FieldTypes" Collapsed="true">
+    <Position X="20.5" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAAAAAgAAAwBBAAAAAAAAAAABQBAAIACAAAAQA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.PropertyConcerns" Collapsed="true">
+    <Position X="25.75" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAACAAAAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.ValidationRules" Collapsed="true">
+    <Position X="18.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAEgAAAAABAAAAAAAAAAAAQBAAAAACAAAAA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="_min.Common.GlobalState" Collapsed="true">
+    <Position X="22.25" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAABAAAAAACAAAAAAAAAAAAAAAAAAAAAAABA=</HashCode>
+      <FileName>Common\Environment.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Delegate Name="_min.Models.ArchitectQuestion" Collapsed="true">
+    <Position X="18.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="_min.Models.ArchitectureError" Collapsed="true">
+    <Position X="20.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="_min.Models.ArchitectWarning" Collapsed="true">
+    <Position X="22.25" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="_min.Models.ArchitectNotice" Collapsed="true">
+    <Position X="17" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="_min.Models.AsyncProposeCaller" Collapsed="true">
+    <Position X="24" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA=</HashCode>
+      <FileName>Models\Architect.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

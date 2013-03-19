@@ -25,6 +25,11 @@ namespace _min.Models
         public List<string> PKColNames { get; set; }
         [IgnoreDataMember]
         public DataRow PK { get; set; }
+        [IgnoreDataMember]
+        public DataRow RetrievedData { get; private set; }
+        [IgnoreDataMember]
+        public DataRow RetrievedInsertData { get; private set; }
+        [IgnoreDataMember]
         private Panel _parent;
         [IgnoreDataMember]
         public Panel parent
@@ -155,6 +160,47 @@ namespace _min.Models
             this.children = new List<Panel>();
             this.fields = new List<Field>();
             this.controls = new List<Control>();
+        }
+
+        public void RetrieveDataFromFields() {
+            DataTable tbl = new DataTable();
+            DataTable insTbl = new DataTable();
+            if(PK != null){
+                foreach(DataColumn col in PK.Table.Columns)
+                    tbl.Columns.Add(new DataColumn(col.ColumnName, col.DataType));
+            }
+            foreach (Field f in fields) {
+                if (f is M2NMappingField) continue;
+                if (f.value != null && !PK.Table.Columns.Contains(f.column))
+                {
+                    tbl.Columns.Add(new DataColumn(f.column, f.value.GetType()));
+                    insTbl.Columns.Add(new DataColumn(f.column, f.value.GetType()));
+                }
+                else {
+                    tbl.Columns.Add(new DataColumn(f.column, typeof(int)));
+                    insTbl.Columns.Add(new DataColumn(f.column, typeof(int)));
+                }
+            }
+
+            RetrievedData = tbl.NewRow();
+            RetrievedInsertData = insTbl.NewRow();
+            if (PK != null) {
+                foreach (DataColumn col in PK.Table.Columns)
+                    RetrievedData[col.ColumnName] = PK[col.ColumnName];
+            }
+            foreach (Field f in fields)
+            {
+                if (f is M2NMappingField) continue;
+                if (f.value != null)
+                {
+                    RetrievedData[f.column] = f.value;
+                    RetrievedInsertData[f.column] = f.value;
+                }
+                else {
+                    RetrievedData[f.column] = DBNull.Value;
+                    RetrievedInsertData[f.column] = DBNull.Value;
+                }
+            }
         }
     }
 }

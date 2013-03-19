@@ -71,7 +71,7 @@ namespace _min.Models
                 bool first = true;
                 foreach (object o in vals.Values)
                 {
-                    sb.Append((first ? "" : ", ") + "@param" + paramCount);
+                    sb.Append((first ? " " : ", ") + "@param" + paramCount);
                     first = false;
                     cmd.Parameters.AddWithValue("@param" + paramCount++, o);
                 }

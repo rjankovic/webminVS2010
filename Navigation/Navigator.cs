@@ -31,12 +31,12 @@ namespace _min.Navigation
         }
 
         public void MenuHandle(object sender, MenuEventArgs e) {
-            Dictionary<string, object> routeData = new Dictionary<string, object>();
+            //Dictionary<string, object> routeData = new Dictionary<string, object>();
             //System.Web.Routing.RouteData routeData = new System.Web.Routing.RouteData();
-            routeData.Add("panelId", e.Item.Value);
+            //routeData.Add("panelId", e.Item.Value);
             //response.End();
             response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelDefaultRoute"
-                : "ProductionShowPanelDefaultRoute", new { panelId = e.Item.Value });
+                : "AdministerBrowsePanelDefaultRoute", new { panelId = e.Item.Value });
         }
 
         public void TreeHandle(object sender, CommandEventArgs e) {
@@ -44,7 +44,7 @@ namespace _min.Navigation
 
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
             response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
-                ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
+                ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
                 new
                 {
                     
@@ -75,7 +75,7 @@ namespace _min.Navigation
                 //data.Add("itemKey", grid.DataKeys[selectedIndex]);
 
                 response.RedirectToRoute(CE.GlobalState == GlobalState.Architect 
-                    ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
+                    ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
                     new { panelId = currentTableActionPanels[action], action = e.CommandName, 
                         itemKey = DataKey2Url(grid.DataKeys[selectedIndex]) } );
                 //new { panelId = currentTableActionPanels[action], action = e.CommandName, 
@@ -100,17 +100,17 @@ namespace _min.Navigation
         public void ActionCommandHandle(object sender, CommandEventArgs e) {    // buttons must fire Commands !
             //response.End();
             
-            UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName);
+            UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
             System.Web.Routing.RouteData routeData = new System.Web.Routing.RouteData();
             routeData.DataTokens.Add("action", action);
             routeData.DataTokens.Add("panelId", currentTableActionPanels[action]);
             if(e.CommandArgument.ToString() != ""){   // TODO ... but this should not happen (buttons are in edit panels or as "Isnert")
                 routeData.DataTokens.Add("itemKey", e.CommandArgument);
-                response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "ProductionShowPanelSpecRoute",
+                response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
                     new { action = action, panelId = currentTableActionPanels[action], itemKey = e.CommandArgument } );
             }
             else response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ?
-              "ArchitectShowPanelRoute" : "ProductionShowPanelRoute",
+              "ArchitectShowPanelRoute" : "AdministerBrowsePanelRoute",
               new { action = action, panelId = currentTableActionPanels[action] });
         }
     }

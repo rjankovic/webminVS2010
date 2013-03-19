@@ -41,11 +41,11 @@ namespace _min.Controls
                 tree.ShowLines = true;
                 WC.TreeNode item;
 
-                foreach (DataRow r in hierarchy.Rows)
+                foreach (HierarchyRow r in hierarchy.Rows)
                 {
-                    if ((int)(r["ParentId"]) == 0)
+                    if (r.ParentId == null)
                     {
-                        item = new WC.TreeNode(r["Caption"].ToString(), r["NavId"].ToString());
+                        item = new WC.TreeNode(r.Caption, r.NavId.ToString());
                         AddSubtreeForItem(r, item);
                         tree.Nodes.Add(item);
                     }
