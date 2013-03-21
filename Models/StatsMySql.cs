@@ -5,6 +5,7 @@ using System.Text;
 using System.Data;
 using _min.Interfaces;
 using System.Reflection;
+using CC = _min.Common.Constants;
 
 namespace _min.Models
 {
@@ -144,10 +145,22 @@ namespace _min.Models
                 }
                 */
                 DataColumn col = res[r["TABLE_NAME"] as string][r["COLUMN_NAME"] as string];        // set ColumnName
-                
+
+                string columnType = r["COLUMN_TYPE"] as string;
+                if (columnType.StartsWith("enum")) {        // enum type
+                    string vals = columnType.Substring(5, columnType.Length - 5 - 1);       // the brackets
+                    string[] split = vals.Split(new char[]{','});
+                    List<string> EnumValues = new List<string>();
+                    foreach (string s in split) {
+                        EnumValues.Add(s.Substring(1, s.Length - 2));
+                    }
+                    col.ExtendedProperties.Add(CC.ENUM_COLUMN_VALUES, EnumValues);
+                }
+
                 //col.ExtendedProperties.Add(Common.Constants.FIELD_POSITION, Convert.ToInt32(r["ORDINAL_POSITION"]));
                 //string typeStr = col.DataType.ToString() as string;      // set DataType
                 //Type representedType = typeof(object);
+                
                 if (col.DataType == typeof(string)) { 
                     col.ExtendedProperties.Add("length", Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]));
                 }

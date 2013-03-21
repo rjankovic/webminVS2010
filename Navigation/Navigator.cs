@@ -45,15 +45,15 @@ namespace _min.Navigation
             int navId = (int)(e.CommandArgument);
 
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
-            Page.Response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
-                ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
+            string routeUrl = Page.GetRouteUrl(CE.GlobalState == GlobalState.Architect
+                ? "ArchitectShowPanelRoute" : "AdministerBrowsePanelRoute",
                 new
                 {
-                    
                     panelId = currentTableActionPanels[currentTableActionPanels.ContainsKey(action)?action:UserAction.Multiple],
-                    action = e.CommandName,
-                    itemKey = navId    // trees must have single-column int PKs
+                    action = e.CommandName
                 });
+            string queryString = "?IKP0=" + navId;
+            Page.Response.Redirect(routeUrl + queryString);
         }
 
         public void GridCommandHandle(object sender, GridViewCommandEventArgs e) {
@@ -94,8 +94,6 @@ namespace _min.Navigation
             }
             return sb.ToString();
         }
-
-
         
         public void ActionCommandHandle(object sender, CommandEventArgs e) {    // buttons must fire Commands !
             //response.End();

@@ -88,6 +88,8 @@ namespace _min.Common
 
         public const string ADMIN_PREFIX = "Admin of ";
         public const string ARCHITECT_PREFIX = "Architect of ";
+        public const string ENUM_COLUMN_VALUES = "EnumValues";
+
 
 
 
@@ -110,8 +112,6 @@ namespace _min.Common
 
         public const string PANEL_NAME = "panelName";
 
-        // "a","bbb","c"... - view attr; one day this shall change to a control attr
-        public const string COLUMN_ENUM_VALUES = "ColumnEnumValues";
 
         public const string FIELD_REF_TABLE = "refTable";   // FK
         public const string FIELD_REF_COLUMN = "refColumn";

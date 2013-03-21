@@ -64,6 +64,7 @@ namespace _min_t7.Architect
                 FieldTypes.Date.ToString(), FieldTypes.DateTime.ToString(), 
                 FieldTypes.Decimal.ToString(), FieldTypes.Ordinal.ToString(), FieldTypes.Text.ToString()
                  };
+            string[] EnumType = new string[] { FieldTypes.Enum.ToString() };
             string[] FKtype = new string[] { FieldTypes.FK.ToString() };
             string[] mappingType = new string[] { FieldTypes.M2NMapping.ToString() };
             string[] validationRules = Enum.GetNames(typeof(ValidationRules));
@@ -100,7 +101,9 @@ namespace _min_t7.Architect
                 
                 TableCell typeCell = new TableCell();
                 DropDownList dl = new DropDownList();
-                if (fk == null)
+                if (f is EnumField)
+                    dl.DataSource = EnumType;
+                else if (fk == null)
                     dl.DataSource = fieldTypes;
                 else
                     dl.DataSource = FKtype;
@@ -111,6 +114,7 @@ namespace _min_t7.Architect
                 if (f != null) {
                     dl.SelectedIndex = dl.Items.IndexOf(dl.Items.FindByText(f.type.ToString()));
                 }
+                // else set default baed on  datatype - could build a dictionary...
 
                 TableCell validCell = new TableCell();
                 CheckBoxList vcbl = new CheckBoxList();
@@ -224,7 +228,6 @@ namespace _min_t7.Architect
 
             foreach (DataColumn col in stats.ColumnTypes[actPanel.tableName])
             {       // standard fields
-
                 TableRow r = tbl.Rows[i++];
                 if (!((CheckBox)r.Cells[1].Controls[0]).Checked)
                     continue;
@@ -247,6 +250,11 @@ namespace _min_t7.Architect
                 Field newField;
                 if (type == FieldTypes.FK)
                     newField = new FKField(0, col.ColumnName, actPanel.panelId, FKs.Find(x => x.myColumn == col.ColumnName), caption);
+                else if (type == FieldTypes.Enum) {
+                    newField = new EnumField(0, col.ColumnName, actPanel.panelId,
+                        (List<string>)stats.ColumnTypes[actPanel.tableName][col.ColumnName].ExtendedProperties[CC.ENUM_COLUMN_VALUES],
+                        caption);
+                }
                 else
                     newField = new Field(0, col.ColumnName, type, actPanel.panelId, caption);
                 newField.validationRules = rules;

@@ -151,6 +151,9 @@ namespace _min.Models
                                 continue;
                         }
                         break;
+                    case _min.Common.FieldTypes.Enum:
+                        field.value = 1;
+                        break;
                     case _min.Common.FieldTypes.Date:
                         field.value = DateTime.Now;
                         break;
@@ -177,8 +180,6 @@ namespace _min.Models
                     case _min.Common.FieldTypes.Bool:
                         field.value = false;
                         break;
-                    case _min.Common.FieldTypes.Enum:
-                        throw new NotImplementedException();
                     default:
                         break;
                 }

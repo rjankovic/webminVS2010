@@ -19,6 +19,7 @@ namespace _min.Models
     [KnownType(typeof(M2NMapping))]
     [KnownType(typeof(FKField))]
     [KnownType(typeof(M2NMappingField))]
+    [KnownType(typeof(EnumField))]
     public class Field
     {
         [IgnoreDataMember]
@@ -81,7 +82,7 @@ namespace _min.Models
 
             return Functions.StreamToString(ms);
         }
-        
+
         public void SetCreationId(int id)
         {
             if (fieldId == 0) fieldId = id;
@@ -94,6 +95,12 @@ namespace _min.Models
             this.panelId = panel.panelId;
         }
 
+        /// <summary>
+        /// creates WebControl for hte field, may give it basic styling, doesn`t bind any data
+        /// </summary>
+        /// <param name="extenders">AjaxControlToolkit extenders, for the needs of a html text field</param>
+        /// <param name="handler">General event handler for events on text fields, that there for any fieldtype so far</param>
+        /// <returns></returns>
         public virtual UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
         {
             System.Web.UI.Control res;
@@ -163,6 +170,7 @@ namespace _min.Models
             return res;
         }
 
+        // retrieves data seved in vewstate on Page_Load, saves it to inner value variable
         public virtual void RetrieveData()
         {
             switch (type)
@@ -198,6 +206,7 @@ namespace _min.Models
             }
         }
 
+        // sets the WebControl`s value based on the inner value variable
         public virtual void SetControlData()
         {
             if (value == null || value == DBNull.Value) return;
@@ -205,7 +214,7 @@ namespace _min.Models
             {
                 case FieldTypes.Date:
                     WC.TextBox resCal = (WC.TextBox)myControl;
-                    if(value is DateTime)
+                    if (value is DateTime)
                         resCal.Text = ((DateTime)value).ToShortDateString();
                     break;
                 case FieldTypes.DateTime:
@@ -232,22 +241,23 @@ namespace _min.Models
             }
         }
 
+        // creates a validator for every ValidatorRule in rules collection
         public virtual List<WC.BaseValidator> GetValidator()
         {
             List<WC.BaseValidator> res = new List<WC.BaseValidator>();
             UControl fieldControl = myControl;
-            
+
             foreach (ValidationRules rule in validationRules)
             {
                 switch (rule)
                 {
                     case ValidationRules.Required:
-                            WC.RequiredFieldValidator reqVal;
-                            reqVal = new WC.RequiredFieldValidator();
-                            reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
-                            reqVal.ErrorMessage = this.caption + " is required";
-                            reqVal.Display = WC.ValidatorDisplay.None;
-                            res.Add(reqVal);
+                        WC.RequiredFieldValidator reqVal;
+                        reqVal = new WC.RequiredFieldValidator();
+                        reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
+                        reqVal.ErrorMessage = this.caption + " is required";
+                        reqVal.Display = WC.ValidatorDisplay.None;
+                        res.Add(reqVal);
                         break;
                     case ValidationRules.Ordinal:
                         WC.RegularExpressionValidator regexVal = new WC.RegularExpressionValidator();
@@ -281,6 +291,7 @@ namespace _min.Models
         }
     }
 
+
     [DataContract]
     class FKField : Field
     {
@@ -300,10 +311,10 @@ namespace _min.Models
                 if (value == null || value == DBNull.Value)
                     this._value = null;
                 else
-                if (!(value is int))
-                    throw new ArgumentException("Value of a FK field must be int or null");
-                else
-                    this._value = (int)value;
+                    if (!(value is int))
+                        throw new ArgumentException("Value of a FK field must be int or null");
+                    else
+                        this._value = (int)value;
             }
         }
         [DataMember]
@@ -330,11 +341,12 @@ namespace _min.Models
         }
 
 
-        public void SetOptions(SortedDictionary<int, string> options) {
+        public void SetOptions(SortedDictionary<int, string> options)
+        {     // set inner options collection, dont bind them yet
             if (this.options == null) this.options = options;
             else throw new Exception("FK Options already set");
-        } 
-        
+        }
+
         public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
         {
             WC.DropDownList res = new WC.DropDownList();
@@ -382,20 +394,23 @@ namespace _min.Models
             {
                 if (!(value is List<int>) && !(value == null))
                     throw new ArgumentException("Value of a mapping field must be List<int> or null");
-                else if(value != null) _value = (List<int>)value;
+                else if (value != null) _value = (List<int>)value;
                 else _value = new List<int>();
             }
         }
 
-        public List<int> ValueList {
-            get {
+        public List<int> ValueList
+        {
+            get
+            {
                 return _value;
             }
         }
 
         [DataMember]
         private M2NMapping mapping;
-        public M2NMapping Mapping { 
+        public M2NMapping Mapping
+        {
             get { return mapping; }
             set { mapping = value; }
         }
@@ -414,7 +429,7 @@ namespace _min.Models
         {
             if (this.options == null) this.options = options;
             else throw new Exception("FK Options already set");
-        } 
+        }
 
 
         public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
@@ -441,4 +456,80 @@ namespace _min.Models
         }
     }
 
+
+    [DataContract]
+    class EnumField : Field
+    {
+        [IgnoreDataMember]
+        private int? _value;
+        [DataMember]
+        private List<string> options = null;
+        public override object value
+        {
+
+            get
+            {
+                return _value;
+            }
+            set
+            {
+                if (value == null || value == DBNull.Value)
+                    this._value = null;
+                else
+                    if (value is string)
+                    {
+                        if (options.Contains(value as string))
+                            _value = options.IndexOf(value as string) + 1;
+                        else throw new ArgumentException("Value not forund within enum options");
+                    }
+                    else if (value is int)
+                    {
+                        _value = (int)value;
+                    }
+                    else throw new ArgumentException("Value not found winthin enum options");
+            }
+        }
+
+        public EnumField(int fieldId, string column, int panelId, List<string> options, string caption = null)
+            : base(fieldId, column, FieldTypes.Enum, panelId, caption)
+        {
+            this.options = options;
+        }
+
+
+        public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
+        {
+            WC.DropDownList res = new WC.DropDownList();
+            res.ID = "Field" + fieldId;
+            this.myControl = res;
+            return res;
+        }
+
+        public override void RetrieveData()
+        {
+            WC.DropDownList ddl = (WC.DropDownList)myControl;
+            int v = Int32.Parse(ddl.SelectedValue);
+            if (v == int.MinValue) value = null;
+            else value = v;
+        }
+
+        public override void SetControlData()
+        {
+            SortedDictionary<int, string> optDict = new SortedDictionary<int, string>();
+            for (int i = 0; i < options.Count; i++)
+            {
+                optDict[i + 1] = options[i];
+            }
+
+            WC.DropDownList ddl = (WC.DropDownList)myControl;
+            ddl.DataTextField = "Value";
+            ddl.DataValueField = "Key";
+            if (!validationRules.Contains(ValidationRules.Required)) optDict[int.MinValue] = "";
+            ddl.DataSource = optDict;
+            ddl.DataBind();
+            if (value == null) return;
+            ddl.SelectedIndex = ddl.Items.IndexOf(ddl.Items.FindByValue(value.ToString()));
+        }
+
+    }
 }

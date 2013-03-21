@@ -175,6 +175,12 @@ namespace _min.Models
                 if (!col.AllowDBNull && col.DataType != typeof(bool)) validation.Add(ValidationRules.Required);
                 FieldTypes fieldType;  // default => standard textBox
 
+                if(col.ExtendedProperties.ContainsKey(CC.ENUM_COLUMN_VALUES)){
+                    EnumField enumField = new EnumField(0, col.ColumnName, 0, (List<string>)(col.ExtendedProperties[CC.ENUM_COLUMN_VALUES]));
+                    enumField.validationRules = validation;
+                    fields.Add(enumField);
+                    continue;
+                }
                 if (col.DataType == typeof(string))
                 {
                     if (col.MaxLength <= 255) fieldType = FieldTypes.Varchar;
