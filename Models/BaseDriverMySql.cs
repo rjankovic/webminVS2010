@@ -182,10 +182,12 @@ namespace _min.Models
                 if(!IsInTransaction)
                 conn.Close();
             }
-            if (writeLog) {
+            if (writeLog)
+            {
                 watch.Stop();
                 this.log(cmd.CommandText, watch);
             }
+
             return result;
         }
 

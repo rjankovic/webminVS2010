@@ -81,8 +81,7 @@ namespace _min.Models
 
             return Functions.StreamToString(ms);
         }
-
-
+        
         public void SetCreationId(int id)
         {
             if (fieldId == 0) fieldId = id;
@@ -206,7 +205,8 @@ namespace _min.Models
             {
                 case FieldTypes.Date:
                     WC.TextBox resCal = (WC.TextBox)myControl;
-                    resCal.Text = ((DateTime)value).ToShortDateString();
+                    if(value is DateTime)
+                        resCal.Text = ((DateTime)value).ToShortDateString();
                     break;
                 case FieldTypes.DateTime:
                     throw new NotImplementedException(); // composite control
@@ -287,7 +287,7 @@ namespace _min.Models
         [IgnoreDataMember]
         private int? _value;
         [IgnoreDataMember]
-        public SortedDictionary<string, int> options = null;
+        public SortedDictionary<int, string> options = null;
         public override object value
         {
 
@@ -330,7 +330,7 @@ namespace _min.Models
         }
 
 
-        public void SetOptions(SortedDictionary<string, int> options) {
+        public void SetOptions(SortedDictionary<int, string> options) {
             if (this.options == null) this.options = options;
             else throw new Exception("FK Options already set");
         } 
@@ -354,9 +354,9 @@ namespace _min.Models
         public override void SetControlData()
         {
             WC.DropDownList ddl = (WC.DropDownList)myControl;
-            ddl.DataTextField = "Key";
-            ddl.DataValueField = "Value";
-            if (!validationRules.Contains(ValidationRules.Required)) options[""] = int.MinValue;
+            ddl.DataTextField = "Value";
+            ddl.DataValueField = "Key";
+            if (!validationRules.Contains(ValidationRules.Required)) options[int.MinValue] = "";
             ddl.DataSource = options;
             ddl.DataBind();
             if (value == null) return;
@@ -369,7 +369,7 @@ namespace _min.Models
     class M2NMappingField : Field
     {
         [IgnoreDataMember]
-        public SortedDictionary<string, int> options = null;
+        public SortedDictionary<int, string> options = null;
         [IgnoreDataMember]
         private List<int> _value = null;
         public override object value
@@ -410,7 +410,7 @@ namespace _min.Models
             //if(mapping == null) this.mapping = new M2NMapping(;
         }
 
-        public void SetOptions(SortedDictionary<string, int> options)
+        public void SetOptions(SortedDictionary<int, string> options)
         {
             if (this.options == null) this.options = options;
             else throw new Exception("FK Options already set");

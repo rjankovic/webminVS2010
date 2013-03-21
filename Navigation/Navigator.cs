@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Routing;
+using System.Text;
+using System.Web.UI;
 
 using System.Web.UI.WebControls;
 using _min.Common;
@@ -12,7 +14,7 @@ namespace _min.Navigation
 {
     public class Navigator
     {
-        private readonly HttpResponse response;
+        private readonly System.Web.UI.Page Page;
         private Dictionary<UserAction, int> currentTableActionPanels;
         public readonly MenuEventHandler MenuHandler;
         public readonly GridViewCommandEventHandler GridViewCommandHandler;
@@ -20,8 +22,8 @@ namespace _min.Navigation
         public readonly CommandEventHandler TreeHandler;
 
 
-        public Navigator(HttpResponse response, Dictionary<UserAction, int> currentPanelActionPanels) {
-            this.response = response;
+        public Navigator(Page page, Dictionary<UserAction, int> currentPanelActionPanels) {
+            this.Page = page;
             this.currentTableActionPanels = currentPanelActionPanels;
 
             MenuHandler = MenuHandle;
@@ -35,7 +37,7 @@ namespace _min.Navigation
             //System.Web.Routing.RouteData routeData = new System.Web.Routing.RouteData();
             //routeData.Add("panelId", e.Item.Value);
             //response.End();
-            response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelDefaultRoute"
+            Page.Response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelDefaultRoute"
                 : "AdministerBrowsePanelDefaultRoute", new { panelId = e.Item.Value });
         }
 
@@ -43,7 +45,7 @@ namespace _min.Navigation
             int navId = (int)(e.CommandArgument);
 
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
-            response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
+            Page.Response.RedirectToRoute(CE.GlobalState == GlobalState.Architect
                 ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
                 new
                 {
@@ -62,22 +64,12 @@ namespace _min.Navigation
             //Dictionary<string, object> data = new Dictionary<string, object>();
             string command = e.CommandName.Substring(1);
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), command);
-            RouteValueDictionary data = new RouteValueDictionary();
             
-            data.Add("panelId", currentTableActionPanels[currentTableActionPanels.ContainsKey(action)?action:UserAction.Multiple]);
-            data.Add("action", command);
-            //object[]
-
-                //Serializer 
-            data.Add("itemKey", grid.DataKeys[selectedIndex].Values.Values);
-            //if (selectedIndex != -1)
-            //{
-                //data.Add("itemKey", grid.DataKeys[selectedIndex]);
-
-                response.RedirectToRoute(CE.GlobalState == GlobalState.Architect 
-                    ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
-                    new { panelId = currentTableActionPanels[action], action = e.CommandName, 
-                        itemKey = DataKey2Url(grid.DataKeys[selectedIndex]) } );
+            string routeUrl = Page.GetRouteUrl(CE.GlobalState == GlobalState.Architect 
+                    ? "ArchitectShowPanelRoute" : "AdministerBrowsePanelRoute",
+                    new { panelId = currentTableActionPanels[action], action = command} );
+            string queryString = DataKey2Url(grid.DataKeys[selectedIndex]);
+            Page.Response.Redirect(routeUrl + queryString);
                 //new { panelId = currentTableActionPanels[action], action = e.CommandName, 
                 //    itemKey = (grid.DataKeys[selectedIndex].Values) } );
             //}
@@ -90,9 +82,17 @@ namespace _min.Navigation
         private string DataKey2Url(DataKey key) {
             var parts = from object p in key.Values.Values select p.ToString();
             List<string> lParts = new List<string>();
-            foreach (string s in parts) lParts.Add(s);
-
-            return string.Join("/", lParts.ToArray());
+            StringBuilder sb = new StringBuilder("?");
+            bool first = true;
+            int i = 0;
+            foreach (string s in parts){
+                if(!first) sb.Append("&");
+                first = false;
+                // item key part
+                sb.Append("IKP" + i.ToString() + "=" + HttpUtility.UrlEncode(s));
+                i++;
+            }
+            return sb.ToString();
         }
 
 
@@ -106,10 +106,10 @@ namespace _min.Navigation
             routeData.DataTokens.Add("panelId", currentTableActionPanels[action]);
             if(e.CommandArgument.ToString() != ""){   // TODO ... but this should not happen (buttons are in edit panels or as "Isnert")
                 routeData.DataTokens.Add("itemKey", e.CommandArgument);
-                response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
+                Page.Response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ? "ArchitectShowPanelSpecRoute" : "AdministerBrowsePanelSpecRoute",
                     new { action = action, panelId = currentTableActionPanels[action], itemKey = e.CommandArgument } );
             }
-            else response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ?
+            else Page.Response.RedirectToRoute(CE.GlobalState == GlobalState.Architect ?
               "ArchitectShowPanelRoute" : "AdministerBrowsePanelRoute",
               new { action = action, panelId = currentTableActionPanels[action] });
         }

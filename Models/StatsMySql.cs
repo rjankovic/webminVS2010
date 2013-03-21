@@ -121,7 +121,6 @@ namespace _min.Models
 
         private void GetColumnTypes()   // extracts information from the COLUMNS table of INFORMATION_SCHEMA
         {
-            DataTable tbl = null;
             // uneffective
             DataTable stats = fetchAll("SELECT COLUMNS.* FROM COLUMNS JOIN TABLES USING(TABLE_SCHEMA, TABLE_NAME) " +  
                 "WHERE TABLE_TYPE != \"VIEW\" AND TABLES.TABLE_SCHEMA = \"" + webDb + 
@@ -302,7 +301,7 @@ namespace _min.Models
         {
             DataTable stats = fetchAll("SELECT COLUMN_NAME FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
                 + webDb + "\" AND TABLE_NAME = \"" + tableName + "\" AND CONSTRAINT_NAME = \"PRIMARY\" "
-                + " GROUP BY CONSTRAINT_NAME ORDER BY ORDINAL_POSITION");
+                + " ORDER BY ORDINAL_POSITION");
             return new List<string>(from row in stats.AsEnumerable() select row["COLUMN_NAME"] as string);
         }
 

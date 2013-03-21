@@ -48,10 +48,7 @@ namespace _min_t7
 
         protected void Page_Init(object sender, EventArgs e) {
             M2NMappingControl m2nc = new M2NMappingControl();
-            Dictionary<string, int> vals = new Dictionary<string, int>();
-            vals.Add("Halo", 1);
-            vals.Add("Aha", 2);
-            vals.Add("Lala", 3);
+            Dictionary<int, string> vals = new Dictionary<int, string>();
             m2nc.SetOptions(vals);
             this.Form.Controls.Add(m2nc); 
             //this.Controls.Add(m2nc);

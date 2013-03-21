@@ -29,10 +29,12 @@ namespace _min.Models
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new Exception("No data fullfill the condition");
                 DataRow row = table.Rows[0];
+                
                 foreach (Field field in panel.fields)
                 {
                     if (!(field is M2NMappingField))        // value
-                        field.value = row[field.column];
+                        field.value =  row[field.column].GetType() != typeof(MySql.Data.Types.MySqlDateTime) ? row[field.column] : 
+                            ((MySql.Data.Types.MySqlDateTime)row[field.column]).GetDateTime();
                     else
                     {
                         M2NMappingField m2nf = (M2NMappingField)field;
@@ -128,23 +130,26 @@ namespace _min.Models
                     case _min.Common.FieldTypes.FK:
                         FKField fkf = field as FKField;
                         string[] options = Lipsum();
-                        fkf.options = new SortedDictionary<string, int>();
+                        fkf.options = new SortedDictionary<int, string>();
                         foreach (string s in options)
-                            if (!fkf.options.ContainsKey(s))
-                                fkf.options.Add(s, rnd.Next());
+                                fkf.options.Add(rnd.Next(), s);
                         break;
                     case _min.Common.FieldTypes.M2NMapping:
-
-
                         M2NMappingField m2nf = field as M2NMappingField;
-                        m2nf.options = new SortedDictionary<string, int>();
+                        m2nf.options = new SortedDictionary<int, string>();
                         //if (m2nf.Mapping.options.Count == 0)
                         //    break;
                         string[] opts = Lipsum();
                         //m2nf.Mapping.options.Clear();
+                        int rndNext;
                         foreach (string s in opts)
-                            if (!m2nf.options.ContainsKey(s))
-                                m2nf.options.Add(s, rnd.Next());
+                        {
+                            rndNext = rnd.Next();
+                            if (!m2nf.options.ContainsKey(rndNext))
+                                m2nf.options.Add(rndNext, s);
+                            else
+                                continue;
+                        }
                         break;
                     case _min.Common.FieldTypes.Date:
                         field.value = DateTime.Now;
@@ -317,7 +322,7 @@ namespace _min.Models
                         Common.Constants.SALT + (countingForeignTableUse[fk.refTable]--).ToString() : "");
                     joins.Add(dbe.Join(fk, alias));
                 }
-                ntc.data = fetchAccordingly("SELECT ", specSelect, " FROM `" + ntc.panel.tableName + "`", joins);
+                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM `" + ntc.panel.tableName + "`", dbe.Joins(joins));
             }
             else
             {
@@ -379,14 +384,14 @@ namespace _min.Models
             CommitTransaction();
         }
 
-        private SortedDictionary<string, int> fetchFKOptions(FK fk)
+        private SortedDictionary<int, string> fetchFKOptions(FK fk)
         {
-            DataTable tbl = fetchAll("SELECT `" + fk.displayColumn + "`, `" + fk.refColumn + "` FROM `" + fk.refTable + "`");
-            SortedDictionary<string, int> res = new SortedDictionary<string, int>();
+            DataTable tbl = fetchAll("SELECT `" + fk.refColumn + "`, `" + fk.displayColumn + "` FROM `" + fk.refTable + "`");
+            SortedDictionary<int, string> res = new SortedDictionary<int, string>();
             foreach (DataRow r in tbl.Rows)
             {
                 if (r[0] == DBNull.Value || r[0].ToString() == "") continue;
-                res.Add(r[0] as string, (int)r[1]);
+                res.Add((int)r[0], r[1] as string);
             }
             return res;
         }

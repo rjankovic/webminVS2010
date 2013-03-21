@@ -173,7 +173,7 @@ namespace _min.Interfaces
     public interface IDbJoin: IMySqlQueryDeployable
     {
         FK fk { get; set; }
-        string alais { get; set; }
+        string alias { get; set; }
     }
     public interface IDbJoins: IMySqlQueryDeployable
     {

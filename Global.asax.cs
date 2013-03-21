@@ -22,8 +22,8 @@ namespace _min_t7
             RouteTable.Routes.MapPageRoute("ArchitectShowRoute", "architect/show/{projectName}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectShowPanelDefaultRoute", "architect/show/{projectName}/{panelId}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectShowPanelRoute", "architect/show/{projectName}/{panelId}/{action}", "~/Shared/Show.aspx");
-            RouteTable.Routes.MapPageRoute("ArchitectShowPanelSpecRoute", "architect/show/{projectName}/{panelId}/{action}/{itemKey}", 
-                "~/Shared/Show.aspx");
+            //RouteTable.Routes.MapPageRoute("ArchitectShowPanelSpecRoute", "architect/show/{projectName}/{panelId}/{action}/{itemKey}", 
+            //    "~/Shared/Show.aspx");
 
             RouteTable.Routes.MapPageRoute("ArchitectEditMenuRoute", "architect/editMenu/{projectName}", 
                 "~/Architect/EditMenu.aspx");
@@ -38,7 +38,7 @@ namespace _min_t7
             RouteTable.Routes.MapPageRoute("AdministerBrowsePanelDefaultRoute", "admin/{projectName}/{panelId}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("AdministerBrowsePanelPagingRoute", "admin/{projectName}/{panelId}/{page}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("AdministerBrowsePanelRoute", "admin/{projectName}/{panelId}/{action}", "~/Shared/Show.aspx");
-            RouteTable.Routes.MapPageRoute("AdministerBrowsePanelSpecRoute", "admin/{projectName}/{panelId}/{action}/{itemKey}", "~/Shared/Show.aspx");
+            //RouteTable.Routes.MapPageRoute("AdministerBrowsePanelSpecRoute", "admin/{projectName}/{panelId}/{action}/{itemKey}", "~/Shared/Show.aspx");
 
         }
 

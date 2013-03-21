@@ -85,9 +85,9 @@ namespace _min_t7.Shared
             {
                 int panelId = Int32.Parse(Page.RouteData.Values["panelId"].ToString());
 
-                if (RouteData.Values.ContainsKey("itemKey"))
+                if (Request.QueryString.Count > 0)
                 {
-                    SetRoutedPKForPanel(activePanel, RouteData.Values["itemKey"] as string);
+                    SetRoutedPKForPanel(activePanel, Request.QueryString);
                 }
                 //Session["activePanel"] = activePanel;
                 currentPanelActionPanels = new Dictionary<UserAction, int>();
@@ -104,7 +104,8 @@ namespace _min_t7.Shared
             }
 
 
-            navigator = new Navigator(Response, currentPanelActionPanels);
+            
+            navigator = new Navigator(Page, currentPanelActionPanels);
 
 
             MenuEventHandler menuHandler = navigator.MenuHandle;
@@ -166,16 +167,16 @@ namespace _min_t7.Shared
 
 
 
-        void SetRoutedPKForPanel(_min.Models.Panel panel, string PKval)
+        void SetRoutedPKForPanel(_min.Models.Panel panel, System.Collections.Specialized.NameValueCollection queryString)
         {
             DataRow row = webDriver.PKColRowFormat(panel);
-            string[] parts = PKval.Split('/');
-            for (int i = 0; i < row.Table.Columns.Count; i++)
+            for (int i = 0; i < queryString.Count; i++)
             {
+                string decoded = Server.UrlDecode(queryString[i]);
                 if (row.Table.Columns[i].DataType == typeof(int))
-                    row[i] = Int32.Parse(parts[i]);
+                    row[i] = Int32.Parse(decoded);
                 else
-                    row[i] = parts[i];
+                    row[i] = decoded;
             }
             panel.PK = row;
         }
@@ -188,7 +189,7 @@ namespace _min_t7.Shared
             {
                 if (activePanel.type == PanelTypes.NavTree
                     || activePanel.type == PanelTypes.NavTable
-                    || RouteData.Values.ContainsKey("itemKey"))
+                    || Request.QueryString.Count > 0)
                 {
                     if (CE.GlobalState == GlobalState.Architect)
                     {
@@ -287,22 +288,25 @@ namespace _min_t7.Shared
             validationSummary.BorderWidth = 1;
             MainPanel.Controls.Add(validationSummary);
 
-
-            if (Page.RouteData.Values.ContainsKey("panelId"))
-            {
+            if (Page.Request.QueryString.Count == 0) {
+                foreach (Field f in activePanel.fields) {
+                    f.value = null;
+                }
+            }
+            //if (Page.Request.QueryString.Count > 0)
+            //{
 
                 foreach (Field f in activePanel.fields)
                 {
                     f.SetControlData();
                 }
-            }
+            //}
 
         }
 
 
         protected void Page_Load(object sender, EventArgs e)
         {
-
             if (Page.RouteData.Values.ContainsKey("panelId"))
             {
                 if (Page.IsPostBack && activePanel != null)

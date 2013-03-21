@@ -160,7 +160,7 @@ namespace _min.Models
         class InnerJoin : IDbJoin, IMySqlQueryDeployable
         {
             public FK fk { get; set; }
-            public string alais { get; set; }
+            public string alias { get; set; }
 
             public InnerJoin(FK fk)
             {
@@ -170,13 +170,13 @@ namespace _min.Models
             public InnerJoin(FK fk, string alias)
             {
                 this.fk = fk;
-                this.alais = alias;
+                this.alias = alias;
             }
 
             public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
-                sb.Append(" JOIN `" + fk.refTable + "`" + (alais == null ? "" : (" AS '" + alais + "'"))
-                    + " ON `" + fk.myTable + "`.`" + fk.myColumn + "` = `" + fk.refTable + "`.`" + fk.refColumn + "`");
+                sb.Append(" JOIN `" + fk.refTable + "`" + (alias == null ? "" : (" AS `" + alias + "`"))
+                    + " ON `" + fk.myTable + "`.`" + fk.myColumn + "` = `" + (alias == null ? fk.refTable : alias) + "`.`" + fk.refColumn + "`");
             }
         }
 

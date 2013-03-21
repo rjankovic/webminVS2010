@@ -39,10 +39,10 @@ namespace _min.Controls
         }
 
         
-        public void SetOptions(IDictionary<string, int> vals){
+        public void SetOptions(IDictionary<int, string> vals){
             outList.DataSource = vals;
-            outList.DataTextField = "Key";
-            outList.DataValueField = "Value";
+            outList.DataTextField = "Value";
+            outList.DataValueField = "Key";
             EnsureChildControls();
             inList.DataBind();
             outList.DataBind();
