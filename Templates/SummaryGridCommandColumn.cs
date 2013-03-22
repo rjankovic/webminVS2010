@@ -50,7 +50,6 @@ namespace _min.Templates
                         LinkButton delButton = new LinkButton();
                         delButton.Text = "Delete";
                         delButton.CommandName = "_Delete";
-                        delButton.OnClientClick = "return confirm('Really?')";
                         container.Controls.Add(delButton);
                     }
                     break;

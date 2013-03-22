@@ -27,14 +27,8 @@ namespace _min.Controls
         private string _ID;
         public override string ID
         {
-            get { 
-                return _ID; 
-            }
-            set { 
-                _ID = value;
-                tree.ID = ID + "_TreeView";
-                radios.ID = ID + "_RadioButtonList";
-            }
+            get { return _ID; }
+            set { _ID = value; }
         }
 
         public TreeNavigatorControl(HierarchyNavTable hierarchy, List<UserAction> actions) {
@@ -63,10 +57,7 @@ namespace _min.Controls
                 radios.DataSource = actions;
                 radios.DataBind();
                 if (actions.Count == 1)
-                {
                     radios.SelectedIndex = 0;
-                    radios.Visible = false;
-                }
                 radios.SelectedIndexChanged += SelectionChanged;
                 radios.AutoPostBack = true;
 

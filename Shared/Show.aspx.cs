@@ -97,8 +97,7 @@ namespace _min_t7.Shared
                 {
                     foreach (KeyValuePair<UserAction, int> item in x)
                     {
-                        if(!currentPanelActionPanels.ContainsKey(item.Key))     // should be done differently
-                            currentPanelActionPanels.Add(item.Key, item.Value);
+                        currentPanelActionPanels.Add(item.Key, item.Value);
                     }
                 }
 
@@ -179,14 +178,7 @@ namespace _min_t7.Shared
                 else
                     row[i] = decoded;
             }
-            /*
-            if(panel.PK is DataRow)
-                for (int i = 0; i < panel.PK.Table.Columns.Count; i++) { 
-                    if(panel.PK[i] != row[i])
-                        Page.Response.Redirect(Page.Request.Url.ToString(), true);
-                }
-             */ 
-                panel.PK = row;
+            panel.PK = row;
         }
 
         void CreateWebControlsForPanel(MPanel activePanel, System.Web.UI.WebControls.Panel containerPanel)
@@ -201,12 +193,10 @@ namespace _min_t7.Shared
                 {
                     if (CE.GlobalState == GlobalState.Architect)
                     {
-                        webDriver.FillPanelFKOptionsArchitect(activePanel);
                         webDriver.FillPanelArchitect(activePanel);
                     }
                     else if (CE.GlobalState == GlobalState.Administer)
                     {
-                        webDriver.FillPanelFKOptions(activePanel);
                         webDriver.FillPanel(activePanel);
                     }
                     else
@@ -215,11 +205,10 @@ namespace _min_t7.Shared
                         throw new Exception("Unknown global application state (Proposal/Production).");
                     }
                 }
-                else if (activePanel.type == PanelTypes.Editable)   // Insert: fill the FKs and Mappings
+                if (CE.GlobalState == GlobalState.Administer   // Insert: fill the FKs and Mappings
+                    && activePanel.type == PanelTypes.Editable)
                 {
-                    if (CE.GlobalState == GlobalState.Administer)
-                        webDriver.FillPanelFKOptions(activePanel);
-                    else webDriver.FillPanelFKOptionsArchitect(activePanel);
+                    webDriver.FillPanelFKOptions(activePanel);
                 }
             }
             if (activePanel.type == PanelTypes.Editable)
@@ -276,17 +265,11 @@ namespace _min_t7.Shared
                 }
                 else if (control is NavTableControl)
                 {        // it is a mere gridview of a summary panel
-                    NavTableControl ntc = (NavTableControl)control;
-                    System.Web.UI.Control ntcControl = ntc.ToUControl(new GridViewCommandEventHandler(GridCommandEventHandler));
-                    containerPanel.Controls.Add(ntcControl);
-
+                    containerPanel.Controls.Add(((NavTableControl)control).ToUControl(
+                        new GridViewCommandEventHandler(GridCommandEventHandler)));
                 }
                 else    // a simple Button or alike 
-                {
-                    if ((control.action == UserAction.Update || control.action == UserAction.Delete) && Page.Request.QueryString.Count == 0)
-                        continue;
                     containerPanel.Controls.Add(control.ToUControl((CommandEventHandler)UserActionCommandHandler));
-                    }
                 // not GridViewCommandEventHandler
             }
             //if (activePanel.type == PanelTypes.Editable) return;
@@ -305,45 +288,39 @@ namespace _min_t7.Shared
             validationSummary.BorderWidth = 1;
             MainPanel.Controls.Add(validationSummary);
 
-            // insert -> set values to null, but only for the first time (probably would work the same without this, but...)
-            if (Page.Request.QueryString.Count == 0 && !Page.IsPostBack)        
-            {
-                foreach (Field f in activePanel.fields)
-                {
+            if (Page.Request.QueryString.Count == 0) {
+                foreach (Field f in activePanel.fields) {
                     f.value = null;
                 }
             }
-            // set the webcontrols from the stored value
-            foreach (Field f in activePanel.fields)
-            {
-                f.SetControlData();
-            }
+            //if (Page.Request.QueryString.Count > 0)
+            //{
+
+                foreach (Field f in activePanel.fields)
+                {
+                    f.SetControlData();
+                }
+            //}
 
         }
 
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Page.Request.QueryString.Count > 0)
-            //{
-                if (Page.IsPostBack && activePanel != null) // retrieve changes from webcontrols and save them to inner value
+            if (Page.RouteData.Values.ContainsKey("panelId"))
+            {
+                if (Page.IsPostBack && activePanel != null)
                 {
                     foreach (Field f in activePanel.fields)
                     {
-                        if (!(f is M2NMappingField))
-                            f.RetrieveData();
+                        if(!(f is M2NMappingField))
+                        f.RetrieveData();
                     }
                 }
-                if (activePanel != null) {
+                activePanel.RetrieveDataFromFields();
+            }
 
-                    activePanel.RetrieveDataFromFields();
-                }
-            //}
-                Response.Cache.SetCacheability(HttpCacheability.NoCache);       // because of back button issues
-                Response.Cache.SetExpires(DateTime.Now.AddSeconds(-1));
-                Response.Cache.SetNoStore();
-                Response.AppendHeader("Pragma", "no-cache");
-
+            Session["activePanel"] = activePanel;
 
         }
 
@@ -352,19 +329,19 @@ namespace _min_t7.Shared
             if (Page.IsPostBack && activePanel != null)
             {
                 bool reason = false;
-                foreach (Field f in activePanel.fields)     // M2N must be retrieved after event handling - it uses event to change value
+                foreach (Field f in activePanel.fields)
                 {
-                    if (f is M2NMappingField)
-                    {
+                    if (f is M2NMappingField){
                         f.RetrieveData();
                         reason = true;
                     }
                 }
                 if (reason) activePanel.RetrieveDataFromFields();
             }
-            Session["activePanel"] = activePanel;
+            
 
         }
+
 
         private void UserActionCommandHandler(object sender, CommandEventArgs e)
         {
@@ -381,11 +358,6 @@ namespace _min_t7.Shared
                     case UserAction.Update:
                         webDriver.updatePanel(activePanel);
                         break;
-                    case UserAction.Delete:
-                        webDriver.deletePanel(activePanel);
-                        break;
-                    default:
-                        throw new NotImplementedException("Unexpected user action type.");
                 }
             }
 
@@ -415,25 +387,6 @@ namespace _min_t7.Shared
             }
             else
             {
-                if (CE.GlobalState == GlobalState.Administer || true)
-                {
-                    /*Page.ClientScript.RegisterStartupScript(this.GetType(), "showVal", "alert('DO NOT!');", true);*/
-                    GridView grid = (GridView)sender;       // must be fired from a gridview and a gridview only ! (is there another way??)
-                    int selectedIndex = ((GridViewRow)((WebControl)(e.CommandSource)).NamingContainer).DataItemIndex;
-                    var KeyValues = grid.DataKeys[selectedIndex].Values.Values;
-                    DataTable keyTable = new DataTable();
-                    foreach (string colName in activePanel.PKColNames) {
-                        keyTable.Columns.Add(colName);
-                    }
-                    DataRow r = keyTable.NewRow();
-                    int i = 0;
-                    foreach (var colValue in KeyValues) {
-                        r[i++] = colValue;
-                    }
-                    activePanel.PK = r;
-                    webDriver.deletePanel(activePanel);
-                    activePanel.PK = null;
-                }
 
             }
         }

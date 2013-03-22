@@ -146,7 +146,6 @@ namespace _min.Models
             button.Text = this.action.ToString();
             button.CommandName = "_" + action.ToString();
             button.Command += (WC.CommandEventHandler)handler;
-            if (action == UserAction.Delete) button.OnClientClick = "return confirm('Really?')";
             button.ID = "Control" + controlId;
             return button;
         }
@@ -338,7 +337,6 @@ namespace _min.Models
                 }
             }
             res.MenuItemClick += handler;
-            res.ID = "Control" + controlId;
             return res;
         }
 

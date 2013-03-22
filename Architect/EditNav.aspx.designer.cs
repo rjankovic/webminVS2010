@@ -76,15 +76,6 @@ namespace _min_t7.Architect {
         protected global::System.Web.UI.WebControls.RadioButtonList NavControlType;
         
         /// <summary>
-        /// UserActions control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label UserActions;
-        
-        /// <summary>
         /// AllowedActions control.
         /// </summary>
         /// <remarks>

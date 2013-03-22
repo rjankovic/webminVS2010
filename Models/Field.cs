@@ -124,7 +124,15 @@ namespace _min.Models
                     //return resHol;
                     res = resHol;
                     break;
-                case FieldTypes.ShortText:
+                case FieldTypes.Decimal:
+                case FieldTypes.Ordinal:
+                    WC.TextBox resNTxt = new WC.TextBox();
+                    /*
+                    if (value is int || value is long || value is decimal || value is double)
+                        resNTxt.Text = value.ToString();*/
+                    res = resNTxt;
+                    break;
+                case FieldTypes.Varchar:
                     WC.TextBox resTxt = new WC.TextBox();
                     //resTxt.EnableViewState = false;
                     //if(value is string)
@@ -180,8 +188,10 @@ namespace _min.Models
                     throw new NotImplementedException();
                 case FieldTypes.Holder:
                     break;
+                case FieldTypes.Decimal:
+                case FieldTypes.Ordinal:
                 case FieldTypes.Text:
-                case FieldTypes.ShortText:
+                case FieldTypes.Varchar:
                     WC.TextBox resTxt = (WC.TextBox)myControl;
                     value = resTxt.Text;
                     break;
@@ -213,8 +223,10 @@ namespace _min.Models
                     throw new NotImplementedException();
                 case FieldTypes.Holder:
                     break;
+                case FieldTypes.Decimal:
+                case FieldTypes.Ordinal:
                 case FieldTypes.Text:
-                case FieldTypes.ShortText:
+                case FieldTypes.Varchar:
                     WC.TextBox resTxt = (WC.TextBox)myControl;
                     resTxt.Text = value.ToString();
                     break;
@@ -461,7 +473,7 @@ namespace _min.Models
             }
             set
             {
-                if (value == null || value == DBNull.Value || value == "")
+                if (value == null || value == DBNull.Value)
                     this._value = null;
                 else
                     if (value is string)
@@ -496,9 +508,9 @@ namespace _min.Models
         public override void RetrieveData()
         {
             WC.DropDownList ddl = (WC.DropDownList)myControl;
-            if(ddl.SelectedIndex == -1) return;
             int v = Int32.Parse(ddl.SelectedValue);
-            value = v;
+            if (v == int.MinValue) value = null;
+            else value = v;
         }
 
         public override void SetControlData()
