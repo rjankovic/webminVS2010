@@ -10,7 +10,7 @@ namespace _min.Common
     public enum UserAction { View, Insert, Update, Delete, Multiple }
     public enum AppRequest { ArchitectureReload, StopLogging, StartLogging }
     public enum PanelTypes { Editable, NavTable, NavTree, MenuDrop, MenuTabs, Monitor, Container }
-    public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, Varchar, Text, Decimal, Ordinal, Bool, Enum }
+    public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, ShortText, Text, Bool, Enum }
     public enum PropertyConcerns { Control, Validation, View }
     public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, ZIP }
     public enum GlobalState { Unknown, Architect, Administer }

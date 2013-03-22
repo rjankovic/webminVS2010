@@ -136,8 +136,8 @@ namespace _min.Models
             DataColumnCollection cols = stats.ColumnTypes[tableName];
             List<FK> FKs = stats.foreignKeys(tableName);
             List<string> PKCols = stats.PKs[tableName];
-            
-            if(FKs.Any(fk => PKCols.Contains(fk.myColumn))) return null;
+
+            if (FKs.Any(fk => PKCols.Contains(fk.myColumn))) return null;
             // not strict enough
             // if (cols.Count == 2 && FKs.Count == 2) return null; // seems like mapping table
             // FK ~> mapping ?
@@ -145,13 +145,14 @@ namespace _min.Models
             List<ValidationRules> validation = new List<ValidationRules>();
 
 
-            foreach (M2NMapping mapping in mappings) {
+            foreach (M2NMapping mapping in mappings)
+            {
                 if (mapping.myTable != tableName) continue;
                 List<string> displayColOrder = stats.ColumnsToDisplay[mapping.refTable];
                 mapping.displayColumn = displayColOrder[0];
                 fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
             }
-            
+
             // standard FKs
             foreach (FK actFK in FKs)
             {
@@ -161,7 +162,7 @@ namespace _min.Models
                 List<string> displayColOrder = stats.ColumnsToDisplay[actFK.refTable];
                 actFK.displayColumn = displayColOrder[0];
                 fields.Add(new FKField(0, actFK.myColumn, 0, actFK));
-                
+
                 cols.Remove(actFK.myColumn);    // will be edited as a foreign key
             }
 
@@ -175,7 +176,8 @@ namespace _min.Models
                 if (!col.AllowDBNull && col.DataType != typeof(bool)) validation.Add(ValidationRules.Required);
                 FieldTypes fieldType;  // default => standard textBox
 
-                if(col.ExtendedProperties.ContainsKey(CC.ENUM_COLUMN_VALUES)){
+                if (col.ExtendedProperties.ContainsKey(CC.ENUM_COLUMN_VALUES))
+                {
                     EnumField enumField = new EnumField(0, col.ColumnName, 0, (List<string>)(col.ExtendedProperties[CC.ENUM_COLUMN_VALUES]));
                     enumField.validationRules = validation;
                     fields.Add(enumField);
@@ -183,18 +185,18 @@ namespace _min.Models
                 }
                 if (col.DataType == typeof(string))
                 {
-                    if (col.MaxLength <= 255) fieldType = FieldTypes.Varchar;
+                    if (col.MaxLength <= 255) fieldType = FieldTypes.ShortText;
                     else fieldType = FieldTypes.Text;
                 }
-                else if (col.DataType == typeof(int) || col.DataType == typeof(long) || 
+                else if (col.DataType == typeof(int) || col.DataType == typeof(long) ||
                     col.DataType == typeof(short) || col.DataType == typeof(sbyte))
                 {
-                    fieldType = FieldTypes.Ordinal;
+                    fieldType = FieldTypes.ShortText;       // numbers will be edited as plain text => must be validated at all times
                     validation.Add(ValidationRules.Ordinal);
                 }
                 else if (col.DataType == typeof(float) || col.DataType == typeof(double) || col.DataType == typeof(decimal))
                 {
-                    fieldType = FieldTypes.Decimal;
+                    fieldType = FieldTypes.ShortText;
                     validation.Add(ValidationRules.Decimal);
                 }
                 else if (col.DataType == typeof(bool))
@@ -332,7 +334,7 @@ namespace _min.Models
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.myColumn,
-                     displayColOrder[0], new List<UserAction> { UserAction.Delete, UserAction.View });
+                     displayColOrder[0], new List<UserAction> { UserAction.View });
                 Controls.Add(control);
                 control = new Control(0, null, PKCols, UserAction.Insert);
                 Controls.Add(control);
@@ -346,14 +348,15 @@ namespace _min.Models
                 res.AddControls(Controls);
                 return res;
             }
-            else {
+            else
+            {
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTable, new List<Panel>(), new List<Field>(),
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
-                List<UserAction> actions = new List<UserAction>( new UserAction[] { UserAction.View, UserAction.Delete } );
+                List<UserAction> actions = new List<UserAction>(new UserAction[] { UserAction.View, UserAction.Delete });
                 List<string> displayColumns = displayColOrder.GetRange(0, Math.Min(displayColOrder.Count, 4));
-                List<FK> neededFKs =  (from FK fk in FKs where displayColumns.Contains(fk.myColumn) select fk).ToList();
-                
+                List<FK> neededFKs = (from FK fk in FKs where displayColumns.Contains(fk.myColumn) select fk).ToList();
+
                 control = new NavTableControl(0, null, PKCols, neededFKs, actions);
 
                 control.displayColumns = displayColumns;
@@ -456,7 +459,7 @@ namespace _min.Models
                 basePanelHierarchy.Rows[i * 3]["NavId"] = basePanel.children[2 * i].panelId;
                 basePanelHierarchy.Rows[i * 3 + 1]["NavId"] = basePanel.children[2 * i].panelId;
                 basePanelHierarchy.Rows[i * 3 + 2]["NavId"] = basePanel.children[2 * i + 1].panelId;
-            } 
+            }
 
             //AddControl! only.
             /*
@@ -490,7 +493,7 @@ namespace _min.Models
         /// </summary>
         /// <param name="proposalPanel"></param>
         /// <param name="recursive">run itself on panel children</param>
-        /// <returns>true if no errors found, true othervise</returns>
+        /// <returns>true if no errors were found, true otherwise</returns>
         public bool checkPanelProposal(Panel proposalPanel, out List<string> errorMsgs)
         // non-recursive checking after the initial check - after panel modification
         {
@@ -522,7 +525,7 @@ namespace _min.Models
                             List<ValidationRules> r = field.validationRules;
                             if (cols[field.column].AllowDBNull == false &&
                                 !cols[field.column].AutoIncrement &&
-                                !(field.type == FieldTypes.Bool) && 
+                                !(field.type == FieldTypes.Bool) &&
                                 !r.Contains(ValidationRules.Required))
                             {
                                 errorMsgs.Add(messageBeginning
@@ -546,10 +549,11 @@ namespace _min.Models
                                 good = false;
                             }
                             */
-                            if (field.type == FieldTypes.Bool && r.Count > 0) {
+                            if (field.type == FieldTypes.Bool && r.Count > 0)
+                            {
                                 errorMsgs.Add(messageBeginning + ": no validation can be assigned to a checkbox. If needed," +
                                     "set its default value true and remove it from the form.");
-                                good = false;                                
+                                good = false;
                             }
 
                             if ((r.Contains(ValidationRules.Date) || r.Contains(ValidationRules.DateTime))
@@ -561,15 +565,34 @@ namespace _min.Models
                             }
 
                             DataColumn fieldColumn = cols[field.column];
-                            if (field.type != FieldTypes.Varchar)
+                            if (field.type != FieldTypes.ShortText)
                             {
                                 if (field.type == FieldTypes.Text && fieldColumn.DataType != typeof(string))
                                 {
                                     errorMsgs.Add(messageBeginning + "- only text columns can be edited in a text editor");
+                                    good = false;
                                 }
                             }
-                            if (field.caption == null || field.caption == "") {
+                            if (field.caption == null || field.caption == "")
+                            {
                                 errorMsgs.Add(messageBeginning + " must have a caption");
+                                good = false;
+                            }
+                            if ((cols[field.column].DataType == typeof(int)
+                                || cols[field.column].DataType == typeof(long)
+                                || cols[field.column].DataType == typeof(short)) && !field.validationRules.Contains(ValidationRules.Ordinal))
+                            {
+                                errorMsgs.Add(messageBeginning + " is of type " + cols[field.column].DataType.ToString() +
+                                    ", but is not restrained to ordinal values by a validation rule");
+                                good = false;
+                            }
+
+                            if ((cols[field.column].DataType == typeof(decimal)
+                                 || cols[field.column].DataType == typeof(double)
+                                || cols[field.column].DataType == typeof(float)) && !field.validationRules.Contains(ValidationRules.Decimal))
+                            {
+                                errorMsgs.Add(messageBeginning + " is of type " + cols[field.column].DataType.ToString() +
+                                    ", but is not restrained to numeric values by a validation rule");
                                 good = false;
                             }
                         }
@@ -600,21 +623,24 @@ namespace _min.Models
                     }
                 }
                 IEnumerable<string> requiredColsMissing = from DataColumn col in stats.ColumnTypes[proposalPanel.tableName]
-                                                       where col.AllowDBNull == false && col.DefaultValue == null && 
-                                                       !proposalPanel.fields.Exists(x => x.column == col.ColumnName) 
+                                                          where col.AllowDBNull == false && col.DefaultValue == null &&
+                                                          !proposalPanel.fields.Exists(x => x.column == col.ColumnName)
                                                           select col.ColumnName;
 
-                foreach(string missingCol in requiredColsMissing){
+                foreach (string missingCol in requiredColsMissing)
+                {
                     good = false;
-                    errorMsgs.Add("Column " + missingCol + " cannot be NULL and has no default value." + 
+                    errorMsgs.Add("Column " + missingCol + " cannot be NULL and has no default value." +
                         " It must therefore be included in the panel");
                 }
-                if (proposalPanel.panelName == "") {
+                if (proposalPanel.panelName == "")
+                {
                     errorMsgs.Add("Does this panel not deserve a name?");
                     good = false;
                 }
 
-                if (proposalPanel.controls.Count == 0) {
+                if (proposalPanel.controls.Count == 0)
+                {
                     errorMsgs.Add("A panel with no controls would be useless...");
                 }
             }
@@ -657,7 +683,7 @@ namespace _min.Models
             // TODO & TODO & TODO (CONTROLS & OTHER PROPERTIES)
             // OR allow the admin-user take valid steps only (?)
 
-           
+
             return good;
         }
 
