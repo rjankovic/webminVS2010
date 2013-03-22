@@ -24,7 +24,7 @@ namespace _min.Models
         {
             if (panel.fields.Count() > 0)
             { // editable Panel, fetch the DataRow, simple controls
-                var columns = panel.fields.Select(x => x.column).ToList<string>();
+                var columns = panel.fields.Where(x => !(x is M2NMappingField)).Select(x => x.column).ToList<string>();
                 DataTable table = fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new Exception("No data fullfill the condition");
@@ -413,7 +413,7 @@ namespace _min.Models
             foreach (DataRow r in tbl.Rows)
             {
                 if (r[0] == DBNull.Value || r[0].ToString() == "") continue;
-                res.Add((int)r[0], r[1] as string);
+                res.Add((int)r[0], r[1].ToString());
             }
             return res;
         }

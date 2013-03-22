@@ -97,7 +97,8 @@ namespace _min_t7.Architect
                 r.Cells.Add(presentCell);
 
                 FK fk = FKs.Find(x => x.myColumn == col.ColumnName);
-                
+                if(f != null && f is FKField) fk = ((FKField)f).FK;
+
                 TableCell typeCell = new TableCell();
                 DropDownList dl = new DropDownList();
                 if (f is EnumField)
@@ -109,6 +110,19 @@ namespace _min_t7.Architect
                 dl.DataBind();
                 typeCell.Controls.Add(dl);
                 r.Cells.Add(typeCell);
+
+                TableCell FKDisplayCell = new TableCell();
+                if (fk != null)
+                {
+                    DropDownList fkddl = new DropDownList();
+                    fkddl.DataSource = stats.ColumnsToDisplay[fk.refTable];
+                    fkddl.DataBind();
+                    if(f != null)
+                        fkddl.SelectedIndex = fkddl.Items.IndexOf(fkddl.Items.FindByValue(((FKField)f).FK.displayColumn));
+                    FKDisplayCell.Controls.Add(fkddl);
+                    
+                }
+                r.Cells.Add(FKDisplayCell);
 
                 if (f != null) {
                     dl.SelectedIndex = dl.Items.IndexOf(dl.Items.FindByText(f.type.ToString()));
@@ -169,6 +183,15 @@ namespace _min_t7.Architect
                 typeCell.Controls.Add(dl);
                 r.Cells.Add(typeCell);
 
+                TableCell displayCell = new TableCell();
+                DropDownList displayDrop = new DropDownList();
+                displayDrop.DataSource = stats.ColumnsToDisplay[mapping.refTable];
+                displayDrop.DataBind();
+                if (f != null) { 
+                    displayDrop.SelectedIndex = displayDrop.Items.IndexOf(displayDrop.Items.FindByValue(f.Mapping.displayColumn));
+                }
+                displayCell.Controls.Add(displayDrop);
+                r.Cells.Add(displayCell);
 
                 TableCell validCell = new TableCell();  // leave it empty
                 r.Cells.Add(validCell);
@@ -183,7 +206,6 @@ namespace _min_t7.Architect
                 {
                     caption.Text = f.caption;
                 }
-                
 
                 mappingsTbl.Rows.Add(r);
             }
@@ -203,12 +225,9 @@ namespace _min_t7.Architect
             
             backButton.PostBackUrl = backButton.GetRouteUrl("ArchitectShowRoute", new { projectName = projectName });
             
-
         }
 
         
-
-
         protected void Page_Load(object sender, EventArgs e)
         {
 
@@ -235,27 +254,36 @@ namespace _min_t7.Architect
                 FieldTypes type = (FieldTypes)Enum.Parse(typeof(FieldTypes), 
                     ((DropDownList)r.Cells[2].Controls[0]).SelectedValue);
 
+                // cell 3 is for FK display column dropList
+
                 List<ValidationRules> rules = new List<ValidationRules>();
-                CheckBoxList checkBoxList = (CheckBoxList)r.Cells[3].Controls[0];
+                CheckBoxList checkBoxList = (CheckBoxList)r.Cells[4].Controls[0];
                 foreach (ListItem item in checkBoxList.Items)
                 {
                     if (item.Selected)
                         rules.Add((ValidationRules)Enum.Parse(typeof(ValidationRules), item.Value));
                 }
 
-                string caption = ((TextBox)r.Cells[4].Controls[0]).Text;
+                string caption = ((TextBox)r.Cells[5].Controls[0]).Text;
                 if (caption == "") caption = null;
 
                 Field newField;
                 if (type == FieldTypes.FK)
+                {
+                    FK fk = FKs.Find(x => x.myColumn == col.ColumnName);
+                    fk.displayColumn = ((DropDownList)(r.Cells[3].Controls[0])).SelectedValue;
                     newField = new FKField(0, col.ColumnName, actPanel.panelId, FKs.Find(x => x.myColumn == col.ColumnName), caption);
-                else if (type == FieldTypes.Enum) {
+                }
+                else if (type == FieldTypes.Enum)
+                {
                     newField = new EnumField(0, col.ColumnName, actPanel.panelId,
                         (List<string>)stats.ColumnTypes[actPanel.tableName][col.ColumnName].ExtendedProperties[CC.ENUM_COLUMN_VALUES],
                         caption);
                 }
                 else
+                {
                     newField = new Field(0, col.ColumnName, type, actPanel.panelId, caption);
+                }
                 newField.validationRules = rules;
                 fields.Add(newField);
             }
@@ -273,8 +301,9 @@ namespace _min_t7.Architect
                 List<ValidationRules> rules = new List<ValidationRules>();
                 // no validation for a mapping
 
-                string caption = ((TextBox)r.Cells[4].Controls[0]).Text;
-                
+                mapping.displayColumn = ((DropDownList)(r.Cells[3].Controls[0])).SelectedValue;
+
+                string caption = ((TextBox)r.Cells[5].Controls[0]).Text;
 
                 M2NMappingField m2nf = new M2NMappingField(0, null, 0, mapping, caption);
                 fields.Add(m2nf);

@@ -600,11 +600,12 @@ namespace _min.Models
                                 good = false;
                             }
                         }
+                        /*  // cannot occur
                         else if (field is M2NMappingField)
                         {
                             // just cannot occur in a NavTable, but just in case...
                             M2NMapping thisMapping = ((M2NMappingField)field).Mapping;
-                            if (!mappings.Contains(thisMapping))
+                            if (!mappings.Contains(thisMapping))    // use any
                             {
                                 errorMsgs.Add(messageBeginning + "- the schema " +
                                     "does not define an usual M2NMapping batween tables " + thisMapping.myTable +
@@ -616,14 +617,16 @@ namespace _min.Models
                         else if (field is FKField)
                         {
                             FK fieldFK = ((FKField)field).FK;
-                            if (!FKs.Contains(fieldFK))
+                            if (!FKs.Any(x => 
+                                x.refTable == fieldFK.refTable && 
+                                x.myTable == fieldFK.myTable &&
+                                x.myColumn == fieldFK.myColumn &&
+                                x.refColumn == fieldFK.refColumn))
                             {
-                                errorMsgs.Add(messageBeginning + "the column " + field.column
-                                + " managed by the field \"" + field.caption + "\""
-                                + " is not a foreign key representable by the FK field");
+                                errorMsgs.Add(messageBeginning + "is not a foreign key representable by the FK field");
                                 good = false;
                             }
-                        }
+                        }*/
                     }
                 }
                 IEnumerable<string> requiredColsMissing = from DataColumn col in stats.ColumnTypes[proposalPanel.tableName]

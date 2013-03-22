@@ -13,6 +13,7 @@
                 <asp:TableCell runat="server">Column Name</asp:TableCell>
                 <asp:TableCell runat="server">Include</asp:TableCell>
                 <asp:TableCell runat="server">Field Type</asp:TableCell>
+                <asp:TableCell runat="server" Font-Bold="true">FK displayed column</asp:TableCell>
                 <asp:TableCell runat="server">Validation</asp:TableCell>
                 <asp:TableCell runat="server">Caption</asp:TableCell>
             </asp:TableRow>
@@ -23,6 +24,7 @@
                 <asp:TableCell runat="server" Font-Bold="True">Mapping Name</asp:TableCell>
                 <asp:TableCell runat="server" Font-Bold="True">Include</asp:TableCell>
                 <asp:TableCell runat="server" Font-Bold="True">Field Type</asp:TableCell>
+                <asp:TableCell ID="TableCell1" runat="server" Font-Bold="true">Displayed column</asp:TableCell>
                 <asp:TableCell runat="server" Font-Bold="True">Validation</asp:TableCell>
                 <asp:TableCell runat="server" Font-Bold="True">Caption</asp:TableCell>
             </asp:TableRow>
