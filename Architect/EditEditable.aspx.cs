@@ -60,9 +60,8 @@ namespace _min_t7.Architect
             actPanel = sysDriver.getPanel(panelId, false);
             DataColumnCollection cols = stats.ColumnTypes[actPanel.tableName];
 
-            string[] fieldTypes = new string[] { FieldTypes.Varchar.ToString(), FieldTypes.Bool.ToString(), 
-                FieldTypes.Date.ToString(), FieldTypes.DateTime.ToString(), 
-                FieldTypes.Decimal.ToString(), FieldTypes.Ordinal.ToString(), FieldTypes.Text.ToString()
+            string[] fieldTypes = new string[] { FieldTypes.ShortText.ToString(), FieldTypes.Bool.ToString(), 
+                FieldTypes.Date.ToString(), FieldTypes.DateTime.ToString(), FieldTypes.Text.ToString()
                  };
             string[] EnumType = new string[] { FieldTypes.Enum.ToString() };
             string[] FKtype = new string[] { FieldTypes.FK.ToString() };

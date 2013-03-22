@@ -189,6 +189,7 @@ namespace _min.Interfaces
         void FillPanel(Panel panel);
         void FillPanelFKOptions(Panel panel);
         void FillPanelArchitect(Panel panel);
+        void FillPanelFKOptionsArchitect(Panel panel);
         int insertPanel(Panel panel);  // returns insertedId
         void updatePanel(Panel panel);
         void deletePanel(Panel panel);

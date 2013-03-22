@@ -69,6 +69,7 @@ namespace _min.Controls
         public void SetIncludedOptions(List<int> included) {
             foreach (int i in included) {
                 ListItem item = outList.Items.FindByValue(i.ToString());
+                if (item == null) continue;
                 inList.Items.Add(item);
                 outList.Items.Remove(item);
             }

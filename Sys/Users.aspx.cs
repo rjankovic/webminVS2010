@@ -19,13 +19,13 @@ namespace _min_t7.Sys
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            
+
 
             if (!Page.IsPostBack)
             {
                 string connString = ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
                 ISystemDriver sysDriver = new SystemDriverMySql(connString);
-                
+
                 MembershipUserCollection users = Membership.GetAllUsers();
                 string[] projects = sysDriver.GetProjectNameList();
 
@@ -56,20 +56,23 @@ namespace _min_t7.Sys
                 PermissionsSubmit.Enabled = true;
 
                 string userName = UserSelect.SelectedValue;
-                foreach (ListItem item in AdministerCheckboxList.Items) { 
-                    if(Roles.IsUserInRole(userName, item.Value))
+                foreach (ListItem item in AdministerCheckboxList.Items)
+                {
+                    if (Roles.IsUserInRole(userName, item.Value))
                         item.Selected = true;
                     else
                         item.Selected = false;
                 }
-                foreach (ListItem item in ArchitectCheckboxList.Items) { 
-                    if(Roles.IsUserInRole(userName, item.Value))
+                foreach (ListItem item in ArchitectCheckboxList.Items)
+                {
+                    if (Roles.IsUserInRole(userName, item.Value))
                         item.Selected = true;
                     else
                         item.Selected = false;
                 }
             }
-            else {
+            else
+            {
                 AdministerCheckboxList.Enabled = false;
                 ArchitectCheckboxList.Enabled = false;
                 PermissionsSubmit.Enabled = false;
@@ -78,28 +81,51 @@ namespace _min_t7.Sys
 
         protected void PermissionsSubmit_Click(object sender, EventArgs e)
         {
-            string[] AddAdmin = 
-                (from ListItem item in AdministerCheckboxList.Items where item.Selected && 
-                     !Roles.IsUserInRole(UserSelect.SelectedValue, item.Value) select item.Value).ToList<string>().ToArray();
+
+            string[] AddAdmin =
+                (from ListItem item in AdministerCheckboxList.Items
+                 where item.Selected &&
+                     !Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
+                 select item.Value).ToList<string>().ToArray();
             string[] AddArchitect =
-                (from ListItem item in ArchitectCheckboxList.Items where item.Selected && 
-                     !Roles.IsUserInRole(UserSelect.SelectedValue, item.Value) select item.Value).ToList<string>().ToArray();
+                (from ListItem item in ArchitectCheckboxList.Items
+                 where item.Selected &&
+                     !Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
+                 select item.Value).ToList<string>().ToArray();
             string[] RemoveAdmin =
-                (from ListItem item in AdministerCheckboxList.Items where !item.Selected && 
-                     Roles.IsUserInRole(UserSelect.SelectedValue, item.Value) select item.Value).ToList<string>().ToArray();
+                (from ListItem item in AdministerCheckboxList.Items
+                 where !item.Selected &&
+                     Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
+                 select item.Value).ToList<string>().ToArray();
             string[] RemoveArchitect =
-                (from ListItem item in ArchitectCheckboxList.Items where !item.Selected && 
-                     Roles.IsUserInRole(UserSelect.SelectedValue, item.Value) select item.Value).ToList<string>().ToArray();
-            string[] user =  { UserSelect.SelectedValue };
+                (from ListItem item in ArchitectCheckboxList.Items
+                 where !item.Selected &&
+                     Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
+                 select item.Value).ToList<string>().ToArray();
+            string[] user = { UserSelect.SelectedValue };
+            foreach (string s in AddAdmin)
+            {
+                if (!Roles.RoleExists(s))
+                {
+                    Roles.CreateRole(s);
+                }
+            }
+            foreach (string s in AddArchitect)
+            {
+                if (!Roles.RoleExists(s))
+                {
+                    Roles.CreateRole(s);
+                }
+            }
 
             if (AddAdmin.Length > 0)
-            Roles.AddUsersToRoles(user, AddAdmin);
+                Roles.AddUsersToRoles(user, AddAdmin);
             if (AddArchitect.Length > 0)
-            Roles.AddUsersToRoles(user, AddArchitect);
+                Roles.AddUsersToRoles(user, AddArchitect);
             if (RemoveAdmin.Length > 0)
-            Roles.RemoveUsersFromRoles(user, RemoveAdmin);
+                Roles.RemoveUsersFromRoles(user, RemoveAdmin);
             if (RemoveArchitect.Length > 0)
-            Roles.RemoveUsersFromRoles(user, RemoveArchitect);
+                Roles.RemoveUsersFromRoles(user, RemoveArchitect);
         }
     }
 }

@@ -127,30 +127,6 @@ namespace _min.Models
                 amount = rnd.Next() % 5 + 5;
                 switch (field.type)
                 {
-                    case _min.Common.FieldTypes.FK:
-                        FKField fkf = field as FKField;
-                        string[] options = Lipsum();
-                        fkf.options = new SortedDictionary<int, string>();
-                        foreach (string s in options)
-                                fkf.options.Add(rnd.Next(), s);
-                        break;
-                    case _min.Common.FieldTypes.M2NMapping:
-                        M2NMappingField m2nf = field as M2NMappingField;
-                        m2nf.options = new SortedDictionary<int, string>();
-                        //if (m2nf.Mapping.options.Count == 0)
-                        //    break;
-                        string[] opts = Lipsum();
-                        //m2nf.Mapping.options.Clear();
-                        int rndNext;
-                        foreach (string s in opts)
-                        {
-                            rndNext = rnd.Next();
-                            if (!m2nf.options.ContainsKey(rndNext))
-                                m2nf.options.Add(rndNext, s);
-                            else
-                                continue;
-                        }
-                        break;
                     case _min.Common.FieldTypes.Enum:
                         field.value = 1;
                         break;
@@ -165,17 +141,13 @@ namespace _min.Models
                         break;
                     case _min.Common.FieldTypes.Holder:
                         break;
-                    case _min.Common.FieldTypes.Varchar:
+                    case _min.Common.FieldTypes.ShortText:
                         field.value = LWord();
+                        if (field.validationRules.Contains(Common.ValidationRules.Ordinal)) field.value = rnd.Next() % 10000;
+                        else if (field.validationRules.Contains(Common.ValidationRules.Decimal)) field.value = rnd.NextDouble() * 1000;
                         break;
                     case _min.Common.FieldTypes.Text:
                         field.value = LText();
-                        break;
-                    case _min.Common.FieldTypes.Decimal:
-                        field.value = rnd.NextDouble() % 100000;
-                        break;
-                    case _min.Common.FieldTypes.Ordinal:
-                        field.value = rnd.Next() % 10000;
                         break;
                     case _min.Common.FieldTypes.Bool:
                         field.value = false;
@@ -259,6 +231,46 @@ namespace _min.Models
 
             foreach (Panel p in panel.children)
                 FillPanelArchitect(p);
+        }
+
+
+        public void FillPanelFKOptionsArchitect(Panel panel) {
+            Random rnd = new Random();
+            int amount;
+            foreach (Field field in panel.fields)
+            {
+                amount = rnd.Next() % 5 + 5;
+                switch (field.type)
+                {
+                    case _min.Common.FieldTypes.FK:
+                        FKField fkf = field as FKField;
+                        string[] options = Lipsum();
+                        fkf.options = new SortedDictionary<int, string>();
+                        foreach (string s in options)
+                            fkf.options.Add(rnd.Next(), s);
+                        break;
+                    case _min.Common.FieldTypes.M2NMapping:
+                        M2NMappingField m2nf = field as M2NMappingField;
+                        m2nf.options = new SortedDictionary<int, string>();
+                        //if (m2nf.Mapping.options.Count == 0)
+                        //    break;
+                        string[] opts = Lipsum();
+                        //m2nf.Mapping.options.Clear();
+                        int rndNext;
+                        foreach (string s in opts)
+                        {
+                            rndNext = rnd.Next();
+                            if (!m2nf.options.ContainsKey(rndNext))
+                                m2nf.options.Add(rndNext, s);
+                            else
+                                continue;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
         }
 
 
@@ -375,14 +387,16 @@ namespace _min.Models
 
         public void deletePanel(Panel panel)
         {
-            StartTransaction();
+            //StartTransaction();
             int affected = query("DELETE FROM `" + panel.tableName + "` WHERE", dbe.Condition(panel.PK));
-            if (affected > 1)
+            /*
+            if (affected > 1)   // do or not to deo?
             {
                 RollbackTransaction();
                 throw new Exception("Panel PK not unique, trying to delete more rows at a time!");
             }
-            CommitTransaction();
+            */ 
+            //CommitTransaction();
         }
 
         private SortedDictionary<int, string> fetchFKOptions(FK fk)

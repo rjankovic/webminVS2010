@@ -98,10 +98,6 @@ namespace _min_t7.Architect
 
         }
 
-            
-
-        
-
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -142,6 +138,14 @@ namespace _min_t7.Architect
                 _min.Models.Control c;
                 List<_min.Models.Control> controls = new List<_min.Models.Control>();
 
+                _min.Models.Control insertButton = null;
+
+                if (actions.Contains(UserAction.Insert))
+                {
+                    insertButton = new _min.Models.Control(actPanel.panelId, "Insert", UserAction.Insert);
+                    actions.Remove(UserAction.Insert);
+                }
+
                 if (NavControlType.SelectedValue.EndsWith("Table"))
                 {
                     List<FK> neededFKs = (from FK fk in FKs where displayCols.Contains(fk.myColumn) select fk).ToList<FK>();
@@ -150,16 +154,14 @@ namespace _min_t7.Architect
                     c.displayColumns = displayCols;
                 }
                 else {
+                    actions.Remove(UserAction.Delete);      // cannot use delete in NavTrees
                     c = new TreeControl(actPanel.panelId, new HierarchyNavTable(), stats.PKs[actPanel.tableName][0], 
                         hierarchy.myColumn, displayCols[0], actions);
                 }
                 controls.Add(c);
+                if (insertButton != null)
+                    controls.Add(insertButton);
                 
-                if (actions.Contains(UserAction.Insert))
-                {
-                    controls.Add(new _min.Models.Control(actPanel.panelId, "Insert", UserAction.Insert));
-                    actions.Remove(UserAction.Insert);
-                }
 
                 foreach (_min.Models.Control listedControl in controls) {
                     listedControl.targetPanelId = actPanel.controls[0].targetPanelId;

@@ -14,6 +14,8 @@
         
         <asp:RadioButtonList ID="NavControlType" runat="server">
         </asp:RadioButtonList>
+        <asp:Label ID="UserActions" runat="server" 
+            Text="Allowed user actions - delete does not apply for Navigation Trees"></asp:Label>
         <asp:CheckBoxList ID="AllowedActions" runat="server">
         </asp:CheckBoxList>
         <asp:Button ID="SaveButton" runat="server" onclick="SaveButton_Click" 
