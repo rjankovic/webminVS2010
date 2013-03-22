@@ -94,6 +94,7 @@ namespace _min.Models
         private IStats stats;
         public List<M2NMapping> mappings;
         public List<string> hierarchies;
+        public List<string> excludedTables = new List<string>();
 
 
         public Architect(ISystemDriver system, IStats stats)
@@ -137,7 +138,9 @@ namespace _min.Models
             List<FK> FKs = stats.foreignKeys(tableName);
             List<string> PKCols = stats.PKs[tableName];
 
-            if (FKs.Any(fk => PKCols.Contains(fk.myColumn))) return null;
+            //if (FKs.Any(fk => PKCols.Contains(fk.myColumn))) return null;
+            // can popose for tables with foreign PK, but not recommended (and not the default choice in Table Usage Step in proposal)
+            
             // not strict enough
             // if (cols.Count == 2 && FKs.Count == 2) return null; // seems like mapping table
             // FK ~> mapping ?
@@ -395,6 +398,7 @@ namespace _min.Models
             HierarchyNavTable basePanelHierarchy = new HierarchyNavTable();
             foreach (string tableName in tables)
             {
+                if (excludedTables.Contains(tableName)) continue;
                 //Notice(this, new ArchitectNoticeEventArgs("Exploring table \"" + tableName + "\"..."));
                 Panel editPanel = proposeForTable(tableName);
                 if (editPanel != null)

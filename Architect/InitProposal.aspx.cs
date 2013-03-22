@@ -28,7 +28,7 @@ namespace _min_t7.Architect
             _min.Common.Environment.GlobalState = GlobalState.Architect;
             if (!Page.IsPostBack)
             {
-                
+
 
                 InitProposalWizard.ActiveStepIndex = 0;
                 string projectName = Page.RouteData.Values["projectName"] as string;
@@ -83,7 +83,42 @@ namespace _min_t7.Architect
 
             switch (InitProposalWizard.ActiveStepIndex)
             {
-                case 0:
+                case 0: // set the gridview
+                    List<M2NMapping> mappings = stats.findMappings();
+                    Session["mappings"] = mappings;
+
+                    List<string> tables = stats.Tables;
+                    DataTable tablesUsageSource = new DataTable();
+                    tablesUsageSource.Columns.Add("TableName", typeof(string));
+                    tablesUsageSource.Columns.Add("DirectEdit", typeof(bool));
+                    foreach (string tblName in tables)
+                    {
+                        DataRow r = tablesUsageSource.NewRow();
+                        r[0] = tblName;
+                        r[1] = !mappings.Any(m => m.mapTable == tblName);
+                        tablesUsageSource.Rows.Add(r);
+                    }
+                    TablesUsageGridView.DataSource = tablesUsageSource;
+                    TablesUsageGridView.DataBind();
+                    break;
+
+                case 1:
+                    // save data about TableUsage
+                    Dictionary<string, string> displayColumnPreferences = new Dictionary<string, string>();
+                    List<string> excludedTables = new List<string>();
+                    int i = 0;
+                    List<string> allTables = stats.Tables;
+                    foreach (GridViewRow gr in TablesUsageGridView.Rows)
+                    {
+                        string tableName = allTables[i++];
+                        if (!((CheckBox)(gr.FindControl("DirectEditCheck"))).Checked)
+                            excludedTables.Add(tableName);
+                        displayColumnPreferences[tableName] = ((DropDownList)(gr.FindControl("DisplayColumnDrop"))).SelectedValue;
+                    }
+                    Session["displayColumnPreferences"] = displayColumnPreferences;
+                    Session["excludedTables"] = excludedTables;
+
+                    // show hierarchies info
                     Dictionary<string, KeyValuePair<bool, string>> status = architect.CheckHierarchies();
                     ProblemListHierarchies.Items.Clear();
                     List<string> goodHierarchies = new List<string>();
@@ -94,11 +129,26 @@ namespace _min_t7.Architect
                     }
                     Session["goodHierarchies"] = goodHierarchies;
                     break;
-                case 1:
-                    List<M2NMapping> mappings = stats.findMappings();       // cache on stats side
+                case 2: // get ready for mappings editation
+
+                    mappings = (List<M2NMapping>)Session["mappings"];      // cache on stats side
+                    if (mappings == null) mappings = stats.findMappings();
                     MappingsChoiceRepeater.DataSource = mappings;
                     MappingsChoiceRepeater.DataBind();
-                    Session["mappings"] = mappings;
+                    break;
+                case 3:
+                    CheckBox ItemCheckBox;
+                    List<M2NMapping> mappingList = (List<M2NMapping>)Session["mappings"];
+                    List<M2NMapping> finMappingList = new List<M2NMapping>();
+                    i = 0;
+                    foreach (RepeaterItem item in MappingsChoiceRepeater.Items)
+                    {
+                        ItemCheckBox = (CheckBox)item.FindControl("ItemCheckBox");
+                        if (ItemCheckBox.Checked)
+                            finMappingList.Add(mappingList[i]);
+                        i++;
+                    }
+                    Session["finMappingList"] = finMappingList;
                     break;
             }
 
@@ -106,24 +156,28 @@ namespace _min_t7.Architect
 
         protected void InitProposalWizard_FinishButtonClick(object sender, WizardNavigationEventArgs e)
         {
-            WaitLabel.Visible = true;
+            List<string> excludedTables = (List<string>)Session["excludedTables"];
+            Dictionary<string, string> displayColumnPreferences = (Dictionary<string, string>)Session["displayColumnPreferences"];
+            List<M2NMapping> finMappingsList = (List<M2NMapping>)Session["finMappingList"];
 
-            CheckBox ItemCheckBox;
-            List<M2NMapping> mappingsList = (List<M2NMapping>)Session["mappings"];
-            int i = 0;
-            List<M2NMapping> finMappingsList = new List<M2NMapping>();
-            foreach (RepeaterItem item in MappingsChoiceRepeater.Items)
-            {
-                ItemCheckBox = (CheckBox)item.FindControl("ItemCheckBox");
-                if (ItemCheckBox.Checked)
-                    finMappingsList.Add(mappingsList[i]);
-                i++;
-            }
             architect.mappings = finMappingsList;
+            architect.excludedTables = excludedTables;
+            stats.SetDisplayPreferences(displayColumnPreferences);
             architect.hierarchies = (List<string>)Session["goodHierarchies"];
             _min.Models.Panel proposal = architect.propose();       // saved within proposing
             //sysDriver.AddPanel(proposal);
-            WaitLabel.Text = "Done...?";
+            string projectName = Page.RouteData.Values["projectName"] as string;
+            Response.RedirectToRoute("ArchitectShowRoute", new { projectName = projectName });
+        }
+
+        protected void TablesUsageGridView_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType != DataControlRowType.DataRow) return;
+            CheckBox cb = (CheckBox)(e.Row.Cells[1].FindControl("DirectEditCheck"));
+            cb.Checked = (bool)(((DataRowView)(e.Row.DataItem))[1]);
+            DropDownList ddl = (DropDownList)(e.Row.Cells[2].FindControl("DisplayColumnDrop"));
+            ddl.DataSource = stats.ColumnsToDisplay[((DataRowView)(e.Row.DataItem))[0] as string];
+            ddl.DataBind();
         }
 
     }

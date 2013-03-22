@@ -67,6 +67,24 @@ namespace _min_t7.Architect {
         protected global::System.Web.UI.WebControls.Button RetryButton;
         
         /// <summary>
+        /// WizardStepTableUsage control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.WizardStep WizardStepTableUsage;
+        
+        /// <summary>
+        /// TablesUsageGridView control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView TablesUsageGridView;
+        
+        /// <summary>
         /// WizardStepHierarchies control.
         /// </summary>
         /// <remarks>
@@ -110,6 +128,15 @@ namespace _min_t7.Architect {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Repeater MappingsChoiceRepeater;
+        
+        /// <summary>
+        /// WizardStepFinish control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.WizardStep WizardStepFinish;
         
         /// <summary>
         /// WaitLabel control.

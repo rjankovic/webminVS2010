@@ -217,6 +217,7 @@ namespace _min.Interfaces
         FK SelfRefFKStrict(string tableName);
         Dictionary<string, List<FK>> FKs { get; }
         List<string> Tables { get; }
+        void SetDisplayPreferences(Dictionary<string, string> pref);
     }
     /*
     public interface IArchitect  // systemDB, does not fill structures with data

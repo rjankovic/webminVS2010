@@ -174,11 +174,18 @@ namespace _min.Models
                         foreach (DataColumn col in c.data.Columns)
                         {
                             //if(!c.data.PrimaryKeycol.Unique = false;
-                            if (col.DataType == typeof(DateTime))
+                            if (col.DataType == typeof(DateTime) || col.DataType == typeof(MySql.Data.Types.MySqlDateTime))
                             {
-                                foreach (DataRow r in rows) r[col] = DateTime.Now + new TimeSpan(rnd.Next() % 30, rnd.Next() % 24, rnd.Next() % 60, rnd.Next() % 60);
+
+                                foreach (DataRow r in rows)
+                                {
+                                    DateTime dt = DateTime.Now + new TimeSpan(rnd.Next() % 30, rnd.Next() % 24, rnd.Next() % 60, rnd.Next() % 60);
+                                    if (col.DataType == typeof(DateTime))
+                                        r[col] = dt;
+                                    else r[col] = new MySql.Data.Types.MySqlDateTime(dt);
+                                }
                             }
-                            else if (col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
+                            else if(col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
                             {
                                 foreach (DataRow r in rows) r[col] = rnd.Next() % 10000;
                             }
