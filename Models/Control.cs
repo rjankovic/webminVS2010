@@ -13,6 +13,7 @@ using _min.Controls;
 
 using UControl = System.Web.UI.Control;
 using WC = System.Web.UI.WebControls;
+using System.Web.UI.WebControls;
 
 namespace _min.Models
 {
@@ -140,7 +141,7 @@ namespace _min.Models
             this.panelId = panel.panelId;
         }
 
-        public virtual UControl ToUControl(WC.CommandEventHandler handler, string navigateUrl = null)
+        public virtual void ToUControl(UControl container, WC.CommandEventHandler handler, string navigateUrl = null)
         {
             WC.Button button = new WC.Button();
             button.Text = this.action.ToString();
@@ -148,7 +149,7 @@ namespace _min.Models
             button.Command += (WC.CommandEventHandler)handler;
             if (action == UserAction.Delete) button.OnClientClick = "return confirm('Really?')";
             button.ID = "Control" + controlId;
-            return button;
+            container.Controls.Add(button);
         }
 
     }
@@ -189,17 +190,13 @@ namespace _min.Models
         
         }
 
-        public virtual UControl ToUControl(WC.GridViewCommandEventHandler handler, string navigateUrl = null)
+        public virtual void ToUControl(UControl container, WC.GridViewCommandEventHandler handler, string navigateUrl = null)
         {
             // take care of all the dependant controls as well
             WC.GridView grid = new WC.GridView();
             grid.DataKeyNames = PKColNames.ToArray();
-            
-            grid.AutoGenerateColumns = false;
-            grid.DataSource = data;
 
-            grid.AllowPaging = grid.Rows.Count > 15;
-            grid.PageSize = 15;
+            grid.AutoGenerateColumns = false;
 
             WC.TemplateField tf = new WC.TemplateField();
             tf.HeaderTemplate = new SummaryGridCommandColumn(WC.ListItemType.Header);
@@ -224,6 +221,18 @@ namespace _min.Models
                 grid.Columns.Add(bf);
             }
 
+            
+            //grid.EnableSortingAndPagingCallbacks = true;
+            //grid.PageSize = 15;
+            //grid.PageIndex = 0;
+
+            container.Controls.Add(grid);
+
+            grid.AllowPaging = true;
+            grid.PageSize = 15;
+            grid.PageIndexChanging += GridView_PageIndexChanging;
+            
+            grid.DataSource = data;
             grid.DataBind();
             /*
             foreach(WC.DataControlField f in grid.Columns){
@@ -235,7 +244,16 @@ namespace _min.Models
             }*/
             grid.RowCommand += handler;
             grid.ID = "Control" + controlId;
-            return grid;
+        }
+
+        protected void GridView_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            GridView gv = (GridView)sender;
+            DataTable dataTable = gv.DataSource as DataTable;
+            
+            gv.DataSource = dataTable;
+            gv.PageIndex = e.NewPageIndex;
+            gv.DataBind();
         }
 
     }
@@ -321,7 +339,7 @@ namespace _min.Models
             storedHierarchyDataSet = storedHierarchyData.DataSet;
         }
 
-        public UControl ToUControl(WC.MenuEventHandler handler, string navigateUrl = null)
+        public void ToUControl(UControl container, WC.MenuEventHandler handler, string navigateUrl = null)
         {
             if(panel.type != PanelTypes.MenuDrop) throw new ArgumentException(
                 "MenuEventHandler can operate only on a Menu - within a MenuDrop panel");
@@ -339,14 +357,14 @@ namespace _min.Models
             }
             res.MenuItemClick += handler;
             res.ID = "Control" + controlId;
-            return res;
+            container.Controls.Add(res);
         }
 
-        public override UControl ToUControl(WC.CommandEventHandler handler, string navigateUrl = null)
+        public override void ToUControl(UControl container, WC.CommandEventHandler handler, string navigateUrl = null)
         {
             TreeNavigatorControl tn = new TreeNavigatorControl(storedHierarchyData, actions);
             tn.ActionChosen += handler;
-            return tn;
+            container.Controls.Add(tn);
         }
 
         private void AddSubmenuForItem(HierarchyRow row, WC.MenuItem item)

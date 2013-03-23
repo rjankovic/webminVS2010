@@ -280,7 +280,9 @@ namespace _min.Models
         public Panel getArchitectureInPanel() {        // !!! make sure there is only one panel with id_parent = NULL
             int basePanelId = (int)fetchSingle("SELECT id_panel FROM panels WHERE id_parent IS NULL AND id_project = ", 
                 CE.project.id);
+            StartTransaction();
             Panel res = getPanel(basePanelId, true);
+            CommitTransaction();
             return res;
         }
 

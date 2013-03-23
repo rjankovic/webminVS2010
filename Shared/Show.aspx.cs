@@ -110,10 +110,10 @@ namespace _min_t7.Shared
 
 
             MenuEventHandler menuHandler = navigator.MenuHandle;
-            Menu baseMenu = (Menu)((TreeControl)basePanel.controls[0]).ToUControl(navigator.MenuHandler);
-            baseMenu.ID = "baseMenu";
-            baseMenu.EnableViewState = false;
-            MainPanel.Controls.Add(baseMenu);
+            ((TreeControl)basePanel.controls[0]).ToUControl(MainPanel, navigator.MenuHandler);
+            //baseMenu.ID = "baseMenu";
+            //baseMenu.EnableViewState = false;
+            //MainPanel.Controls.Add(baseMenu);
             if (CE.GlobalState == GlobalState.Architect)
             {
                 LinkButton editMenuLink = new LinkButton();
@@ -272,20 +272,19 @@ namespace _min_t7.Shared
             {
                 if (control is TreeControl)
                 {
-                    containerPanel.Controls.Add(((TreeControl)control).ToUControl(navigator.TreeHandler));
+                    ((TreeControl)control).ToUControl(containerPanel, navigator.TreeHandler);
                 }
                 else if (control is NavTableControl)
                 {        // it is a mere gridview of a summary panel
                     NavTableControl ntc = (NavTableControl)control;
-                    System.Web.UI.Control ntcControl = ntc.ToUControl(new GridViewCommandEventHandler(GridCommandEventHandler));
-                    containerPanel.Controls.Add(ntcControl);
-
+                    ntc.ToUControl(containerPanel, new GridViewCommandEventHandler(GridCommandEventHandler));
+                    
                 }
                 else    // a simple Button or alike 
                 {
                     if ((control.action == UserAction.Update || control.action == UserAction.Delete) && Page.Request.QueryString.Count == 0)
                         continue;
-                    containerPanel.Controls.Add(control.ToUControl((CommandEventHandler)UserActionCommandHandler));
+                    control.ToUControl(containerPanel, (CommandEventHandler)UserActionCommandHandler);
                     }
                 // not GridViewCommandEventHandler
             }
@@ -409,6 +408,7 @@ namespace _min_t7.Shared
 
         private void GridCommandEventHandler(object sender, GridViewCommandEventArgs e)
         {
+            if (e.CommandName == "Page") return;
             if ((UserAction)Enum.Parse(typeof(UserAction), (e.CommandName.Substring(1))) != UserAction.Delete)
             {
                 navigator.GridViewCommandHandler(sender, e);

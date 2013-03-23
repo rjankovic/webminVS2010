@@ -36,7 +36,7 @@ namespace _min_t7.Architect
                 _min.Common.Environment.project = sysDriver.getProject(projectName);
                 string WebDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
                 dbLog = new DataTable();
-                stats = new StatsMySql(CE.project.connstringIS, WebDbName, dbLog, true);
+                stats = new StatsMySql(CE.project.connstringIS, WebDbName);
                 architect = new _min.Models.Architect(sysDriver, stats);
                 Session["sysDriver"] = sysDriver;
                 Session["stats"] = stats;
@@ -75,7 +75,7 @@ namespace _min_t7.Architect
 
         protected void Page_PreRender(object sender, EventArgs e)
         {
-            sysDriver.ProcessLogTable(stats.logTable);
+            //sysDriver.ProcessLogTable(stats.logTable);
         }
 
         protected void InitProposalWizard_NextButtonClick(object sender, WizardNavigationEventArgs e)
@@ -88,11 +88,13 @@ namespace _min_t7.Architect
                     Session["mappings"] = mappings;
 
                     List<string> tables = stats.Tables;
+                    List<string> PKless = (List<string>)Session["PKless"];
                     DataTable tablesUsageSource = new DataTable();
                     tablesUsageSource.Columns.Add("TableName", typeof(string));
                     tablesUsageSource.Columns.Add("DirectEdit", typeof(bool));
                     foreach (string tblName in tables)
                     {
+                        if (PKless.Contains(tblName)) continue;
                         DataRow r = tablesUsageSource.NewRow();
                         r[0] = tblName;
                         r[1] = !mappings.Any(m => m.mapTable == tblName);
@@ -108,12 +110,19 @@ namespace _min_t7.Architect
                     List<string> excludedTables = new List<string>();
                     int i = 0;
                     List<string> allTables = stats.Tables;
+                    PKless = (List<string>)Session["PKless"];
                     foreach (GridViewRow gr in TablesUsageGridView.Rows)
                     {
                         string tableName = allTables[i++];
+                        while(PKless.Contains(tableName)) tableName = allTables[i++];
+
                         if (!((CheckBox)(gr.FindControl("DirectEditCheck"))).Checked)
                             excludedTables.Add(tableName);
                         displayColumnPreferences[tableName] = ((DropDownList)(gr.FindControl("DisplayColumnDrop"))).SelectedValue;
+                    }
+                    PKless = (List<string>)Session["PKless"];
+                    foreach (string Pkl in PKless) {
+                        excludedTables.Add(Pkl);
                     }
                     Session["displayColumnPreferences"] = displayColumnPreferences;
                     Session["excludedTables"] = excludedTables;

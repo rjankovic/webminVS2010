@@ -103,7 +103,7 @@ namespace _min.Models
         public void SetDisplayPreferences(Dictionary<string, string> pref) {
             if (columnsToDisplay == null)
                 FindColumnsToDisplay();
-            foreach (string tblName in columnsToDisplay.Keys) {
+            foreach (string tblName in pref.Keys) {
                 if (columnsToDisplay[tblName][0] != pref[tblName]) {
                     string top = columnsToDisplay[tblName][0];
                     columnsToDisplay[tblName][columnsToDisplay[tblName].FindIndex(x => x == pref[tblName])] = top;

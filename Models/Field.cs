@@ -220,6 +220,10 @@ namespace _min.Models
                     break;
                 case FieldTypes.Bool:
                     WC.CheckBox cb = (WC.CheckBox)myControl;
+                    if(value is sbyte){
+                        if ((sbyte)value == 0) value = false;
+                        else if ((sbyte)value == 1) value = true;
+                    }
                     cb.Checked = (bool)value;
                     break;
                 case FieldTypes.Enum:

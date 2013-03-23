@@ -185,9 +185,10 @@ namespace _min.Models
                                     else r[col] = new MySql.Data.Types.MySqlDateTime(dt);
                                 }
                             }
-                            else if(col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short))
+                            else if(col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short)
+                                || col.DataType == typeof(sbyte))
                             {
-                                foreach (DataRow r in rows) r[col] = rnd.Next() % 10000;
+                                foreach (DataRow r in rows) r[col] = rnd.Next() % 100;
                             }
                             else if (col.DataType == typeof(float)
                                 || col.DataType == typeof(double)
