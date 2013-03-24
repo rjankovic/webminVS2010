@@ -142,10 +142,9 @@ namespace _min.Models
             Dictionary<string, DataColumnCollection> res = new Dictionary<string, DataColumnCollection>();
             foreach(string tableName in TableList()){
                 DataTable schema = fetchSchema("SELECT * FROM `" + webDb + "`.`" + tableName + "`");
-                schema.PrimaryKey = new DataColumn[] { };
-                schema.Constraints.Clear();
+                //schema.PrimaryKey = new DataColumn[] { };
+                //schema.Constraints.Clear(); - need the constraints to find unique columns
                 res[tableName] = schema.Columns;
-
             }
 
             foreach (DataRow r in stats.Rows) {
@@ -173,8 +172,8 @@ namespace _min.Models
                 //string typeStr = col.DataType.ToString() as string;      // set DataType
                 //Type representedType = typeof(object);
                 
-                if (col.DataType == typeof(string)) { 
-                    col.ExtendedProperties.Add("length", Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]));
+                if (col.DataType == typeof(string)) {
+                    col.MaxLength = Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]);
                 }
                 /*
                 else switch (typeStr) {     // using fetchSchema instead

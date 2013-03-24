@@ -267,13 +267,8 @@ namespace _min.Models
                         regexVal2.Display = WC.ValidatorDisplay.None;
                         res.Add(regexVal2);
                         break;
-                    case ValidationRules.ZIP:
-                        WC.RegularExpressionValidator regexValZIP = new WC.RegularExpressionValidator();
-                        regexValZIP.ControlToValidate = fieldControl.ID;
-                        regexValZIP.ValidationExpression = "[0-9]{5}";
-                        regexValZIP.ErrorMessage = this.caption + " must be a valid ZIP code";
-                        regexValZIP.Display = WC.ValidatorDisplay.None;
-                        res.Add(regexValZIP);
+                    case ValidationRules.Unique:
+                        // will be ensured during Webdriver insert / update
                         break;
                     default:
                         break;

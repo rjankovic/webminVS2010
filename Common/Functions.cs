@@ -5,6 +5,7 @@ using System.Text;
 using System.Reflection;
 using System.IO;
 using System.Data;
+using System.Web.UI;
 
 namespace _min.Common
 {
@@ -58,6 +59,7 @@ namespace _min.Common
 
         public int Compare(DataColumn x, DataColumn y)
         {
+            if (x.Unique && !y.Unique) return -1;
             if (x == y || x.DataType == y.DataType) return 0;
             if (x == null) return 1;
             if (y == null) return -1;
@@ -70,6 +72,29 @@ namespace _min.Common
             if (x.DataType == typeof(int)) return -1;
             if (y.DataType == typeof(int)) return 1;
             return 0;
+        }
+    }
+
+    public class ValidationError : IValidator
+    {
+        private ValidationError(string message)
+        {
+            ErrorMessage = message;
+            IsValid = false;
+        }
+
+        public string ErrorMessage { get; set; }
+
+        public bool IsValid { get; set; }
+
+        public void Validate()
+        {
+            // no action required
+        }
+
+        public static void Display(string message, Page currentPage)
+        {
+            currentPage.Validators.Add(new ValidationError(message));
         }
     }
 

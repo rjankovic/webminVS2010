@@ -230,6 +230,24 @@ namespace _min.Models
             }
         }
 
+        class DbTable : IDbTable
+        {
+            public string table { get; set; }
+            public string alias { get; set; }
+
+            public DbTable(string table, string alias = null) {
+                this.table = table;
+                this.alias = alias;      // TODO should check for empty strings
+            }
+
+            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append(" `" + table + "`"
+                + (alias == null ? "" : (" AS '" + alias + "'")));
+            }
+        }
+
+
         public IDbInStr InStr(string s)
         {
             return new InputStr(s);
@@ -313,6 +331,12 @@ namespace _min.Models
         public IMySqlQueryDeployable Condition(System.Data.DataRow lowerBounds, System.Data.DataRow upperBounds = null)
         {
             return new ConditionMySql(lowerBounds, upperBounds);
+        }
+
+
+        public IDbTable Table(string table, string alias = null)
+        {
+            return new DbTable(table, alias);
         }
     }
 }

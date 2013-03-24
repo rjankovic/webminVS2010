@@ -28,6 +28,7 @@ namespace _min_t7.Shared
         _min.Models.Panel activePanel;
         Navigator navigator;
         IWebDriver webDriver;
+        ValidationSummary validationSummary;
 
 
         protected void Page_Init(object sender, EventArgs e)
@@ -300,7 +301,7 @@ namespace _min_t7.Shared
                 MainPanel.Controls.Add(validator);
             }
 
-            ValidationSummary validationSummary = new ValidationSummary();
+            validationSummary = new ValidationSummary();
             validationSummary.BorderWidth = 1;
             MainPanel.Controls.Add(validationSummary);
 
@@ -367,28 +368,44 @@ namespace _min_t7.Shared
 
         private void UserActionCommandHandler(object sender, CommandEventArgs e)
         {
+            bool valid = true;
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
             if (CE.GlobalState == GlobalState.Administer)
             {
                 switch (action)
                 {
+                    
                     case UserAction.Insert:
                         if (activePanel.type != PanelTypes.Editable)        // insert button under NavTable, should be handled differently
                             break;
                         webDriver.insertPanel(activePanel);
                         break;
                     case UserAction.Update:
-                        webDriver.updatePanel(activePanel);
+                        try
+                        {
+                            webDriver.updatePanel(activePanel);
+                        }
+                        catch (ConstraintException ce) {        // unique column constraint exception from db
+                            valid = false;
+                            _min.Common.ValidationError.Display(ce.Message, Page);
+                        }
                         break;
                     case UserAction.Delete:
-                        webDriver.deletePanel(activePanel);
+                        try
+                        {
+                            webDriver.deletePanel(activePanel);
+                        }
+                        catch (ConstraintException ce) {        // unique column constraint exception from db
+                            valid = false;
+                            _min.Common.ValidationError.Display(ce.Message, Page);
+                        }
                         break;
                     default:
                         throw new NotImplementedException("Unexpected user action type.");
                 }
             }
 
-            navigator.ActionCommandHandle(sender, e);
+            if(valid) navigator.ActionCommandHandle(sender, e);
         }
 
         protected override void LoadViewState(object savedState)

@@ -148,6 +148,8 @@ namespace _min.Interfaces
 
         IDbInList InList(List<object> list);
         IMySqlQueryDeployable Condition(DataRow lowerBounds, DataRow upperBounds = null);
+
+        IDbTable Table(string table, string alias = null);
     }
 
     public interface IDbInStr: IMySqlQueryDeployable
@@ -182,6 +184,12 @@ namespace _min.Interfaces
     public interface IDbInList: IMySqlQueryDeployable
     {
         List<object> list { get; set; }
+    }
+
+    public interface IDbTable : IMySqlQueryDeployable
+    {
+        string table { get; set; }
+        string alias { get; set; }
     }
 
     public interface IWebDriver : IBaseDriver     // webDB

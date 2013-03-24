@@ -12,7 +12,7 @@ namespace _min.Common
     public enum PanelTypes { Editable, NavTable, NavTree, MenuDrop, MenuTabs, Monitor, Container }
     public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, ShortText, Text, Bool, Enum }
     public enum PropertyConcerns { Control, Validation, View }
-    public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, ZIP }
+    public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, Unique }
     public enum GlobalState { Unknown, Architect, Administer }
 
     public static class Environment
@@ -89,6 +89,8 @@ namespace _min.Common
         public const string ADMIN_PREFIX = "Admin of ";
         public const string ARCHITECT_PREFIX = "Architect of ";
         public const string ENUM_COLUMN_VALUES = "EnumValues";
+
+
 
 
 

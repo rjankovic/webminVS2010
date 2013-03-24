@@ -177,6 +177,7 @@ namespace _min.Models
                 validation = new List<ValidationRules>();
                 if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_EDITABLE)) continue;
                 if (!col.AllowDBNull && col.DataType != typeof(bool)) validation.Add(ValidationRules.Required);
+                if (col.Unique) validation.Add(ValidationRules.Unique);
                 FieldTypes fieldType;  // default => standard textBox
 
                 if (col.ExtendedProperties.ContainsKey(CC.ENUM_COLUMN_VALUES))
@@ -597,6 +598,11 @@ namespace _min.Models
                             {
                                 errorMsgs.Add(messageBeginning + " is of type " + cols[field.column].DataType.ToString() +
                                     ", but is not restrained to numeric values by a validation rule");
+                                good = false;
+                            }
+                            if (cols[field.column].Unique && !field.validationRules.Contains(ValidationRules.Unique)) {
+                                errorMsgs.Add(messageBeginning + " is constrained to be unique, but the corresponding field does not have "
+                                    + "the \"Unique\" validation rule set.");
                                 good = false;
                             }
                         }

@@ -170,7 +170,8 @@ namespace _min.Models
                         for (int i = 0; i < n; i++)
                             rows[i] = c.data.NewRow();
                         //c.data.Rows.Add(c.data.NewRow());
-
+                        
+                        c.data.Constraints.Clear(); // can do this - just for the Architect
                         foreach (DataColumn col in c.data.Columns)
                         {
                             //if(!c.data.PrimaryKeycol.Unique = false;
@@ -356,10 +357,30 @@ namespace _min.Models
 
         public int insertPanel(Panel panel)
         {
-            StartTransaction();
-            query("INSERT INTO " + panel.tableName + " ", dbe.InsVals(panel.RetrievedInsertData));
-            int ID = LastId();
-            CommitTransaction();
+            foreach (Field f in panel.fields)
+            {
+                if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique))
+                {
+                    if (panel.RetrievedData[f.column] != null)       // TODO make sure all fields are set to null when should be
+                    {
+                        bool unique = CheckUniqueness(panel.tableName, f.column, panel.RetrievedData[f.column]);
+                        if (!unique) throw new ConstraintException("Field \"" + f.caption + "\" is restrained to be unique and \""
+                             + f.value.ToString() + "\" is already present");
+                    }
+                }
+            }
+            int ID;
+            try
+            {
+                StartTransaction();
+                query("INSERT INTO " + panel.tableName + " ", dbe.InsVals(panel.RetrievedInsertData));
+                ID = LastId();
+                CommitTransaction();
+            }
+            catch (ConstraintException ce) {
+                RollbackTransaction();
+                throw new ConstraintException(FriendlyConstraintException(ce.Message, panel), null);
+            }
             foreach (Field f in panel.fields) {
                 if (f is M2NMappingField)
                 {
@@ -370,17 +391,34 @@ namespace _min.Models
             return ID;
         }
 
+
         public void updatePanel(Panel panel)
         {
-            StartTransaction();
-            int affected = query("UPDATE " + panel.tableName + " SET ", dbe.UpdVals(panel.RetrievedData), " WHERE ", dbe.Condition(panel.PK));
-            if (affected > 1)
-            {
-                RollbackTransaction();
-                throw new Exception("Panel PK not unique, trying to update more rows at a time!");
+            foreach (Field f in panel.fields) {
+                if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique)) {
+                    if (panel.RetrievedData[f.column] != null)       // TODO make sure all fields are set to null when should be
+                    {
+                        bool unique = CheckUniqueness(panel.tableName, f.column, panel.RetrievedData[f.column], panel.PK);
+                        if (!unique) throw new ConstraintException("Field \"" + f.caption + "\" is restrained to be unique and \""
+                             + f.value.ToString() + "\" is already present");
+                     }
+                }
             }
-            CommitTransaction();
-
+            try
+            {
+                StartTransaction();
+                int affected = query("UPDATE " + panel.tableName + " SET ", dbe.UpdVals(panel.RetrievedData), " WHERE ", dbe.Condition(panel.PK));
+                if (affected > 1)
+                {
+                    RollbackTransaction();
+                    throw new Exception("Panel PK not unique, trying to update more rows at a time!");
+                }
+                CommitTransaction();
+            }
+            catch (ConstraintException ce) {
+                RollbackTransaction();
+                throw new ConstraintException(FriendlyConstraintException(ce.Message, panel), null);
+            }
             foreach (Field f in panel.fields)
             {
                 if (f is M2NMappingField)
@@ -452,6 +490,28 @@ namespace _min.Models
         public DataRow PKColRowFormat(Panel panel)
         {
             return fetchSchema("SELECT ", dbe.Cols(panel.PKColNames), " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
+        }
+
+        private bool CheckUniqueness(string tableName, string columnName) {
+            return (int)fetchSingle("SELECT COUNT(", dbe.Col(columnName), 
+                ") - COUNT(DISTINCT(", dbe.Col(columnName), ")) FROM ", dbe.Table(tableName), ")") == 0;
+        }
+
+        private bool CheckUniqueness(string tableName, string columnName, object newValue, DataRow updatedItemPK = null) { 
+            if(updatedItemPK == null)
+                return (int)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName),
+                    " WHERE", dbe.Col(columnName), " =", newValue, ")") == 1;
+            else
+                return (int)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName), 
+                " WHERE NOT ", dbe.Condition(updatedItemPK), " AND ",  dbe.Col(columnName), " =", newValue, ")") == 1;
+        }
+
+        private string FriendlyConstraintException(string originalMessage, Panel panel) {
+            string newMessage = originalMessage;
+            foreach (Field f in panel.fields) {
+                newMessage = newMessage.Replace("'" + f.column + "'", "\"" + f.caption + "\"");
+            }
+            return newMessage;
         }
     }
 }
