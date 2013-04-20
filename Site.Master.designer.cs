@@ -7,10 +7,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7 {
+namespace _min {
     
     
-    public partial class SiteMaster {
+    public partial class MinMaster {
         
         /// <summary>
         /// HeadContent control.

@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7.Architect {
+namespace _min.Architect {
     
     
     public partial class EditNav {

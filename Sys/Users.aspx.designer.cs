@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7.Sys {
+namespace _min.Sys {
     
     
     public partial class WebForm1 {
@@ -49,31 +49,31 @@ namespace _min_t7.Sys {
         protected global::System.Web.UI.WebControls.Label AdministrationLabel;
         
         /// <summary>
-        /// AdministerCheckboxList control.
+        /// ProjectSelect control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBoxList AdministerCheckboxList;
+        protected global::System.Web.UI.WebControls.DropDownList ProjectSelect;
         
         /// <summary>
-        /// ArchitectLabel control.
+        /// Label1 control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label ArchitectLabel;
+        protected global::System.Web.UI.WebControls.Label Label1;
         
         /// <summary>
-        /// ArchitectCheckboxList control.
+        /// PermissionCheckboxList control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBoxList ArchitectCheckboxList;
+        protected global::System.Web.UI.WebControls.CheckBoxList PermissionCheckboxList;
         
         /// <summary>
         /// PermissionsSubmit control.

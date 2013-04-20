@@ -6,7 +6,7 @@ using System.Web.Security;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
-namespace _min_t7.Account
+namespace _min.Account
 {
     public partial class Register : System.Web.UI.Page
     {

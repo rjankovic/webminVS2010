@@ -4,27 +4,24 @@ using System.Linq;
 using System.Text;
 using _min.Interfaces;
 using MySql.Data.MySqlClient;
-using MySql;
 using System.Data;
-using System.Collections;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace _min.Models
 {
-
-
+    /// <summary>
+    /// Provides basic database layer using and IDbDeployableFactory query parts
+    /// </summary>
     class BaseDriverMySql : IBaseDriver
     {
             // empty space always at the beggining of appended command!
             // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong
 
-    
-
         private MySqlConnection conn;
         // logTable declared in Environment, defined here as string query, int time (miliseconds)
         public DataTable logTable { get; private set; }
         protected bool writeLog;
+        protected MySqlTransaction currentTransaction;
 
         public virtual bool IsInTransaction
         {
@@ -32,28 +29,11 @@ namespace _min.Models
             protected set;
         }
 
+        // parsed from the query beginning so that we can throw an exception when the query type doesnt match the method used to execute it
         private enum QueryType 
         {
             Unknown, Insert, Update, Delete, Select 
         };
-        private enum Expectations
-        {
-            Single, InsertValues, UpdateValues, Conditions, InList, Columns, Tables
-        };
-
-        private static readonly Dictionary<string, Expectations> lastWordsDecoder =
-                new Dictionary<string, Expectations>(StringComparer.OrdinalIgnoreCase)
-        {
-            {"IN", Expectations.InList},
-            {"INSERT", Expectations.InsertValues},
-            {"INTO", Expectations.InsertValues},
-            {"SET", Expectations.UpdateValues},
-            {"WHERE", Expectations.Conditions},            
-            {"HAVING", Expectations.Conditions},
-            {"SELECT", Expectations.Columns},
-            {"FROM", Expectations.Tables}
-        };
-
 
         public BaseDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
         {
@@ -93,7 +73,12 @@ namespace _min.Models
                 logTable.Rows.Add(logInfo);
         }
 
-        /* translate dibi-style query to string */
+        /// <summary>
+        /// Creates a command by concatenating the provided arguments, preferably IMySqlQueryDeployable, which will translate themselves into SQL. ValueTypes will be passed
+        /// as parameters and string will directly copied to the query.
+        /// </summary>
+        /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
+        /// <returns></returns>
         protected MySqlCommand translate(params object[] parts) {
 
             int paramCount = 0;
@@ -123,6 +108,12 @@ namespace _min.Models
             return resultCmd;
         }
 
+        /// <summary>
+        /// Composes an SELECT SQL query from the passed parts and returns a DataTable with structure determined by the format of 
+        /// result data, but without fetching the data
+        /// </summary>
+        /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
+        /// <returns></returns>
         public System.Data.DataTable fetchSchema(params object[] parts)
         {
             MySqlCommand cmd = translate(parts);
@@ -141,12 +132,14 @@ namespace _min.Models
             }
             try
             {
-                conn.Open();
+                if(!IsInTransaction)
+                    conn.Open();
                 adapter.FillSchema(result, SchemaType.Source);
             }
             finally
             {
-                conn.Close();
+                if(!IsInTransaction)
+                    conn.Close();
             }
             if (writeLog)
             {
@@ -156,7 +149,11 @@ namespace _min.Models
             return result;
         }
 
-        
+        /// <summary>
+        /// Composes an SQL query from the passed parts and returns the result in a table - the query MUST be an SELECT statement.
+        /// </summary>
+        /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
+        /// <returns></returns>        
         public System.Data.DataTable fetchAll(params object[] parts)
         {
             MySqlCommand cmd = translate(parts);
@@ -190,7 +187,11 @@ namespace _min.Models
 
             return result;
         }
-
+        /// <summary>
+        /// Composes an SQL query from the passed parts and returns the first row of the result in a DataRow - the query MUST be an SELECT statement.
+        /// </summary>
+        /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
+        /// <returns></returns>        
         public System.Data.DataRow fetch(params object[] parts)
         {
             DataTable table = this.fetchAll(parts);
@@ -200,6 +201,11 @@ namespace _min.Models
                 return null;
         }
 
+        /// <summary>
+        /// Composes an SQL query from the passed parts and returns the result the first cell of the result - the query MUST be an SELECT statement.
+        /// </summary>
+        /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
+        /// <returns></returns>
         public object fetchSingle(params object[] parts)
         {
             DataTable table = this.fetchAll(parts);
@@ -208,7 +214,11 @@ namespace _min.Models
             else
                 return null;
         }
-
+        /// <summary>
+        /// Composes an SQL query from the passed parts and executes it.
+        /// </summary>
+        /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
+        /// <returns>Number of affected rows</returns>
         public int query(params object[] parts)
         {
             MySqlCommand cmd = this.translate(parts);
@@ -238,33 +248,24 @@ namespace _min.Models
             return rowsAffected;
         }
 
-        public void StartTransaction() {
+        public void BeginTransaction() {
             if (IsInTransaction) throw new Exception("Already in transaction");
-            MySqlCommand cmd = new MySqlCommand();
-            cmd.Connection = conn;
-            cmd.CommandText = "START TRANSACTION";
             conn.Open();
-            cmd.ExecuteNonQuery();
+            currentTransaction = conn.BeginTransaction();
             IsInTransaction = true;
         }
 
         public void CommitTransaction()
         {
-            if (!IsInTransaction) throw new Exception("Mot in transaction");
-            MySqlCommand cmd = new MySqlCommand();
-            cmd.Connection = conn;
-            cmd.CommandText = "COMMIT";
-            cmd.ExecuteNonQuery();
+            if (!IsInTransaction) throw new Exception("Not in transaction");
+            currentTransaction.Commit();
             conn.Close();
             IsInTransaction = false;
         }
         public void RollbackTransaction()
         {
-            if (!IsInTransaction) throw new Exception("Mot in transaction");
-            MySqlCommand cmd = new MySqlCommand();
-            cmd.Connection = conn;
-            cmd.CommandText = "ROLLBACK";
-            cmd.ExecuteNonQuery();
+            if (!IsInTransaction) throw new Exception("Not in transaction");
+            currentTransaction.Rollback();
             conn.Close();
             IsInTransaction = false;
         }
@@ -273,6 +274,7 @@ namespace _min.Models
             string id = fetchSingle("SELECT LAST_INSERT_ID()").ToString();
             return Int32.Parse(id);
         }
+
         public int NextAIForTable(string tableName) {
             DataRow res = fetch("SHOW TABLE STATUS LIKE '" + tableName + "'");
             return (int)res["Auto_increment"];

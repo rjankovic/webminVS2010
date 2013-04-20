@@ -16,50 +16,33 @@ using CC = _min.Common.Constants;
 using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
 using _min.Controls;
-using System.Data;
 
-namespace _min_t7.Architect
+
+namespace _min.Architect
 {
+    /// <summary>
+    /// edit a panel of Editable tpee
+    /// </summary>
     public partial class EditEditable : System.Web.UI.Page
     {
-        ISystemDriver sysDriver;
-        IWebDriver webDriver;
-        IStats stats;
-        _min.Models.Architect architect;
+        
         MPanel actPanel;
         List<FK> FKs;
         List<M2NMapping> mappings;
-        
+        MinMaster mm;
 
         protected void Page_Init(object sender, EventArgs e)
         {
-
+            mm = (MinMaster)Master;
             _min.Common.Environment.GlobalState = GlobalState.Architect;
 
-            //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
-            //    Session.Clear();
-            _min.Models.Panel architecture = null;
-            if (Session["Architecture"] is _min.Models.Panel)
-            {
-                architecture = (MPanel)Session["Architecture"];
-            }
-
-            string projectName = Page.RouteData.Values["projectName"] as string;
             int panelId = Int32.Parse(Page.RouteData.Values["panelId"] as string);
 
-            sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
-            _min.Common.Environment.project = sysDriver.getProject(projectName);
+            actPanel = mm.SysDriver.Panels[panelId];
+            DataColumnCollection cols = mm.Stats.ColumnTypes[actPanel.tableName];
 
-            string WebDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
-            webDriver = new WebDriverMySql(CE.project.connstringWeb);
-
-            stats = new StatsMySql(CE.project.connstringIS, WebDbName);
-
-            architect = new _min.Models.Architect(sysDriver, stats);
-
-            actPanel = sysDriver.getPanel(panelId, false);
-            DataColumnCollection cols = stats.ColumnTypes[actPanel.tableName];
-
+            // the field types - default and special subsets allowed for special data types - i.e. o foereign key cannot be edited via anything but
+            // a FKFiels
             string[] fieldTypes = new string[] { FieldTypes.ShortText.ToString(), FieldTypes.Bool.ToString(), 
                 FieldTypes.Date.ToString(), FieldTypes.DateTime.ToString(), FieldTypes.Text.ToString()
                  };
@@ -67,16 +50,15 @@ namespace _min_t7.Architect
             string[] FKtype = new string[] { FieldTypes.FK.ToString() };
             string[] mappingType = new string[] { FieldTypes.M2NMapping.ToString() };
             string[] validationRules = Enum.GetNames(typeof(ValidationRules));
+            // a  FKField can be only required - let referential integrity take care of the rest
             string[] requiredRule = new string[] { Enum.GetName(typeof(ValidationRules), ValidationRules.Required) };
-            FKs = stats.foreignKeys(actPanel.tableName);
+            FKs = mm.Stats.FKs[actPanel.tableName];
             mappings = new List<M2NMapping>();
-            // stats will take care of the following...
-            //if(stats.Mappings.ContainsKey(actPanel.tableName))
-            mappings = stats.Mappings[actPanel.tableName];
-
+            mappings = mm.Stats.Mappings[actPanel.tableName];
 
             panelName.Text = actPanel.panelName;
             
+            // create a datarow for each column, specifiing...
             foreach (DataColumn col in cols) {          // std. fields (incl. FKs)
 
                 Field f = actPanel.fields.Find(x => x.column == col.ColumnName && !(x is M2NMappingField));
@@ -84,12 +66,14 @@ namespace _min_t7.Architect
                 TableRow r = new TableRow();
                 r.ID = col.ColumnName;
 
+                //...the name,...
                 TableCell nameCell = new TableCell();
                 Label nameLabel = new Label();
                 nameLabel.Text = col.ColumnName;
                 nameCell.Controls.Add(nameLabel);
                 r.Cells.Add(nameCell);
 
+                //...whether the column will be accessible to editation at all,...
                 TableCell presentCell = new TableCell();
                 CheckBox present = new CheckBox();
                 present.Checked = f != null;
@@ -98,7 +82,7 @@ namespace _min_t7.Architect
 
                 FK fk = FKs.Find(x => x.myColumn == col.ColumnName);
                 if(f != null && f is FKField) fk = ((FKField)f).FK;
-
+                //...the FieldType,...
                 TableCell typeCell = new TableCell();
                 DropDownList dl = new DropDownList();
                 if (f is EnumField)
@@ -111,11 +95,13 @@ namespace _min_t7.Architect
                 typeCell.Controls.Add(dl);
                 r.Cells.Add(typeCell);
 
+                //...what column of the referred table to display in the dropdown 
                 TableCell FKDisplayCell = new TableCell();
+                // set default value if the field was originally present in the editation form
                 if (fk != null)
                 {
                     DropDownList fkddl = new DropDownList();
-                    fkddl.DataSource = stats.ColumnsToDisplay[fk.refTable];
+                    fkddl.DataSource = mm.Stats.ColumnsToDisplay[fk.refTable];
                     fkddl.DataBind();
                     if(f != null)
                         fkddl.SelectedIndex = fkddl.Items.IndexOf(fkddl.Items.FindByValue(((FKField)f).FK.displayColumn));
@@ -129,6 +115,8 @@ namespace _min_t7.Architect
                 }
                 // else set default baed on  datatype - could build a dictionary...
 
+
+                //...the validation rules...
                 TableCell validCell = new TableCell();
                 CheckBoxList vcbl = new CheckBoxList();
                 if (fk == null)
@@ -145,6 +133,7 @@ namespace _min_t7.Architect
                     }
                 }
 
+                //...and the caption
                 TableCell captionCell = new TableCell();
                 TextBox caption = new TextBox();
                 captionCell.Controls.Add(caption);
@@ -158,6 +147,7 @@ namespace _min_t7.Architect
             }
 
             
+            // mappings will get a similiar table, but some collumns (like validation) will just be left empty
             foreach (M2NMapping mapping in mappings) {
                 M2NMappingField f = actPanel.fields.Find(
                     x => x is M2NMappingField && ((M2NMappingField)x).Mapping.myColumn == mapping.myColumn) as M2NMappingField;
@@ -185,7 +175,7 @@ namespace _min_t7.Architect
 
                 TableCell displayCell = new TableCell();
                 DropDownList displayDrop = new DropDownList();
-                displayDrop.DataSource = stats.ColumnsToDisplay[mapping.refTable];
+                displayDrop.DataSource = mm.Stats.ColumnsToDisplay[mapping.refTable];
                 displayDrop.DataBind();
                 if (f != null) { 
                     displayDrop.SelectedIndex = displayDrop.Items.IndexOf(displayDrop.Items.FindByValue(f.Mapping.displayColumn));
@@ -210,7 +200,7 @@ namespace _min_t7.Architect
                 mappingsTbl.Rows.Add(r);
             }
 
-
+            // what can be done with the panel
             string[] actionTypes = new string[] { UserAction.Insert.ToString(), 
                 UserAction.Update.ToString(), 
                 UserAction.Delete.ToString() };                       // controls
@@ -223,28 +213,19 @@ namespace _min_t7.Architect
                 item.Selected = activeActions.Contains(item.Value);
             
             
-            backButton.PostBackUrl = backButton.GetRouteUrl("ArchitectShowRoute", new { projectName = projectName });
+            backButton.PostBackUrl = backButton.GetRouteUrl("ArchitectShowRoute", new { projectName = mm.ProjectName });
             
         }
 
         
-        protected void Page_Load(object sender, EventArgs e)
-        {
-
-            
-        }
-
-        protected void Page_LoadComplete(object sender, EventArgs e) {
-
-            //Session["Architecture"] = sysDriver.MainPanel;
-        }
 
         protected void SaveButton_Click(object sender, EventArgs e)
         {
+            // extract the data for fields from the table
             List<Field> fields = new List<Field>();
             int i = 1;
 
-            foreach (DataColumn col in stats.ColumnTypes[actPanel.tableName])
+            foreach (DataColumn col in mm.Stats.ColumnTypes[actPanel.tableName])
             {       // standard fields
                 TableRow r = tbl.Rows[i++];
                 if (!((CheckBox)r.Cells[1].Controls[0]).Checked)
@@ -277,7 +258,7 @@ namespace _min_t7.Architect
                 else if (type == FieldTypes.Enum)
                 {
                     newField = new EnumField(0, col.ColumnName, actPanel.panelId,
-                        (List<string>)stats.ColumnTypes[actPanel.tableName][col.ColumnName].ExtendedProperties[CC.ENUM_COLUMN_VALUES],
+                        (List<string>)mm.Stats.ColumnTypes[actPanel.tableName][col.ColumnName].ExtendedProperties[CC.ENUM_COLUMN_VALUES],
                         caption);
                 }
                 else
@@ -309,6 +290,7 @@ namespace _min_t7.Architect
                 fields.Add(m2nf);
             }
 
+            // crate a control for each checked action
             List<_min.Models.Control> controls = new List<_min.Models.Control>();           // controls
             
             foreach (ListItem item in allowedActions.Items)
@@ -330,18 +312,22 @@ namespace _min_t7.Architect
             resPanel.panelName = panelName.Text;
 
             List<string> errorMsgs;
-            bool valid = architect.checkPanelProposal(resPanel, out errorMsgs);
-            //BulletedList validationResult = new BulletedList();
+            bool valid = mm.Architect.checkPanelProposal(resPanel, out errorMsgs);
+            
+            // validate the Panel using Architect`s validator - don`t edit PKs, unique columns must have the constraint, must contain all collumns except Nullable
+            // and AI and more rules
             validationResult.Items.Clear();
             if (valid)
             {
                 validationResult.Items.Add(new ListItem("Valid"));
 
                 actPanel = resPanel;
-                sysDriver.StartTransaction();
-                sysDriver.updatePanel(actPanel);
+                mm.SysDriver.BeginTransaction();
+                mm.SysDriver.UpdatePanel(actPanel);
                 Session.Clear();
-                sysDriver.CommitTransaction();
+                mm.SysDriver.IncreaseVersionNumber();
+                mm.SysDriver.CommitTransaction();
+                
                 validationResult.Items.Add(new ListItem("Saved"));
             }
             else

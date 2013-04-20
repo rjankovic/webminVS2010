@@ -6,7 +6,7 @@ using System.Web.Security;
 using System.Web.SessionState;
 using System.Web.Routing;
 
-namespace _min_t7
+namespace _min
 {
     public class Global : System.Web.HttpApplication
     {
@@ -14,6 +14,8 @@ namespace _min_t7
         void Application_Start(object sender, EventArgs e)
         {
             // Code that runs on application startup
+
+            RouteTable.Routes.MapPageRoute("DefaultRoute", "", "~/Default.aspx");
             RouteTable.Routes.MapPageRoute("LoginRoute", "login", "~/Account/Login.aspx");
             RouteTable.Routes.MapPageRoute("UsersRoute", "sys/users", "~/Sys/Users.aspx");
             RouteTable.Routes.MapPageRoute("ProjectsRoute", "sys/projects", "~/Sys/Projects.aspx");

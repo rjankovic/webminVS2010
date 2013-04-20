@@ -1,5 +1,5 @@
 ﻿<%@ Page Title="PasswordRecovery" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true"
-    CodeBehind="PasswordRecovery.aspx.cs" Inherits="_min_t7.Account.PasswordRecovery" %>
+    CodeBehind="PasswordRecovery.aspx.cs" Inherits="_min.Account.PasswordRecovery" %>
 
 <asp:Content ID="HeaderContent" runat="server" ContentPlaceHolderID="HeadContent">
 </asp:Content>

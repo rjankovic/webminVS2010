@@ -17,71 +17,46 @@ using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
 using _min.Controls;
 
-namespace _min_t7.Architect
+namespace _min.Architect
 {
+    /// <summary>
+    /// edit main menu structure - just load the original menu and save it when requested, all the UI work is done by TreeBuilder
+    /// </summary>
     public partial class EditMenu : System.Web.UI.Page
     {
-        ISystemDriver sysDriver;
-        IWebDriver webDriver;
 
+        MinMaster mm;
 
         protected void Page_Init(object sender, EventArgs e)
         {
 
             _min.Common.Environment.GlobalState = GlobalState.Architect;
 
-            //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
-            //    Session.Clear();
-            
+            mm = (MinMaster)Master;
 
-            string projectName = Page.RouteData.Values["projectName"] as string;
-
-            sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
-            _min.Common.Environment.project = sysDriver.getProject(projectName);
-
-
-            string WebDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
-            webDriver = new WebDriverMySql(CE.project.connstringWeb);
-            
-            
             if (!Page.IsPostBack)
             {
-                sysDriver.InitArchitecture();
-                tbc.SetInitialState(((TreeControl)sysDriver.MainPanel.controls[0]).storedHierarchyData, sysDriver.MainPanel);
-                
+                tbc.SetInitialState(((TreeControl)mm.SysDriver.MainPanel.controls[0]).storedHierarchyData, mm.SysDriver.MainPanel);
             }
 
+            
 
         }
 
         protected void OnSaveButtonClicked(object sender, EventArgs e) {
-            sysDriver.InitArchitectureBasePanel();
-            TreeControl tc = ((TreeControl)(sysDriver.MainPanel.controls[0]));
+            TreeControl tc = ((TreeControl)(mm.SysDriver.MainPanel.controls[0]));
             tc.storedHierarchyDataSet.Relations.Clear();
             tc.storedHierarchyDataSet.Tables.Clear();
+            // so that they dont`t remain constrained by their original dataset and can be saved to the db and eliminated arbitrarily
             tbc.FreeTables();
             tc.storedHierarchyDataSet.Tables.Add(tbc.Hierarchy);
             tc.storedHierarchyData = (HierarchyNavTable)tc.storedHierarchyDataSet.Tables[0];
-            sysDriver.StartTransaction();
-            sysDriver.RewriteControlDefinitions(sysDriver.MainPanel, false);
-            sysDriver.CommitTransaction();
+            mm.SysDriver.BeginTransaction();
+            mm.SysDriver.UpdatePanel(mm.SysDriver.MainPanel, false);
+            mm.SysDriver.CommitTransaction();
             tc.storedHierarchyData.DataSet.Relations.Add("Hierarchy",
                 tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], false);
-            //Session.Clear();
             Response.RedirectToRoute("ArchitectShowRoute", new { projectName = Page.RouteData.Values["projectName"] });
-        }
-
-
-
-        protected void Page_Load(object sender, EventArgs e)
-        {
-
-            
-        }
-
-        protected void Page_LoadComplete(object sender, EventArgs e) {
-
-            //Session["Architecture"] = sysDriver.MainPanel;
         }
 
     }

@@ -10,6 +10,9 @@ namespace _min.Models
 {
     public partial class DbDeployableMySql : IDbDeployableFactory
     {
+        /// <summary>
+        /// a condition (should be deployed after the keyword "WHERE") suitable for testing primary key equality renge of numeric values
+        /// </summary>
         class ConditionMySql : IMySqlQueryDeployable
         {
             private DataRow lowerBounds;

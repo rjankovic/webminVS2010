@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7.Sys {
+namespace _min.Sys {
     
     
     public partial class Projects {

@@ -5,7 +5,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
-namespace _min_t7.Account
+namespace _min.Account
 {
     public partial class Login : System.Web.UI.Page
     {

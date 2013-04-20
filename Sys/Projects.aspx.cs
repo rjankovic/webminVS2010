@@ -11,7 +11,7 @@ using System.Web.Configuration;
 using System.Data;
 using System.Web.Security;
 
-namespace _min_t7.Sys
+namespace _min.Sys
 {
     public partial class Projects : System.Web.UI.Page
     {
@@ -22,27 +22,14 @@ namespace _min_t7.Sys
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!Page.IsPostBack)
-            {
-                string connString = WebConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
-                sysDriver = new SystemDriverMySql(connString);
-                projectsTable = sysDriver.GetProjects();
-                
-                Session["projectsTable"] = projectsTable;
-                Session["sysDriver"] = sysDriver;
-                ProjectsGrid.DataSource = projectsTable;
-                ProjectsGrid.DataBind();
+            string connString = WebConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
+            sysDriver = new SystemDriverMySql(connString);
+        }
 
-                InsertProjectDetailsView.DataSource = projectsTable;
-                InsertProjectDetailsView.DataBind();
-            }
-            else {
-                sysDriver = Session["sysDriver"] as ISystemDriver;
-                projectsTable = Session["projectsTable"] as DataTable;
-                ProjectsGrid.DataSource = projectsTable;
-            }
-            
-            
+        protected void Page_LoadComplete(object sender, EventArgs e) {
+            projectsTable = sysDriver.GetProjects();
+            ProjectsGrid.DataSource = projectsTable;
+            ProjectsGrid.DataBind();
         }
 
         protected void ProjectsGrid_RowEditing(object sender, GridViewEditEventArgs e)
@@ -51,14 +38,6 @@ namespace _min_t7.Sys
             ProjectsGrid.DataBind();
         }
 
-        private void RenameRoleAndUsers(string OldRoleName, string NewRoleName)
-        {
-            string[] users = Roles.GetUsersInRole(OldRoleName);
-            Roles.CreateRole(NewRoleName);
-            Roles.AddUsersToRole(users, NewRoleName);
-            Roles.RemoveUsersFromRole(users, OldRoleName);
-            Roles.DeleteRole(OldRoleName);
-        }
 
         protected void ProjectsGrid_RowUpdating(object sender, GridViewUpdateEventArgs e)
         {
@@ -68,18 +47,8 @@ namespace _min_t7.Sys
             dict["connstring_information_schema"] = ((TextBox)(ProjectsGrid.Rows[e.RowIndex].Cells[2].Controls[0])).Text;
             dict["server_type"] = ((TextBox)(ProjectsGrid.Rows[e.RowIndex].Cells[3].Controls[0])).Text;
 
-
-            RenameRoleAndUsers(Constants.ADMIN_PREFIX + e.OldValues["name"].ToString(), 
-                Constants.ADMIN_PREFIX + e.NewValues["name"].ToString());
-            RenameRoleAndUsers(Constants.ARCHITECT_PREFIX + e.OldValues["name"].ToString(),
-                Constants.ARCHITECT_PREFIX + e.NewValues["name"].ToString());
-
             sysDriver.UpdateProject((int)(e.Keys[0]), dict);
             ProjectsGrid.EditIndex = -1;
-            projectsTable = sysDriver.GetProjects();
-            Session["projectsTable"] = projectsTable;
-            ProjectsGrid.DataSource = projectsTable;
-            ProjectsGrid.DataBind();
 
         }
 
@@ -95,22 +64,14 @@ namespace _min_t7.Sys
                 dict[o.ToString()] = e.Values[o];
             }
 
-            sysDriver.InsertProject(dict);
-
+            int proejctId = sysDriver.InsertProject(dict);
+            int userid = (int)(Membership.GetUser().ProviderUserKey);
+            sysDriver.SetUserRights(userid, proejctId, 1100);
             projectsTable = sysDriver.GetProjects();
-            Session["projectsTable"] = projectsTable;
             ProjectsGrid.DataSource = projectsTable;
             ProjectsGrid.DataBind();
             InsertProjectDetailsView.DataSource = projectsTable;
             InsertProjectDetailsView.DataBind();
-
-            // only add the newly created!
-            foreach (DataRow r in projectsTable.Rows) { 
-                if(!Roles.RoleExists(Constants.ADMIN_PREFIX + r["name"]))
-                    Roles.CreateRole(Constants.ADMIN_PREFIX + r["name"]);
-                if (!Roles.RoleExists(Constants.ARCHITECT_PREFIX + r["name"]))
-                    Roles.CreateRole(Constants.ARCHITECT_PREFIX + r["name"]);
-            }
         }
 
     }

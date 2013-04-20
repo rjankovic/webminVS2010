@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7.Account {
+namespace _min.Account {
     
     
     public partial class PasswordRecovery {

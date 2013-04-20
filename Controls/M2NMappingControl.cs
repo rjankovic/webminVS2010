@@ -9,6 +9,10 @@ using System.Web.UI;
 
 namespace _min.Controls
 {
+    /// <summary>
+    /// A WebControl for the management of an associtive / mapping table consisting of two select boxes, which exchange items upon select.
+    /// This is achieved through jquery, the control itself onsly sets the initial values and retrieves the selection upon request.
+    /// </summary>
     [ToolboxData("<{0}:M2NMappingControl runat=\"server\"></{0}:M2NMappingControl>")]
     public class M2NMappingControl : CompositeControl
     {
@@ -16,29 +20,15 @@ namespace _min.Controls
         private ListBox outList = new ListBox();
         private string _ID;
 
-
-        public ListItemCollection IncludedItems {
-            get {
-                EnsureChildControls();
-
-                return inList.Items;
-            }
-        }
-        public ListItemCollection ExcludedItems
-        {
-            get
-            {
-                EnsureChildControls();
-                return outList.Items;
-            }
-        }
-
         public override string ID {
             get { return _ID; }
             set { _ID = value; }
         }
 
-        
+        /// <summary>
+        /// set all the options, initially are all "excluded"
+        /// </summary>
+        /// <param name="vals"></param>
         public void SetOptions(IDictionary<int, string> vals){
             outList.DataSource = vals;
             outList.DataTextField = "Value";
@@ -56,8 +46,20 @@ namespace _min.Controls
             outList.DataBind();
         }
 
+        /// <summary>
+        /// set all options to "excluded"
+        /// </summary>
+        private void ResetIncluded() {
+            foreach (ListItem item in inList.Items)
+            {
+                outList.Items.Add(item);
+                inList.Items.Remove(item);
+            }        
+        }
+
         public void SetIncludedOptions(List<string> included)
         {
+            ResetIncluded();
             foreach (string s in included)
             {
                 ListItem item = outList.Items.FindByText(s.ToString());
@@ -67,6 +69,8 @@ namespace _min.Controls
         }
 
         public void SetIncludedOptions(List<int> included) {
+
+            ResetIncluded();
             foreach (int i in included) {
                 ListItem item = outList.Items.FindByValue(i.ToString());
                 if (item == null) continue;
@@ -75,43 +79,39 @@ namespace _min.Controls
             }
         }
 
+        public List<int> RetrieveData() {
+            
+            string results = Page.Request.Form[inList.UniqueID];
+            List<int> res = new List<int>();
+            if (results == null) return res;
+            foreach(string item in results.Split(',')){
+                res.Add(Int32.Parse(item));
+            }
+            return res;
+        }
+
+        public List<string> RetrieveStringData() {
+            string results = Page.Request.Form[inList.UniqueID];
+            return new List<string>(results.Split(','));
+        }
+
         protected override void CreateChildControls()
         {
-            //inList.EnableViewState = true;
-            //outList.EnableViewState = true;
-            inList.SelectedIndexChanged += OnINListSelectedItemChanged;
-            outList.SelectedIndexChanged += OnOutListSelectedItemChanged;
-            inList.AutoPostBack = true;
-            outList.AutoPostBack = true;
+            inList.SelectionMode = ListSelectionMode.Multiple;
+            inList.ClientIDMode = System.Web.UI.ClientIDMode.Static;
+            outList.ClientIDMode = System.Web.UI.ClientIDMode.Static;
+            inList.ID = this.ID + "_M2NIN";
+            outList.ID = this.ID + "_M2NOUT";
+            inList.AutoPostBack = false;
+            outList.AutoPostBack = false;
+            inList.EnableViewState = false;
+            outList.EnableViewState = false;
             this.Controls.Clear();
             this.Controls.Add(inList);
             this.Controls.Add(outList);
         }
 
-        protected void OnINListSelectedItemChanged(object sender, EventArgs e) {
-            //if (inList.SelectedIndex == -1) return;
-            outList.Items.Add(inList.SelectedItem);
-            /*
-            included.Remove(inList.SelectedItem.Text);
-            ViewState["included"] = included;
-             */ 
-            inList.Items.Remove(inList.SelectedItem);
-            outList.SelectedIndex = -1; // the selected item moves
-        }
-        protected void OnOutListSelectedItemChanged(object sender, EventArgs e)
-        {
-            //if (outList.SelectedIndex == -1) return;
-            inList.Items.Add(outList.SelectedItem);
-            /*
-            included.Add(outList.SelectedItem.Text);
-            ViewState["included"] = included;
-            */
-            outList.Items.Remove(outList.SelectedItem);
-            inList.SelectedIndex = -1;  // the selected item moves
-        }
-
-       
-
+        
         protected override void Render(HtmlTextWriter writer)
         {
             AddAttributesToRender(writer);
@@ -119,6 +119,8 @@ namespace _min.Controls
             writer.RenderBeginTag(HtmlTextWriterTag.Table);
             writer.RenderBeginTag(HtmlTextWriterTag.Tr);
             writer.RenderBeginTag(HtmlTextWriterTag.Td);
+            inList.AutoPostBack = false;
+            outList.AutoPostBack = false;
             inList.Attributes.Add("runat", "server");
             inList.RenderControl(writer);
             writer.RenderEndTag();

@@ -6,19 +6,92 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Web.Security;
 using _min.Common;
+using _min.Models;
+using System.Configuration;
+using MPanel = _min.Models.Panel;
+using CC = _min.Common.Constants;
+using CE = _min.Common.Environment;
+using _min.Interfaces;
+using System.Web.Routing;
 
-namespace _min_t7
+namespace _min
 {
-    public partial class SiteMaster : System.Web.UI.MasterPage
+    public partial class MinMaster : System.Web.UI.MasterPage
     {
-        protected void Page_Init(object sender, EventArgs e) {
+        public _min.Models.Architect Architect { get; private set; }
+        public ISystemDriver SysDriver { get; private set; }
+        public IWebDriver WebDriver { get; private set; }
+        public IStats Stats { get; private set; }
+        public string ProjectName { get; private set; }
+
+        protected void Page_Init(object sender, EventArgs e)
+        {
+
+
             if (Request.Url.LocalPath.StartsWith("/architect"))
             {
                 _min.Common.Environment.GlobalState = GlobalState.Architect;
             }
-            else {
+            else
+            {
                 _min.Common.Environment.GlobalState = GlobalState.Administer;
             }
+
+            
+            // global service
+
+            // get current project and init drivers and architect
+            if (Page.RouteData.Values.ContainsKey("projectName"))
+            {
+                ProjectName = Page.RouteData.Values["projectName"] as string;
+                SysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
+                CE.Project actProject = SysDriver.GetProject(ProjectName);
+                if (CE.project == null || actProject.Id != CE.project.Id || actProject.Version != CE.project.Version)
+                {
+                    Session.Clear();    // may not be neccessary in all cases, but better be safe
+                }
+                CE.project = SysDriver.GetProject(ProjectName);
+                Stats = new StatsMySql(CE.project.ConnstringIS, CE.project.WebDbName);
+                WebDriver = new WebDriverMySql(CE.project.ConnstringWeb);
+                Architect = new _min.Models.Architect(SysDriver, Stats);
+
+                // check whether there is something to load at all
+                if (Page.RouteData.Route != RouteTable.Routes["ArchitectInitRoute"])
+                {
+                    if (!SysDriver.ProposalExists())
+                    {
+                        if (CE.GlobalState == GlobalState.Architect)
+                        {
+                            Response.RedirectToRoute("ArchitectInitRoute", new { projectName = Page.RouteData.Values["projectName"] });
+                            Response.End();
+                        }
+                        else
+                        {
+                            // change to some kind of "Not found" page
+                            Response.RedirectToRoute("DefaultRoute", new { projectName = Page.RouteData.Values["projectName"] });
+                            Response.End();
+                        }
+                    }
+
+                    // get the current architecture - either extract from Session or directry from the DB, if project version has changed
+                    int actVersion = CE.project.Version;
+                    if (Session[CC.SESSION_ARCHITECTURE] is _min.Models.Panel
+                        && Session[CC.SESSION_ARCHITECTURE_VERSION] is int
+                        && (int)Session[CC.SESSION_ARCHITECTURE_VERSION] == actVersion)
+                    {
+                        SysDriver.SetArchitecture((MPanel)Session[CC.SESSION_ARCHITECTURE]);
+                    }
+                    else
+                    {
+                        SysDriver.FullProjectLoad();
+                        Session[CC.SESSION_ARCHITECTURE] = SysDriver.MainPanel;
+                        Session[CC.SESSION_ARCHITECTURE_VERSION] = CE.project.Version;
+                    }
+                }
+            }
+
+            // local issues
+
             
             if (!Page.IsPostBack)
             {
@@ -79,7 +152,7 @@ namespace _min_t7
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            
+
         }
     }
 }

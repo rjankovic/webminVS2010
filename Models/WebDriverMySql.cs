@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Data;
 using _min.Interfaces;
-using NLipsum;
-using _min.Models;
 
 namespace _min.Models
 {
+    class WebDriverValidationException : Exception {    // for known user-caused errors
+        public WebDriverValidationException(string message)
+            : base(message)
+        { }
+    }
+
     class WebDriverMySql : BaseDriverMySql, IWebDriver
     {
 
@@ -18,27 +21,29 @@ namespace _min.Models
         { }
 
 
-
-
+        /// <summary>
+        /// Fills panel with data based on the columns included and possibly the Primary Key
+        /// </summary>
+        /// <param name="panel"></param>
         public void FillPanel(Panel panel)
         {
             if (panel.fields.Count() > 0)
-            { // editable Panel, fetch the DataRow, simple controls
+            { // editable Panel, fetch the DataRow, simple controls - must have unique PK
                 var columns = panel.fields.Where(x => !(x is M2NMappingField)).Select(x => x.column).ToList<string>();
                 DataTable table = fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new Exception("No data fullfill the condition");
                 DataRow row = table.Rows[0];
                 
-                foreach (Field field in panel.fields)
+                foreach (Field field in panel.fields)       // fill the fields
                 {
                     if (!(field is M2NMappingField))        // value
                         field.value =  row[field.column].GetType() != typeof(MySql.Data.Types.MySqlDateTime) ? row[field.column] : 
                             ((MySql.Data.Types.MySqlDateTime)row[field.column]).GetDateTime();
                     else
-                    {
+                    {           // mapping values are yet to fetch
                         M2NMappingField m2nf = (M2NMappingField)field;
-                        m2nf.value = fetchMappingValues(m2nf.Mapping, (int)panel.PK[0]);
+                        m2nf.value = FetchMappingValues(m2nf.Mapping, (int)panel.PK[0]);
                     }
                 }
             }
@@ -51,18 +56,21 @@ namespace _min.Models
                 }
                 // always gets the whole table, save in session
                 else if (c is TreeControl && c.data is DataTable)
-                {
+                {   // there are no data in storedHierarchy - that is only the case of menu in base panel - fill it
                     TreeControl tc = (TreeControl)c;
                     tc.data.DataSet.EnforceConstraints = false;
                     tc.data.Rows.Clear();
                     HierarchyNavTable hierarchy = (HierarchyNavTable)(tc.data);
 
                     List<IDbCol> selectCols = new List<IDbCol>();
-                    selectCols.Add(dbe.Col(tc.PKColNames[0], "Id"));
-                    selectCols.Add(dbe.Col(tc.parentColName, "ParentId"));
-                    selectCols.Add(dbe.Col(tc.displayColName, "Caption"));
-                    selectCols.Add(dbe.Col(tc.PKColNames[0], "NavId"));
-                    DataTable fetched = fetchAll("SELECT", dbe.Cols(selectCols), "FROM", panel.tableName);
+                    // don`t need to use constants - the column names are set in HierarchNavTable
+                    DataTable fetched = fetchAll("SELECT", 
+                        dbe.Col(tc.PKColNames[0], "Id"), ",",
+                        dbe.Cols(selectCols), dbe.Col(tc.parentColName, "ParentId"), ",",
+                        "CAST(", dbe.Col(tc.displayColName), "AS CHAR) AS `Caption`", ",",
+                        dbe.Col(tc.PKColNames[0], "NavId"),
+                        "FROM", panel.tableName);
+                    
 
                     hierarchy.Merge(fetched);
                     tc.data.DataSet.EnforceConstraints = true;
@@ -81,18 +89,22 @@ namespace _min.Models
                 if (field is FKField)
                 {     // FK options
                     FKField fkf = (FKField)field;
-                    fkf.options = fetchFKOptions(fkf.FK);
+                    fkf.options = FetchFKOptions(fkf.FK);
                 }
                 else if (field is M2NMappingField)
                 {
                     M2NMappingField m2nf = (M2NMappingField)field;
-                    m2nf.options = fetchFKOptions((FK)m2nf.Mapping);
+                    m2nf.options = FetchFKOptions((FK)m2nf.Mapping);
                 }
             }
             //foreach (Panel p in panel.children)
             //FillPanelFks(p);
         }
 
+        /// <summary>
+        /// generate a few varchar-like strings - for FKs, mappings
+        /// </summary>
+        /// <returns></returns>
         private string[] Lipsum()
         {
             Random rnd = new Random();
@@ -103,11 +115,19 @@ namespace _min.Models
             return res;
         }
 
+        /// <summary>
+        /// a single lipsum word
+        /// </summary>
+        /// <returns></returns>
         private string LWord()
         {
             return NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Words, "{0}", NLipsum.Core.Lipsums.TheRaven);
         }
 
+        /// <summary>
+        /// a few lipsum words
+        /// </summary>
+        /// <returns></returns>
         private string LSentence()
         {
             return NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Sentences, "{0}", NLipsum.Core.Lipsums.RobinsonoKruso);
@@ -118,6 +138,10 @@ namespace _min.Models
             return NLipsum.Core.LipsumGenerator.GenerateHtml(3);
         }
 
+        /// <summary>
+        /// fill the panel with example data in Architect mode
+        /// </summary>
+        /// <param name="panel"></param>
         public void FillPanelArchitect(Panel panel)
         {
             Random rnd = new Random();
@@ -164,17 +188,16 @@ namespace _min.Models
 
                     if (c is NavTableControl)
                     {
-                        AssignDataForNavTable((NavTableControl)c, true);
+                        AssignDataForNavTable((NavTableControl)c, true);        // assigns only the schema - no values
+                        // number of rows
                         int n = rnd.Next() % 5 + 5;
                         DataRow[] rows = new DataRow[n];
                         for (int i = 0; i < n; i++)
                             rows[i] = c.data.NewRow();
-                        //c.data.Rows.Add(c.data.NewRow());
                         
-                        c.data.Constraints.Clear(); // can do this - just for the Architect
+                        c.data.Constraints.Clear(); // can do this - just for the Architect - so that are no unique constraint exceptions
                         foreach (DataColumn col in c.data.Columns)
                         {
-                            //if(!c.data.PrimaryKeycol.Unique = false;
                             if (col.DataType == typeof(DateTime) || col.DataType == typeof(MySql.Data.Types.MySqlDateTime))
                             {
 
@@ -224,7 +247,7 @@ namespace _min.Models
                         c.data.DataSet.EnforceConstraints = true;
                         int n = rnd.Next() % 10 + 10;
                         HierarchyNavTable hierarchy = (HierarchyNavTable)(c.data);
-                        for (int i = 0; i < n; i++)
+                        for (int i = 0; i < n; i++) // generate a random tree - each node picks a parent or no parent with equal chance
                         {
                             HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
                             r.Id = i + 1;
@@ -243,6 +266,10 @@ namespace _min.Models
         }
 
 
+        /// <summary>
+        /// fills all the fields that are either FKField or M2NMappingField, in the given panel (called by FillpanelArchitect)
+        /// </summary>
+        /// <param name="panel"></param>
         public void FillPanelFKOptionsArchitect(Panel panel) {
             Random rnd = new Random();
             int amount;
@@ -261,10 +288,7 @@ namespace _min.Models
                     case _min.Common.FieldTypes.M2NMapping:
                         M2NMappingField m2nf = field as M2NMappingField;
                         m2nf.options = new SortedDictionary<int, string>();
-                        //if (m2nf.Mapping.options.Count == 0)
-                        //    break;
                         string[] opts = Lipsum();
-                        //m2nf.Mapping.options.Clear();
                         int rndNext;
                         foreach (string s in opts)
                         {
@@ -279,53 +303,51 @@ namespace _min.Models
                         break;
                 }
             }
-
         }
 
-
+        // used by AssignDataForNavTable
         delegate DataTable FetchMethod(params object[] parts);
 
+        /// <summary>
+        /// fills "data" tables of NavTableControls
+        /// </summary>
+        /// <param name="ntc"></param>
+        /// <param name="schemaOnly"></param>
         private void AssignDataForNavTable(NavTableControl ntc, bool schemaOnly)
         {
-
+            
             List<string> toSelect = ntc.displayColumns.Union(ntc.PKColNames).ToList();
-            /*
-            foreach(string s in c.PKColNames)
-                if(!toSelect.Contains(s))
-                    toSelect.Add(s);
-             */
             List<IDbCol> specSelect = new List<IDbCol>();
-            //List<Tuple<string, string, string>> specSelect = new List<Tuple<string, string, string>>();
             List<string> neededTables = new List<string>();
-            // different FKs to teh same table - JOIN colision prevention
+            // different FKs to the same table - JOIN colision prevention by giving each table an alias
             Dictionary<string, int> countingForeignTableUse = new Dictionary<string, int>();
             foreach (string col in toSelect)
             {
-                FK correspondingFK = ntc.FKs.Where(x => x.myColumn == col).FirstOrDefault();
+                FK correspondingFK = ntc.FKs.Where(x => x.myColumn == col).FirstOrDefault();    // can be at most one
                 if (correspondingFK is FK && ((FK)correspondingFK).refTable != ntc.panel.tableName) // dont join on itself
                 {
                     neededTables.Add(correspondingFK.refTable);
 
-                    if (!countingForeignTableUse.ContainsKey(correspondingFK.refTable))
+                    if (!countingForeignTableUse.ContainsKey(correspondingFK.refTable)) // don`t need an alias
                     {
                         specSelect.Add(dbe.Col(correspondingFK.refTable,
                                 correspondingFK.displayColumn, col));
                         countingForeignTableUse[correspondingFK.refTable] = 1;
                     }
                     else
-                    {
+                    {       // use SALT + the count so that it is (hopefully) unique
                         countingForeignTableUse[correspondingFK.refTable]++;
                         specSelect.Add(dbe.Col(correspondingFK.refTable + Common.Constants.SALT + countingForeignTableUse[correspondingFK.refTable],
                             correspondingFK.displayColumn, col));
                     }
                 }
                 else
-                {
+                {       // no FK, just use the original column name
                     specSelect.Add(dbe.Col(ntc.panel.tableName, col, col));
                 }
             }
 
-            FetchMethod fetchAccordingly;
+            FetchMethod fetchAccordingly;       // so that we can use the same fetch-code for both Architect and Admin mode
             if (schemaOnly)
                 fetchAccordingly = fetchSchema;
             else
@@ -336,8 +358,8 @@ namespace _min.Models
                 // FK table aliases
                 // not 100% solution - tables with suffix "1"...
                 List<IDbJoin> joins = new List<IDbJoin>();
-                ntc.FKs.Reverse();
-                foreach (FK fk in ntc.FKs)    // so that the counter counts down
+                ntc.FKs.Reverse();  // the counter counts down when creating joins in reverse order
+                foreach (FK fk in ntc.FKs)
                 {
                     string alias = fk.refTable +
                         (countingForeignTableUse[fk.refTable] > 1 ?
@@ -354,14 +376,18 @@ namespace _min.Models
         }
 
 
-
-        public int insertPanel(Panel panel)
+        /// <summary>
+        /// inserts a new row into the table managed by the panel, with the vlaues stored in it`s fields, also inserts in mapping tables
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <returns></returns>
+        public int InsertIntoPanel(Panel panel)
         {
             foreach (Field f in panel.fields)
             {
                 if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique))
                 {
-                    if (panel.RetrievedData[f.column] != null)       // TODO make sure all fields are set to null when should be
+                    if (panel.RetrievedData[f.column] != null)
                     {
                         bool unique = CheckUniqueness(panel.tableName, f.column, panel.RetrievedData[f.column]);
                         if (!unique) throw new ConstraintException("Field \"" + f.caption + "\" is restrained to be unique and \""
@@ -372,12 +398,15 @@ namespace _min.Models
             int ID;
             try
             {
-                StartTransaction();
+                BeginTransaction();
                 query("INSERT INTO " + panel.tableName + " ", dbe.InsVals(panel.RetrievedInsertData));
-                ID = LastId();
+                ID = LastId();      // TODO safe? Does transaction ensure insert separation?
                 CommitTransaction();
             }
             catch (ConstraintException ce) {
+                // Can occur, if there is a unique Key on multiple columns - such constraint cannot be set in panel management
+                // (very rare indeed). The exception is attached a user-friendly comment and bubbles to the Show.cs, where
+                // it will be displayed as a standard validation error (but probably with a notable delay).
                 RollbackTransaction();
                 throw new ConstraintException(FriendlyConstraintException(ce.Message, panel), null);
             }
@@ -391,8 +420,12 @@ namespace _min.Models
             return ID;
         }
 
-
-        public void updatePanel(Panel panel)
+        /// <summary>
+        /// updates the db row identified by the panel PK, using data from panel fields
+        /// </summary>
+        /// <param name="panel"></param>
+        // TODO : row PK cannot change once created!
+        public void UpdatePanel(Panel panel)
         {
             foreach (Field f in panel.fields) {
                 if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique)) {
@@ -404,14 +437,19 @@ namespace _min.Models
                      }
                 }
             }
+            foreach (DataColumn PKcol in panel.PK.Table.Columns) {  // row PK midified
+                if (panel.PK[PKcol.ColumnName].ToString() != panel.RetrievedData[PKcol.ColumnName].ToString())
+                    throw new WebDriverValidationException("The field '" + PKcol.ColumnName + 
+                        "' is a part of the item`s identity and cannot be changed unless the item is recreated."); 
+            }
             try
             {
-                StartTransaction();
+                BeginTransaction();
                 int affected = query("UPDATE " + panel.tableName + " SET ", dbe.UpdVals(panel.RetrievedData), " WHERE ", dbe.Condition(panel.PK));
                 if (affected > 1)
                 {
                     RollbackTransaction();
-                    throw new Exception("Panel PK not unique, trying to update more rows at a time!");
+                    throw new Exception("Panel PK not unique, trying to update multiple rows at a time!");
                 }
                 CommitTransaction();
             }
@@ -431,21 +469,31 @@ namespace _min.Models
             }
         }
 
-        public void deletePanel(Panel panel)
+        /// <summary>
+        /// Deletes the row determined by the panel`s PK from the panl`s table.
+        /// Also clears the mapping (this may not be neccessary if the constraint CASCADEs, but it is probably the desired behaviour in either case).
+        /// </summary>
+        /// <param name="panel"></param>
+        public void DeleteFromPanel(Panel panel)
         {
-            //StartTransaction();
-            int affected = query("DELETE FROM `" + panel.tableName + "` WHERE", dbe.Condition(panel.PK));
-            /*
-            if (affected > 1)   // do or not to deo?
+            BeginTransaction();
+            foreach (Field f in panel.fields) {
+                if (f is M2NMappingField) {
+                    M2NMapping mapping = ((M2NMappingField)f).Mapping;
+                    UnmapM2NMappingKey(mapping, (int)(panel.PK[mapping.mapMyColumn]));
+                }
+            }
+            int affected = query("DELETE FROM", dbe.Table(panel.tableName), " WHERE", dbe.Condition(panel.PK));
+            
+            if (affected > 1)
             {
                 RollbackTransaction();
                 throw new Exception("Panel PK not unique, trying to delete more rows at a time!");
-            }
-            */ 
-            //CommitTransaction();
+            } 
+            CommitTransaction();
         }
 
-        private SortedDictionary<int, string> fetchFKOptions(FK fk)
+        private SortedDictionary<int, string> FetchFKOptions(FK fk)
         {
             DataTable tbl = fetchAll("SELECT `" + fk.refColumn + "`, `" + fk.displayColumn + "` FROM `" + fk.refTable + "`");
             SortedDictionary<int, string> res = new SortedDictionary<int, string>();
@@ -463,6 +511,13 @@ namespace _min.Models
             query("DELETE FROM `" + mapping.mapTable + "` WHERE ", dbe.Col(mapping.mapMyColumn), " = ", key);
         }
 
+        /// <summary>
+        /// INSERTs rows neccessary for mapping the inserted / updated datarow to another table via a M2NMappingField. Does not clear the mapping by itself
+        /// => UnmapM2NMappingKey must be called on update
+        /// </summary>
+        /// <param name="mapping"></param>
+        /// <param name="key"></param>
+        /// <param name="vals"></param>
         private void MapM2NVals(M2NMapping mapping, int key, List<int> vals)
         {
             DataTable table = new DataTable();
@@ -477,7 +532,13 @@ namespace _min.Models
             }
         }
 
-        private List<int> fetchMappingValues(M2NMapping mapping, int key)
+        /// <summary>
+        /// Fetches the IDs of rows that are associated to the panel`s datarow through a maptable and edited in a M2NMappingField
+        /// </summary>
+        /// <param name="mapping"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        private List<int> FetchMappingValues(M2NMapping mapping, int key)
         {
             DataTable tbl = fetchAll("SELECT", dbe.Col(mapping.mapRefColumn), "FROM", mapping.mapTable, "WHERE", dbe.Col(mapping.mapMyColumn), " = ", key);
             List<int> res = new List<int>();
@@ -486,26 +547,52 @@ namespace _min.Models
             return res;
         }
 
-
+        /// <summary>
+        /// The structure of the panl`s PK property (a DataRow), no data included
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <returns></returns>
         public DataRow PKColRowFormat(Panel panel)
         {
             return fetchSchema("SELECT ", dbe.Cols(panel.PKColNames), " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
         }
 
+        /// <summary>
+        /// Checks whether this column is unique in the table by checking for unique constraint in the schema
+        /// => artificial constraints (not set in database) cannot be created
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
         private bool CheckUniqueness(string tableName, string columnName) {
-            return (int)fetchSingle("SELECT COUNT(", dbe.Col(columnName), 
-                ") - COUNT(DISTINCT(", dbe.Col(columnName), ")) FROM ", dbe.Table(tableName), ")") == 0;
+            DataTable schema = fetchSchema("SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName));
+            return schema.Columns[0].Unique;
         }
 
+        /// <summary>
+        /// does the new value in the column keep the column unique?
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="newValue"></param>
+        /// <param name="updatedItemPK"></param>
+        /// <returns></returns>
         private bool CheckUniqueness(string tableName, string columnName, object newValue, DataRow updatedItemPK = null) { 
-            if(updatedItemPK == null)
+            if(updatedItemPK == null)   // INSERT - there can be row with this value
                 return (int)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName),
                     " WHERE", dbe.Col(columnName), " =", newValue, ")") == 1;
-            else
+            else    // UPDATE - no row except this row
                 return (int)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName), 
                 " WHERE NOT ", dbe.Condition(updatedItemPK), " AND ",  dbe.Col(columnName), " =", newValue, ")") == 1;
         }
 
+        /// <summary>
+        /// Provides the Constraint exception thrown by MySQL command because of multi-column unique index with a less database-like message,
+        /// does not modify it directly
+        /// </summary>
+        /// <param name="originalMessage"></param>
+        /// <param name="panel"></param>
+        /// <returns>the modified string</returns>
         private string FriendlyConstraintException(string originalMessage, Panel panel) {
             string newMessage = originalMessage;
             foreach (Field f in panel.fields) {

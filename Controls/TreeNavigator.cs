@@ -14,6 +14,10 @@ using _min.Common;
 
 namespace _min.Controls
 {
+    /// <summary>
+    /// Used by NavTree panels as the update selection control. Can be also used to handle more than one user action at a time, by letting the user select the 
+    /// action that executed for the selected item from a RadioButtonList, but this was disovered inconvenient and chaotic.
+    /// </summary>
     [ToolboxData("<{0}:TreeNavigator runat=server></{0}:M2NMapping>")]
     public class TreeNavigatorControl : CompositeControl
     {
@@ -62,6 +66,8 @@ namespace _min.Controls
                 radios = new RadioButtonList();
                 radios.DataSource = actions;
                 radios.DataBind();
+
+                // if there is only one action option, don`t show the radios at all
                 if (actions.Count == 1)
                 {
                     radios.SelectedIndex = 0;
@@ -88,6 +94,11 @@ namespace _min.Controls
             }
         }
 
+        /// <summary>
+        /// if an UserAction is selected within the RadioButtonList, thehandler for the item selected in the TreeView
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SelectionChanged(object sender, EventArgs e) {
             
             if (tree.SelectedNode == null) return;
@@ -95,12 +106,6 @@ namespace _min.Controls
             CommandEventArgs command = new CommandEventArgs("_" + radios.SelectedValue, Int32.Parse(tree.SelectedValue));
             
             ActionChosen(this, command);
-        }
-        
-        
-
-        protected override void CreateChildControls()
-        {
         }
         
         protected override void Render(HtmlTextWriter writer)

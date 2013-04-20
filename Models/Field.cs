@@ -431,7 +431,7 @@ namespace _min.Models
         public override void RetrieveData()
         {
             M2NMappingControl c = (M2NMappingControl)myControl;
-            value = (from WC.ListItem item in c.IncludedItems select Int32.Parse(item.Value)).ToList<int>();
+            value = c.RetrieveData();
         }
 
         public override void SetControlData()

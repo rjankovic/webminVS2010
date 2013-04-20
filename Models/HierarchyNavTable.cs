@@ -1,19 +1,25 @@
 ﻿using System;
 using System.Data;
-using _min.Models;
-using _min.Common;
 
 namespace _min.Models
 {
-    
+    /// <summary>
+    /// Provides a strongly typed DataTable for hierarchical data in TreeControl-s.
+    /// Contains four columns - [Id], [ParentId] (FK -> [Id]), [Caption] and [NavId] - the PK of the row in the containing control`s target panel`s table
+    /// to the detail of which the menu item bound to this row leads.
+    /// </summary>
     public class HierarchyNavTable : DataTable
     {
-        
         public HierarchyRow this[int idx]
         {
             get { return (HierarchyRow)Rows[idx]; }
         }
 
+        /// <summary>
+        /// just for convenience - call Find on the table instead of Rows
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public HierarchyRow Find(int key) {
             return (HierarchyRow)Rows.Find(key);
         }
@@ -27,8 +33,6 @@ namespace _min.Models
             Columns.Add(new DataColumn("NavId", typeof(int)));
             Columns["NavId"].AllowDBNull = true;
             PrimaryKey = new DataColumn[] { Columns["Id"] };
-            //Columns["ParentId"].AllowDBNull = true;   // should use NULL, not 0
-            //Columns["NavId"].AllowDBNull = true;
             Columns["Id"].AutoIncrementSeed = 1;
             Columns["Id"].AutoIncrement = true;
         }
@@ -62,6 +66,9 @@ namespace _min.Models
 
     }
 
+    /// <summary>
+    /// a row of a HierarchyNavTable - provided with properties to set the columns
+    /// </summary>
     public class HierarchyRow : DataRow
     {
         public int Id
@@ -87,7 +94,7 @@ namespace _min.Models
             }
         }
 
-        public int? ParentId
+        public int? ParentId    // DBNull can (and must) be simply passed as null
         {
             get
             {
@@ -113,14 +120,7 @@ namespace _min.Models
 
         internal HierarchyRow(DataRowBuilder builder)
             : base(builder)
-        {
-            /*
-            Id = 0;
-            ParentId = 0;
-            NavId = 0;
-            Caption = string.Empty;
-             */
-        }
+        { }
 
         public HierarchyRow[] GetHierarchyChildRows(string relationName) { 
             DataRow[] children = GetChildRows(relationName);

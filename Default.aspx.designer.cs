@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7 {
+namespace _min {
     
     
     public partial class _Default {

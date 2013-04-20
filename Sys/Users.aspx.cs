@@ -11,121 +11,108 @@ using System.Configuration;
 using System.Data;
 using System.Web.Security;
 using System.Web.UI.HtmlControls;
+using CE = _min.Common.Environment;
 
-namespace _min_t7.Sys
+namespace _min.Sys
 {
     public partial class WebForm1 : System.Web.UI.Page
     {
+        ISystemDriver sysDriver;
 
         protected void Page_Load(object sender, EventArgs e)
         {
 
+            string connString = ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
+            sysDriver = new SystemDriverMySql(connString);
 
             if (!Page.IsPostBack)
             {
-                string connString = ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
-                ISystemDriver sysDriver = new SystemDriverMySql(connString);
-
                 MembershipUserCollection users = Membership.GetAllUsers();
-                string[] projects = sysDriver.GetProjectNameList();
+                List<CE.Project> projects = sysDriver.GetProjectObjects();
+                int userId = (int)(Membership.GetUser().ProviderUserKey);
 
-                AdministerCheckboxList.Enabled = false;
-                ArchitectCheckboxList.Enabled = false;
-                PermissionsSubmit.Enabled = false;
-
-                foreach (string project in projects)
+                int globalAccess = sysDriver.GetUserRights(userId, null);
+                if (globalAccess >= 1000)
                 {
-                    AdministerCheckboxList.Items.Add(new ListItem(project, Constants.ADMIN_PREFIX + project));
-                    ArchitectCheckboxList.Items.Add(new ListItem(project, Constants.ARCHITECT_PREFIX + project));
+                    projects.Reverse();
+                    projects.Add(new CE.Project(0, "All Projects", null, null, null, 0));
+                    projects.Reverse();
+                }
+                else
+                {
+                    List<CE.Project> inaccessible = new List<CE.Project>();
+                    foreach (CE.Project p in projects)
+                    {
+                        if (sysDriver.GetUserRights(userId, p.Id) < 1000) inaccessible.Add(p);
+                    }
+                    foreach (CE.Project p in inaccessible)
+                        projects.Remove(p);
                 }
 
-                UserSelect.Items.Add("--choose a user--");
-                foreach (MembershipUser user in users)
-                {
-                    UserSelect.Items.Add(user.UserName);
-                }
+                UserSelect.DataSource = users;
+                UserSelect.DataValueField = "ProviderUserKey";
+                UserSelect.DataTextField = "UserName";
+                UserSelect.DataBind();
+                ProjectSelect.DataSource = projects;
+                ProjectSelect.DataValueField = "Id";
+                ProjectSelect.DataTextField = "Name";
+                ProjectSelect.DataBind();
+                SetCheckboxes();
             }
         }
 
-        protected void UserSelect_SelectedIndexChanged(object sender, EventArgs e)
+        protected void SomeSelect_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (UserSelect.SelectedIndex != 0)
-            {
-                AdministerCheckboxList.Enabled = true;
-                ArchitectCheckboxList.Enabled = true;
-                PermissionsSubmit.Enabled = true;
+            SetCheckboxes();
+        }
 
-                string userName = UserSelect.SelectedValue;
-                foreach (ListItem item in AdministerCheckboxList.Items)
-                {
-                    if (Roles.IsUserInRole(userName, item.Value))
-                        item.Selected = true;
-                    else
-                        item.Selected = false;
-                }
-                foreach (ListItem item in ArchitectCheckboxList.Items)
-                {
-                    if (Roles.IsUserInRole(userName, item.Value))
-                        item.Selected = true;
-                    else
-                        item.Selected = false;
-                }
-            }
-            else
+        private void SetCheckboxes() {
+            int project;
+            int user;
+            try
             {
-                AdministerCheckboxList.Enabled = false;
-                ArchitectCheckboxList.Enabled = false;
-                PermissionsSubmit.Enabled = false;
+                project = Int32.Parse(ProjectSelect.SelectedValue);
+                user = Int32.Parse(UserSelect.SelectedValue);
             }
+            catch
+            { return; }
+            int permissions;
+
+            if (project != 0)
+            {
+                permissions = sysDriver.GetUserRights(user, project);
+            }
+            else {
+                permissions = sysDriver.GetUserRights(user, null);
+            }
+
+            ListItemCollection lic = PermissionCheckboxList.Items;
+
+            lic[0].Selected = permissions % 100 / 10 == 1;
+            lic[1].Selected = permissions % 1000 / 100 == 1;
+            lic[2].Selected = permissions / 1000 == 1;
         }
 
         protected void PermissionsSubmit_Click(object sender, EventArgs e)
         {
-
-            string[] AddAdmin =
-                (from ListItem item in AdministerCheckboxList.Items
-                 where item.Selected &&
-                     !Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
-                 select item.Value).ToList<string>().ToArray();
-            string[] AddArchitect =
-                (from ListItem item in ArchitectCheckboxList.Items
-                 where item.Selected &&
-                     !Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
-                 select item.Value).ToList<string>().ToArray();
-            string[] RemoveAdmin =
-                (from ListItem item in AdministerCheckboxList.Items
-                 where !item.Selected &&
-                     Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
-                 select item.Value).ToList<string>().ToArray();
-            string[] RemoveArchitect =
-                (from ListItem item in ArchitectCheckboxList.Items
-                 where !item.Selected &&
-                     Roles.IsUserInRole(UserSelect.SelectedValue, item.Value)
-                 select item.Value).ToList<string>().ToArray();
-            string[] user = { UserSelect.SelectedValue };
-            foreach (string s in AddAdmin)
+            int? project;
+            int user;
+            try
             {
-                if (!Roles.RoleExists(s))
-                {
-                    Roles.CreateRole(s);
-                }
+                project = Int32.Parse(ProjectSelect.SelectedValue);
+                user = Int32.Parse(UserSelect.SelectedValue);
             }
-            foreach (string s in AddArchitect)
-            {
-                if (!Roles.RoleExists(s))
-                {
-                    Roles.CreateRole(s);
-                }
-            }
+            catch { return; }
+            if(project == 0) project = null;
 
-            if (AddAdmin.Length > 0)
-                Roles.AddUsersToRoles(user, AddAdmin);
-            if (AddArchitect.Length > 0)
-                Roles.AddUsersToRoles(user, AddArchitect);
-            if (RemoveAdmin.Length > 0)
-                Roles.RemoveUsersFromRoles(user, RemoveAdmin);
-            if (RemoveArchitect.Length > 0)
-                Roles.RemoveUsersFromRoles(user, RemoveArchitect);
+            int permissions = 0;
+            ListItemCollection lic = PermissionCheckboxList.Items;
+            if (lic[0].Selected) permissions += 10;
+            if (lic[1].Selected) permissions += 100;
+            if (lic[2].Selected) permissions += 1000;
+
+            sysDriver.SetUserRights(user, project, permissions);
         }
+
     }
 }

@@ -17,58 +17,42 @@ using CC = _min.Common.Constants;
 using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
 
-namespace _min_t7.Architect
+namespace _min.Architect
 {
+    /// <summary>
+    /// Edit a navigation panel structure - either a NavTable or a NavTree (a NavTree can always be converted into a NavTable)
+    /// </summary>
     public partial class EditNav : System.Web.UI.Page
     {
-        ISystemDriver sysDriver;
-        IWebDriver webDriver;
-        IStats stats;
-        _min.Models.Architect architect;
         MPanel actPanel;
         FK hierarchy;
         List<FK> FKs = new List<FK>();
+        MinMaster mm;
 
         protected void Page_Init(object sender, EventArgs e)
         {
 
             ValidationResult.Items.Clear();
+            mm = (MinMaster)Master;
 
             _min.Common.Environment.GlobalState = GlobalState.Architect;
-
-            //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
-            //    Session.Clear();
-            _min.Models.Panel architecture = null;
-            if (Session["Architecture"] is _min.Models.Panel)
-            {
-                architecture = (MPanel)Session["Architecture"];
-            }
 
             string projectName = Page.RouteData.Values["projectName"] as string;
             int panelId = Int32.Parse(Page.RouteData.Values["panelId"] as string);
 
-            sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
-            _min.Common.Environment.project = sysDriver.getProject(projectName);
-
-            string WebDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
-            webDriver = new WebDriverMySql(CE.project.connstringWeb);
-
-            stats = new StatsMySql(CE.project.connstringIS, WebDbName);
-
-            architect = new _min.Models.Architect(sysDriver, stats);
-
-            actPanel = sysDriver.getPanel(panelId, false);
+            actPanel = mm.SysDriver.Panels[panelId];
             
-            DataColumnCollection cols = stats.ColumnTypes[actPanel.tableName];
+            DataColumnCollection cols = mm.Stats.ColumnTypes[actPanel.tableName];
 
             PanelName.Text = actPanel.panelName;
             
             _min.Models.Control control = actPanel.controls.Where(x => x is NavTableControl || x is TreeControl).First();
 
-            FKs = stats.foreignKeys(actPanel.tableName);
+            FKs = mm.Stats.FKs[actPanel.tableName];
 
             List<string> colNames = (from DataColumn col in cols select col.ColumnName).ToList<string>();
             
+            // a M2NControl to select the columns of the table displayed in the GridView - for a tree we take only the first item
             DisplayCols.SetOptions(colNames);
             DisplayCols.SetIncludedOptions(control.displayColumns);
             
@@ -87,27 +71,17 @@ namespace _min_t7.Architect
                     item.Selected = true;
             }
 
-            hierarchy = stats.SelfRefFKStrict(actPanel.tableName);
+            hierarchy = mm.Stats.SelfRefFKs().Find(x => x.myTable == actPanel.tableName);
             string[] CTypeOptions = hierarchy == null ? new string[] {"Navigation Table"} : 
                 new string[] {"Navigation Table", "Navigation Tree"};
+            // a radio button list - contains navtable and maybe treeview option
             NavControlType.DataSource = CTypeOptions;
             NavControlType.DataBind();
+            // let the default be the current
             if (control is TreeControl) NavControlType.SelectedIndex = 1; else NavControlType.SelectedIndex = 0;
 
             BackButton.PostBackUrl = BackButton.GetRouteUrl("ArchitectShowRoute", new { projectName = projectName });
 
-        }
-
-
-        protected void Page_Load(object sender, EventArgs e)
-        {
-
-            
-        }
-
-        protected void Page_LoadComplete(object sender, EventArgs e) {
-
-            //Session["Architecture"] = sysDriver.MainPanel;
         }
 
         protected void SaveButton_Click(object sender, EventArgs e)
@@ -115,13 +89,14 @@ namespace _min_t7.Architect
 
 
             string panelName = PanelName.Text;
-            List<string> displayCols = (from ListItem li in DisplayCols.IncludedItems select li.Text).ToList<string>();
+            List<string> displayCols = DisplayCols.RetrieveStringData();
             List<UserAction> actions = new List<UserAction>();
             foreach(ListItem item in AllowedActions.Items){
                 if(item.Selected) actions.Add((UserAction)Enum.Parse(typeof(UserAction), item.Text));
             }
 
             ValidationResult.Items.Clear();
+            // validate the proposal
             if (panelName == ".")
             {
                 ValidationResult.Items.Add("Give the pannel a name, please.");
@@ -135,11 +110,13 @@ namespace _min_t7.Architect
             }
             else {
                 ValidationResult.Items.Add("Valid");
+                // => create the panel and save it
                 _min.Models.Control c;
                 List<_min.Models.Control> controls = new List<_min.Models.Control>();
 
                 _min.Models.Control insertButton = null;
 
+                // insert is a separate button
                 if (actions.Contains(UserAction.Insert))
                 {
                     insertButton = new _min.Models.Control(actPanel.panelId, "Insert", UserAction.Insert);
@@ -149,13 +126,13 @@ namespace _min_t7.Architect
                 if (NavControlType.SelectedValue.EndsWith("Table"))
                 {
                     List<FK> neededFKs = (from FK fk in FKs where displayCols.Contains(fk.myColumn) select fk).ToList<FK>();
-                    c = new NavTableControl(actPanel.panelId, new System.Data.DataTable(), stats.PKs[actPanel.tableName],
+                    c = new NavTableControl(actPanel.panelId, new System.Data.DataTable(), mm.Stats.PKs[actPanel.tableName],
                         neededFKs, actions);
                     c.displayColumns = displayCols;
                 }
-                else {
+                else {  // NavTree
                     actions.Remove(UserAction.Delete);      // cannot use delete in NavTrees
-                    c = new TreeControl(actPanel.panelId, new HierarchyNavTable(), stats.PKs[actPanel.tableName][0], 
+                    c = new TreeControl(actPanel.panelId, new HierarchyNavTable(), mm.Stats.PKs[actPanel.tableName][0], 
                         hierarchy.myColumn, displayCols[0], actions);
                 }
                 controls.Add(c);
@@ -174,11 +151,13 @@ namespace _min_t7.Architect
 
                 actPanel = resPanel;
 
-                sysDriver.StartTransaction();
-                sysDriver.updatePanel(actPanel);
+                mm.SysDriver.BeginTransaction();
+                mm.SysDriver.UpdatePanel(actPanel);
                 Session.Clear();
-                sysDriver.CommitTransaction();
+                mm.SysDriver.CommitTransaction();
+                mm.SysDriver.IncreaseVersionNumber();
                 ValidationResult.Items.Add("Saved");
+                
             }
 
         }

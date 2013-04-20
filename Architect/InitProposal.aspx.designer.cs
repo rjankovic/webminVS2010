@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7.Architect {
+namespace _min.Architect {
     
     
     public partial class InitProposal {
@@ -146,5 +146,17 @@ namespace _min_t7.Architect {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label WaitLabel;
+        
+        /// <summary>
+        /// Master property.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated property.
+        /// </remarks>
+        public new _min.MinMaster Master {
+            get {
+                return ((_min.MinMaster)(base.Master));
+            }
+        }
     }
 }

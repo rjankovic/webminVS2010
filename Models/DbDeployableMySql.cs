@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿using System.Collections.Generic;
 using _min.Interfaces;
-using _min.Models;
 using MySql.Data.MySqlClient;
 using System.Text;
 using System.Data;
@@ -11,14 +7,20 @@ using System.Data;
 namespace _min.Models
 {
 
-
+    /// <summary>
+    /// A set of query parts that can append themselves to a MySql command
+    /// </summary>
     public partial class DbDeployableMySql : IDbDeployableFactory
-    {
+    {   // the other part is ConditionMySql
+        
         // empty space always at the beggining of appended command!
         // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong
 
+        /// <summary>
+        /// simple string parameter
+        /// </summary>
         class InputStr : IDbInStr, IMySqlQueryDeployable
-        {       // input string 
+        { 
             public string s { get; set; }
             public InputStr(string s)
             {
@@ -57,6 +59,9 @@ namespace _min.Models
             public abstract void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount);
         }
 
+        /// <summary>
+        /// columns and values for an INSERT query
+        /// </summary>
         class InsertVals : Vals
         {
             public InsertVals(Dictionary<string, object> vals)
@@ -79,6 +84,9 @@ namespace _min.Models
             }
         }
 
+        /// <summary>
+        /// columns and values for an UPDATE query
+        /// </summary>
         class UpdateVals : Vals
         {
             public UpdateVals(Dictionary<string, object> vals)
@@ -100,6 +108,9 @@ namespace _min.Models
         }
 
 
+        /// <summary>
+        /// single column name
+        /// </summary>
         class Column : IDbCol, IMySqlQueryDeployable
         {
             public string table { get; set; }
@@ -130,6 +141,9 @@ namespace _min.Models
             }
         }
 
+        /// <summary>
+        /// a few column names divided by commas
+        /// </summary>
         class Columns : IMySqlQueryDeployable
         {
             private List<Column> cols;
@@ -180,6 +194,9 @@ namespace _min.Models
             }
         }
 
+        /// <summary>
+        /// muliple joins concatenated
+        /// </summary>
         class InnerJoins : IMySqlQueryDeployable
         {
             private List<InnerJoin> joins;
@@ -207,6 +224,9 @@ namespace _min.Models
             }
         }
 
+        /// <summary>
+        /// IN(x,y,z,...) clause
+        /// </summary>
         class InStatement : IDbInList, IMySqlQueryDeployable
         {
             public List<object> list { get; set; }
@@ -230,6 +250,9 @@ namespace _min.Models
             }
         }
 
+        /// <summary>
+        /// table name
+        /// </summary>
         class DbTable : IDbTable
         {
             public string table { get; set; }
@@ -332,7 +355,6 @@ namespace _min.Models
         {
             return new ConditionMySql(lowerBounds, upperBounds);
         }
-
 
         public IDbTable Table(string table, string alias = null)
         {

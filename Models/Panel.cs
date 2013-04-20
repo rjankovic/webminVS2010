@@ -160,6 +160,9 @@ namespace _min.Models
             }
         }
 
+        /// <summary>
+        /// sets panel`s controls, fields and children to empty lists
+        /// </summary>
         public void InitAfterDeserialization()
         {
             if (this.children != null || this.fields != null || this.controls != null)

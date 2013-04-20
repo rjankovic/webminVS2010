@@ -11,85 +11,12 @@ using CE = _min.Common.Environment;
 
 namespace _min.Models
 {
-    public class ArchitectQuestionEventArgs : EventArgs
-    {
-        public string questionText { get; private set; }
-        public Dictionary<string, object> options { get; private set; }
-
-        public ArchitectQuestionEventArgs(string qText, Dictionary<string, object> options)
-        {
-            questionText = qText;
-            this.options = options;
-        }
-    }
-
-    public delegate void ArchitectQuestion(Architect sender, ArchitectQuestionEventArgs e);
-
-    public class ArchitectureErrorEventArgs : EventArgs
-    {
-        public string message { get; private set; }
-        public string tableName { get; private set; }
-        public Panel panel { get; private set; }
-        public Field field { get; private set; }
-        public Control control { get; set; }
-
-        public ArchitectureErrorEventArgs(string message, string tableName)
-        {
-            this.message = message;
-            this.tableName = tableName;
-            this.panel = null;
-            this.field = null;
-            this.control = null;
-        }
-
-        public ArchitectureErrorEventArgs(string message, Panel panel, Field field)
-            : this(message, panel.tableName)
-        {
-            this.panel = panel;
-            this.field = field;
-        }
-
-        public ArchitectureErrorEventArgs(string message, Panel panel, Control control)
-            : this(message, panel.tableName)
-        {
-            this.panel = panel;
-            this.control = control;
-        }
-    }
-
-    public delegate void ArchitectureError(Architect sender, ArchitectureErrorEventArgs e);
-
-
-    public class ArchitectWarningEventArgs : ArchitectureErrorEventArgs
-    {
-        public ArchitectWarningEventArgs(string message, string tableName)
-            : base(message, tableName)
-        { }
-    }
-
-    public delegate void ArchitectWarning(Architect sender, ArchitectWarningEventArgs e);
-
-
-    public class ArchitectNoticeEventArgs : ArchitectureErrorEventArgs
-    {
-        public ArchitectNoticeEventArgs(string message, string tableName = null)
-            : base(message, tableName)
-        { }
-    }
-
-    public delegate void ArchitectNotice(Architect sender, ArchitectNoticeEventArgs e);
-
-
-    public delegate Panel AsyncProposeCaller();
-
+    /// <summary>
+    /// creates initial proposal of administration interface based on the database charactersitics retriveved by StatsDriver and saves them using SystemDriver
+    /// can also check correctness of a given proposal against the database
+    /// </summary>
     public class Architect
     {
-        public object questionAnswer;
-        public event ArchitectQuestion Question;
-        public event ArchitectureError Error;
-        public event ArchitectWarning Warning;
-        public event ArchitectNotice Notice;
-
         private ISystemDriver systemDriver;
         private IStats stats;
         public List<M2NMapping> mappings;
@@ -101,29 +28,7 @@ namespace _min.Models
         {
             this.stats = stats;
             this.systemDriver = system;
-            questionAnswer = null;
         }
-        /*
-        private List<string> DisplayColOrder(string tableName)
-        // the order in which columns will be displayed in summary tables & M2NMapping, covers all columns
-        {
-            DataColumnCollection cols = stats.columnTypes(tableName);
-            Dictionary<string, List<string>> PKs = stats.GlobalPKs();
-            List<string> PKcols = PKs[tableName];
-            List<string> res = new List<string>();
-            List<DataColumn> colList = new List<DataColumn>(from DataColumn col in cols 
-                                                            where !PKcols.Contains(col.ColumnName) 
-                                                            select col);
-            ColumnDisplayComparer comparer = new Common.ColumnDisplayComparer();
-            colList.Sort(comparer);
-            return new List<string>(from col in colList select col.ColumnName);
-        }
-        */
-        /*
-        public Panel getArchitectureInPanel()
-        {
-            return systemDriver.getArchitectureInPanel();
-        }*/
         /// <summary>
         /// propose the editable panel for a table, if table will probably not be self-editable
         /// (such as an M2N mapping), return null
@@ -132,23 +37,17 @@ namespace _min.Models
         /// <returns>Panel (or null)</returns>
         public Panel proposeForTable(string tableName)
         {
-            // dont care for indexes for now
+            // don`t care for indexes for now
 
             DataColumnCollection cols = stats.ColumnTypes[tableName];
-            List<FK> FKs = stats.foreignKeys(tableName);
+            List<FK> FKs = stats.FKs[tableName];
             List<string> PKCols = stats.PKs[tableName];
 
-            //if (FKs.Any(fk => PKCols.Contains(fk.myColumn))) return null;
-            // can popose for tables with foreign PK, but not recommended (and not the default choice in Table Usage Step in proposal)
-            
-            // not strict enough
-            // if (cols.Count == 2 && FKs.Count == 2) return null; // seems like mapping table
-            // FK ~> mapping ?
             List<Field> fields = new List<Field>();
             List<ValidationRules> validation = new List<ValidationRules>();
 
 
-            foreach (M2NMapping mapping in mappings)
+            foreach (M2NMapping mapping in mappings)    // find mappings related to this table
             {
                 if (mapping.myTable != tableName) continue;
                 List<string> displayColOrder = stats.ColumnsToDisplay[mapping.refTable];
@@ -160,26 +59,26 @@ namespace _min.Models
             foreach (FK actFK in FKs)
             {
                 validation = new List<ValidationRules>();
-                //PropertyCollection validation = new PropertyCollection();
                 if (!cols[actFK.myColumn].AllowDBNull) validation.Add(ValidationRules.Required);
                 List<string> displayColOrder = stats.ColumnsToDisplay[actFK.refTable];
                 actFK.displayColumn = displayColOrder[0];
                 fields.Add(new FKField(0, actFK.myColumn, 0, actFK));
 
-                cols.Remove(actFK.myColumn);    // will be edited as a foreign key
+                cols[actFK.myColumn].ExtendedProperties.Add("AlreadyUsed", null);
+                //cols.Remove(actFK.myColumn);    // will be edited as a foreign key
             }
 
             // editable fields in the order as defined in table; don`t edit AI
             foreach (DataColumn col in cols)
             {
-                //PropertyCollection validation = new PropertyCollection();
-
+                if (col.ExtendedProperties.Contains("AlreadyUsed")) continue;
                 validation = new List<ValidationRules>();
                 if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_EDITABLE)) continue;
                 if (!col.AllowDBNull && col.DataType != typeof(bool)) validation.Add(ValidationRules.Required);
                 if (col.Unique) validation.Add(ValidationRules.Unique);
                 FieldTypes fieldType;  // default => standard textBox
 
+                // this is an enum column
                 if (col.ExtendedProperties.ContainsKey(CC.ENUM_COLUMN_VALUES))
                 {
                     EnumField enumField = new EnumField(0, col.ColumnName, 0, (List<string>)(col.ExtendedProperties[CC.ENUM_COLUMN_VALUES]));
@@ -187,7 +86,8 @@ namespace _min.Models
                     fields.Add(enumField);
                     continue;
                 }
-                if (col.DataType == typeof(string))
+                // a switch through Data|Type would be clearer, it it was possible
+                else if (col.DataType == typeof(string))
                 {
                     if (col.MaxLength <= 255) fieldType = FieldTypes.ShortText;
                     else fieldType = FieldTypes.Text;
@@ -209,18 +109,8 @@ namespace _min.Models
                 }
                 else if (col.DataType == typeof(DateTime))
                 {
-                    //if (col.ExtendedProperties.ContainsKey(CC.FIELD_DATE_ONLY))
-                    //    fieldType = FieldTypes.Date;
-                    // should DATETIME, BUT DATETIME is usually used for date only...or is it?
                     fieldType = FieldTypes.Date;
                     validation.Add(ValidationRules.Date);
-                }
-                else if (col.DataType == typeof(Enum))
-                {
-                    // cannot happen, since column properties are taken from Stats
-                    //if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_ENUM_VALUES))
-                    //    throw new Exception("Missing enum options for field " + col.ColumnName);
-                    fieldType = FieldTypes.Enum;
                 }
                 else
                 {
@@ -235,40 +125,14 @@ namespace _min.Models
             PropertyCollection controlProps = new PropertyCollection();
             PropertyCollection viewProps = new PropertyCollection();
             string panelName = tableName + " Editation";
-            //viewProps.Add(CC.PANEL_NAME, tableName + " Editation");
-
+            
             List<Control> controls = new List<Control>();
 
-            /*
-            string actionName = UserAction.View.ToString();
-            controlProps.Add(actionName, actionName);
-            controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 1);
-
-            actionName = UserAction.Insert.ToString();
-            controlProps.Add(actionName, actionName);
-            controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 3);
-            
-            actionName = UserAction.Update.ToString();
-            controlProps.Add(actionName, actionName);
-            controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 5);
-
-            actionName = UserAction.Delete.ToString();
-            controlProps.Add(actionName, actionName);
-            controlProps.Add(actionName + CC.CONTROL_ACCESS_LEVEL_REQUIRED_SUFFIX, 5);
-            */
+            // no delete (?)
             controls.Add(new Control(0, UserAction.Insert.ToString(), UserAction.Insert));
             controls.Add(new Control(0, UserAction.Update.ToString(), UserAction.Update));
-            /*
-            foreach (string actName in Enum.GetNames(typeof(UserAction)))
-            {
-                controls.Add(new Control(0, actName, (UserAction)Enum.Parse(typeof(UserAction), actName)));
-            }*/
+            
             List<Control> controlsAsControl = new List<Control>(controls);
-
-            //set additional properties
-            // the order of fields in edit form (if defined), if doesn`t cover all editable columns, display the remaining
-            // at the begining, non-editable columns are skipped
-            //viewProps[CC.PANEL_DISPLAY_COLUMN_ORDER] = String.Join(",", DisplayColOrder(tableName));
 
             Panel res = new Panel(tableName, 0, PanelTypes.Editable,
                 new List<Panel>(), fields, controlsAsControl, PKCols);
@@ -276,11 +140,14 @@ namespace _min.Models
         }
 
 
-
+        /// <summary>
+        /// gets all FKs that refer back to their own table and filters those suitalbe for NavTree navigaion, otherwise adds an error message
+        /// </summary>
+        /// <returns>For each such FK Pair&lt;suitable(true/false), description/reason&gt;</returns>
         public Dictionary<string, KeyValuePair<bool, string>> CheckHierarchies()
         {
-            List<FK> selfRefFK = stats.selfRefFKs();
-            Dictionary<string, List<string>> PKs = stats.GlobalPKs();
+            List<FK> selfRefFK = stats.SelfRefFKs();
+            Dictionary<string, List<string>> PKs = stats.PKs;
             var tableSRFKs = from fk in selfRefFK group fk by fk.myTable into groups select new { Key = groups.Key, Value = groups };
             Dictionary<string, KeyValuePair<bool, string>> res = new Dictionary<string, KeyValuePair<bool, string>>();
 
@@ -312,27 +179,21 @@ namespace _min.Models
         public Panel proposeSummaryPanel(string tableName)
         {
             DataColumnCollection cols = stats.ColumnTypes[tableName];
-            List<FK> FKs = stats.foreignKeys(tableName);
+            List<FK> FKs = stats.FKs[tableName];
             // a table with more than one self-referential FK is improbable
             List<FK> selfRefs = new List<FK>(from FK in FKs where FK.myTable == FK.refTable select FK as FK);
-            List<string> PKCols = stats.primaryKeyCols(tableName);
+            List<string> PKCols = stats.PKs[tableName];
             FK selfRefFK = null;
             // strict hierarchy structure validation - not nice => no Tree
             if (hierarchies.Contains(tableName))
                 selfRefFK = selfRefs.First();
             List<string> displayColOrder = stats.ColumnsToDisplay[tableName];
-            /*
-            PropertyCollection controlProps = new PropertyCollection();
-            PropertyCollection displayProps = new PropertyCollection();
-            */
-
-
+            
             Control control;
             DataTable controlTab = new DataTable();
 
-            //List<Field> fields = new List<Field>();
             List<Control> Controls = new List<Control>();
-            if (selfRefFK != null)
+            if (selfRefFK != null)  // this will be a NavTree
             {
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
                     new List<Control>(), PKCols);
@@ -342,18 +203,12 @@ namespace _min.Models
                 Controls.Add(control);
                 control = new Control(0, null, PKCols, UserAction.Insert);
                 Controls.Add(control);
-                /*
-                controlProps.Add(CC.CONTROL_HIERARCHY_SELF_FK_COL, selfRefFK.myColumn);
-                controlTab.Columns.Add(PKCols[0]);
-                controlTab.Columns.Add(selfRefFK.myColumn);
-                controlTab.Columns.Add(displayColOrder[0]);
-                control = new TreeControl(controlTab, PKCols[0], selfRefFK.myColumn, displayColOrder[0], UserAction.Update);
-                */
+                
                 res.AddControls(Controls);
                 return res;
             }
             else
-            {
+            {       // a simple NavTable
                 Panel res = new Panel(tableName, 0, PanelTypes.NavTable, new List<Panel>(), new List<Field>(),
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
@@ -388,12 +243,9 @@ namespace _min.Models
         /// <returns>Panel</returns>
         public Panel propose()
         {
-            //Notice(this, new ArchitectNoticeEventArgs("Starting proposal..."));
+            systemDriver.BeginTransaction();
 
-
-            systemDriver.StartTransaction();
-
-            List<string> tables = stats.TableList();
+            List<string> tables = stats.Tables;
             List<Panel> baseChildren = new List<Panel>();
 
             HierarchyNavTable basePanelHierarchy = new HierarchyNavTable();
@@ -404,7 +256,6 @@ namespace _min.Models
                 Panel editPanel = proposeForTable(tableName);
                 if (editPanel != null)
                 {      // editable panel available - add summary panel
-                    //Notice(this, new ArchitectNoticeEventArgs("Table \"" + tableName + "\" will be editable."));
                     Panel summaryPanel = proposeSummaryPanel(tableName);
 
                     foreach (Control c in summaryPanel.controls)        // simlified for now
@@ -412,7 +263,6 @@ namespace _min.Models
                     foreach (Control c in editPanel.controls)
                         c.targetPanel = summaryPanel;
 
-                    //Notice(this, new ArchitectNoticeEventArgs("Proposed summary navigation panel for table \"" + tableName + "\"."));
                     editPanel.panelName = "Editation of " + tableName;
                     summaryPanel.panelName = "Summary of " + tableName;
                     baseChildren.Add(editPanel);
@@ -425,8 +275,7 @@ namespace _min.Models
                     tableSummaryRow.ParentId = tableRow.Id;
                     tableEditRow.ParentId = tableRow.Id;
                     tableRow.NavId = null;
-                    //tableSummaryRow.NavId = summaryPanel.panelId;
-                    //tableEditRow.NavId = editPanel.panelId;
+                    
                     tableRow.Caption = tableName;
                     tableEditRow.Caption = "Add";
                     tableSummaryRow.Caption = "Browse";
@@ -435,24 +284,13 @@ namespace _min.Models
                     basePanelHierarchy.Add(tableEditRow);
                     basePanelHierarchy.Add(tableSummaryRow);
                 }
-                else
-                {
-                    //Notice(this, new ArchitectNoticeEventArgs("Table \"" + tableName + "\" is probably NOT suitable for direct management."));
-                }
             }
-            //Notice(this, new ArchitectNoticeEventArgs("Creating navigation base with " +
-            //    baseChildren.Count + " options (2 per table)."));
-
+            
             Panel basePanel = new Panel(null, 0, PanelTypes.MenuDrop,
                 baseChildren, null, null, null);
             basePanel.panelName = "Main page";
             basePanel.isBaseNavPanel = true;
-            //systemDriver.query("TRUNCATE TABLE log_db");
-            //Notice(this, new ArchitectNoticeEventArgs("Updating database..."));
             systemDriver.AddPanel(basePanel);
-
-            SetControlPanelBindings(basePanel);
-            systemDriver.RewriteControlDefinitions(basePanel);  // to save the targetPanel
 
             TreeControl basePanelTreeControl = new TreeControl(basePanel.panelId, basePanelHierarchy,
                 "Id", "ParentId", "Caption", UserAction.View);
@@ -466,25 +304,13 @@ namespace _min.Models
                 basePanelHierarchy.Rows[i * 3 + 2]["NavId"] = basePanel.children[2 * i + 1].panelId;
             }
 
-            //AddControl! only.
-            /*
-            systemDriver.AddControl(basePanelTreeControl);
-            systemDriver.RewriteControlDefinitions(basePanel);  // to give it correct IDs in serialization
-            systemDriver.RewriteFieldDefinitions(basePanel);
-            */
-
-            // now children have everything set, even parentid 
-            // as the parent was inserted first, his id was set and they took it from the object
-
+            
             List<Control> addedList = new List<Control>();
             addedList.Add(basePanelTreeControl);
             basePanel.AddControls(addedList);
             systemDriver.AddControl(basePanelTreeControl);
 
-
-            //systemDriver.updatePanel(basePanel, false); 
-            // sholuld no longer be neccessay
-
+            systemDriver.IncreaseVersionNumber();
             systemDriver.CommitTransaction();
             return basePanel;
         }
@@ -506,7 +332,7 @@ namespace _min.Models
 
             DataColumnCollection cols = stats.ColumnTypes[proposalPanel.tableName];
 
-            List<FK> FKs = stats.foreignKeys(proposalPanel.tableName);
+            List<FK> FKs = stats.FKs[proposalPanel.tableName];
             List<M2NMapping> mappings = stats.Mappings[proposalPanel.tableName];
 
             bool good = true;
@@ -537,23 +363,7 @@ namespace _min.Models
                                     + "cannot be set to null, but the coresponding field is not required");
                                 good = false;
                             }
-                            /*
-                            if (r.Contains(ValidationRules.Ordinal)
-                                && !(typeof(long).IsAssignableFrom(cols[field.column].DataType)))
-                            {
-                                errorMsgs.Add(messageBeginning + "is of type " + cols[field.column].DataType.ToString()
-                                        + ", thus cannot be edited as a number");
-                                good = false;
-                            }
 
-                            if (r.Contains(ValidationRules.Decimal)
-                                && !(typeof(double).IsAssignableFrom(cols[field.column].DataType)))
-                            {
-                                errorMsgs.Add(messageBeginning + "is of type " + cols[field.column].DataType.ToString()
-                                        + ", thus cannot be edited as a decimal number");
-                                good = false;
-                            }
-                            */
                             if (field.type == FieldTypes.Bool && r.Count > 0)
                             {
                                 errorMsgs.Add(messageBeginning + ": no validation can be assigned to a checkbox. If needed," +
@@ -606,33 +416,6 @@ namespace _min.Models
                                 good = false;
                             }
                         }
-                        /*  // cannot occur
-                        else if (field is M2NMappingField)
-                        {
-                            // just cannot occur in a NavTable, but just in case...
-                            M2NMapping thisMapping = ((M2NMappingField)field).Mapping;
-                            if (!mappings.Contains(thisMapping))    // use any
-                            {
-                                errorMsgs.Add(messageBeginning + "- the schema " +
-                                    "does not define an usual M2NMapping batween tables " + thisMapping.myTable +
-                                    " and " + thisMapping.refTable + " using " + thisMapping.mapTable +
-                                    " as a map table");
-                                good = false;
-                            }
-                        }
-                        else if (field is FKField)
-                        {
-                            FK fieldFK = ((FKField)field).FK;
-                            if (!FKs.Any(x => 
-                                x.refTable == fieldFK.refTable && 
-                                x.myTable == fieldFK.myTable &&
-                                x.myColumn == fieldFK.myColumn &&
-                                x.refColumn == fieldFK.refColumn))
-                            {
-                                errorMsgs.Add(messageBeginning + "is not a foreign key representable by the FK field");
-                                good = false;
-                            }
-                        }*/
                     }
                 }
                 IEnumerable<string> requiredColsMissing = from DataColumn col in stats.ColumnTypes[proposalPanel.tableName]
@@ -659,75 +442,8 @@ namespace _min.Models
             }
             else throw new Exception("Validation-non editable panel as an editable one.");
 
-            // controls...
-
-            /*
-            // not ideal
-            if (!proposalPanel.isBaseNavPanel && proposalPanel.controls.Any(x => x.targetPanelId == null || x.targetPanel == null))
-            {
-                Error(this, new ArchitectureErrorEventArgs(messageBeginning + "Each control must have a target panel set",
-                    proposalPanel, proposalPanel.controls[0]));
-                good = false;
-            }
-
-            if (proposalPanel.type == PanelTypes.NavTable
-                || proposalPanel.type == PanelTypes.NavTree
-                || proposalPanel.type == PanelTypes.MenuDrop)
-            {
-                if (proposalPanel.controls.Count == 0)
-                {
-                    Error(this, new ArchitectureErrorEventArgs(messageBeginning + "navTables, navTrees and drop menus"
-                   + "must have at least one control", proposalPanel.tableName));
-                }
-                else
-                {
-                    if (proposalPanel.isBaseNavPanel)
-                    {
-                        if (proposalPanel.tableName != null)
-                        {
-                            Error(this, new ArchitectureErrorEventArgs(messageBeginning + "Panel that navigates through panels "
-                                + "cannot have tableName set", proposalPanel.tableName));
-                            good = false;
-                        }
-                    }
-                }
-            }
-            */
-            // TODO & TODO & TODO (CONTROLS & OTHER PROPERTIES)
-            // OR allow the admin-user take valid steps only (?)
-
-
+            
             return good;
-        }
-
-
-        /*
-        public bool checkPanelProposal(int panelId, bool recursive = true)  // on first load / reload request; also in production
-        {
-            Panel proposalPanel = systemDriver.getPanel(panelId, true);
-            return checkPanelProposal(proposalPanel, true);
-        }
-
-        public bool checkProposal()
-        {
-            Panel proposalPanel = systemDriver.getArchitectureInPanel();
-            return checkPanelProposal(proposalPanel, true);
-        }
-        */
-        private void SetControlPanelBindings(Panel panel, bool recursive = true)
-        {
-            foreach (Control c in panel.controls)
-            {
-                if (c.targetPanelId != null)
-                    throw new Exception("Target panel id already set!");
-                if (c.targetPanel != null)
-                {
-                    c.targetPanelId = c.targetPanel.panelId;
-                }
-            }
-            if (recursive)
-                foreach (Panel p in panel.children)
-                    SetControlPanelBindings(p);
         }
 
     }

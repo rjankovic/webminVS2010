@@ -7,7 +7,7 @@ using _min.Interfaces;
 using _min.Models;
 using _min.Common;
 
-namespace _min_t7.Common
+namespace _min.Common
 {
     /*
     public static class Debug

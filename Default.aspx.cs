@@ -16,7 +16,7 @@ using System.IO;
 using _min.Common;
 using _min.Controls;
 
-namespace _min_t7
+namespace _min
 {
     public partial class _Default : System.Web.UI.Page
     {
@@ -28,8 +28,7 @@ namespace _min_t7
         WebDriverMySql webDriver;
         _min.Models.Architect architect;
 
-        public event ArchitectNotice AdditionalArchitectNotice;
-
+        
 
         private void ProposalReady(IAsyncResult result)
         {

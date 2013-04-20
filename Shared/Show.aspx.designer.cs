@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _min_t7.Shared {
+namespace _min.Shared {
     
     
     public partial class Show {
@@ -29,5 +29,17 @@ namespace _min_t7.Shared {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel MainPanel;
+        
+        /// <summary>
+        /// Master property.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated property.
+        /// </remarks>
+        public new _min.MinMaster Master {
+            get {
+                return ((_min.MinMaster)(base.Master));
+            }
+        }
     }
 }

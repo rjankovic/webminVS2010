@@ -17,55 +17,45 @@ using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
 using _min.Controls;
 
-namespace _min_t7.Architect
+namespace _min.Architect
 {
+    /// <summary>
+    /// Edit panels on global level - remove existing panels for tables or add panels for table that isn`t edited.
+    /// Only panels inaccessible from menu can be removed and only tables that have at least one part of PK as a independent (non-foreign key) column, 
+    /// can have panels. Panels are always added / removed in pairs summary panel / edit panel.
+    /// </summary>
     public partial class EditPanels : System.Web.UI.Page
     {
-        ISystemDriver sysDriver;
-        Dictionary<string, List<M2NMapping>> mappings;
         DataTable summary;
-        CE.Project project;
-        string webDbName;
+        MinMaster mm;
 
         protected void Page_Init(object sender, EventArgs e)
         {
-
+            mm = (MinMaster)Master;
             _min.Common.Environment.GlobalState = GlobalState.Architect;
-
-            //if (!Page.IsPostBack && !Page.RouteData.Values.ContainsKey("panelId"))
-            //    Session.Clear();
-            sysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
-                
+    
             if (!(Session["Summary"] is DataTable))
             {
-                string projectName = Page.RouteData.Values["projectName"] as string;
-                project = sysDriver.getProject(projectName);
-                Session["Project"] = _min.Common.Environment.project;
+                HierarchyNavTable baseNavTable = ((TreeControl)(mm.SysDriver.MainPanel.controls[0])).storedHierarchyData;
 
-                webDbName = Regex.Match(CE.project.connstringWeb, ".*Database=\"?([^\";]+)\"?.*").Groups[1].Value;
-                Session["WebDbName"] = webDbName;
-                IStats stats = new StatsMySql(CE.project.connstringIS, webDbName);
-                Session["Mappings"] = mappings = stats.Mappings;
-
-
-                sysDriver.InitArchitecture();
-                HierarchyNavTable baseNavTable = ((TreeControl)(sysDriver.MainPanel.controls[0])).storedHierarchyData;
-
-                List<string> tables = stats.Tables;
+                List<string> tables = mm.Stats.Tables;
 
                 summary = new DataTable();
                 summary.Columns.Add("TableName", typeof(string));
                 summary.Columns.Add("Independent", typeof(bool));
                 summary.Columns.Add("HasPanels", typeof(bool));
                 summary.Columns.Add("Reachable", typeof(bool));
-                foreach (string tableName in stats.Tables)
+                foreach (string tableName in mm.Stats.Tables)
                 {
+                    if(!mm.Stats.PKs.ContainsKey(tableName))
+                        continue;
                     DataRow r = summary.NewRow();
-                    r["TableName"] = tableName;
-                    r["Independent"] = !(stats.PKs[tableName].Any(pkCol => stats.FKs[tableName].Any(fk => fk.myColumn == pkCol)));
+                    r["TableName"] = tableName;     // get it only once - table is stored in Session and updated
 
-                    List<MPanel> tablePanels = (from MPanel p in sysDriver.Panels.Values where p.tableName == tableName select p).ToList<MPanel>();
-                    r["HasPanels"] = tablePanels.Count > 0;     // now surely equal to 2
+                    r["Independent"] = !(mm.Stats.PKs[tableName].Any(pkCol => mm.Stats.FKs[tableName].Any(fk => fk.myColumn == pkCol)));
+
+                    List<MPanel> tablePanels = (from MPanel p in mm.SysDriver.Panels.Values where p.tableName == tableName select p).ToList<MPanel>();
+                    r["HasPanels"] = tablePanels.Count > 0;     // now surely equal to 2 (panels are added/removed in pairs)
                     r["Reachable"] = false;
                     if ((bool)(r["HasPanels"]))
                     {
@@ -77,28 +67,26 @@ namespace _min_t7.Architect
                 Session["Summary"] = summary;
             }
             else {
-                mappings = (Dictionary<string, List<M2NMapping>>)Session["Mappings"];
                 summary = (DataTable)Session["Summary"];
-                project = (CE.Project)Session["Project"];
-                webDbName = (string)Session["WebDbName"];
             }
 
 
 
             if (!Page.IsPostBack)
             {
+                // the next time grid is set like this will be after panels addition / removal
                 TablesGrid.DataSource = summary;
                 TablesGrid.DataBind();
                 ResetActionClickablility();
             }
 
-            BackButton.PostBackUrl = BackButton.GetRouteUrl("ArchitectShowRoute", new { projectName = project.name });
+            BackButton.PostBackUrl = BackButton.GetRouteUrl("ArchitectShowRoute", new { projectName = _min.Common.Environment.project.Name });
 
         }
 
         private void ResetActionClickablility() {
             for (int i = 0; i < summary.Rows.Count; i++)
-            {        // disable add & remove where impossible
+            {        // disable "add" & "remove" where impossible
                 if ((bool)summary.Rows[i]["Reachable"] || !(bool)summary.Rows[i]["HasPanels"])
                     ((LinkButton)(TablesGrid.Rows[i].Cells[1].Controls[0])).Enabled = false;
                 if ((bool)summary.Rows[i]["HasPanels"] || !(bool)summary.Rows[i]["Independent"])
@@ -107,16 +95,6 @@ namespace _min_t7.Architect
         }
 
         
-        protected void Page_Load(object sender, EventArgs e)
-        {
-
-            
-        }
-        // after events
-        protected void Page_LoadComplete(object sender, EventArgs e) {
-
-            //Session["Architecture"] = sysDriver.MainPanel;
-        }
 
         protected void TablesGrid_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -131,47 +109,53 @@ namespace _min_t7.Architect
                 MappingsLabel.Visible = false;
                 MappingsCheck.Visible = false;
             }
-            else {      // optiona for panel addition
+            else {      // mapping optiona for new panel
                 TablesGrid.SelectedRow.BackColor = System.Drawing.Color.LightGreen;
-                MappingsLabel.Visible = true;
-                MappingsCheck.DataSource = from M2NMapping mp in mappings[summary.Rows[index]["TableName"] as string] select 
+                
+                // check in the sense of checkbock list - no validation
+                MappingsCheck.DataSource = from M2NMapping mp in mm.Stats.Mappings[summary.Rows[index]["TableName"] as string] select 
                                                new { text = "Mapping to " + mp.refTable + " via " + mp.mapTable, mapTable = mp.mapTable };
                 MappingsCheck.DataTextField = "text";
                 MappingsCheck.DataValueField = "mapTable";
                 MappingsCheck.DataBind();
+                if (MappingsCheck.Items.Count > 0)
+                {
+                    MappingsLabel.Visible = true;
+                    MappingsCheck.Visible = true;
+                }
             }
         }
 
         protected void SaveButton_Click(object sender, EventArgs e)
         {
-            sysDriver.InitArchitecture();
+            mm.SysDriver.FullProjectLoad();
             int index = TablesGrid.SelectedIndex;
             string tableName = summary.Rows[index]["TableName"] as string;
-                
+            
+    
             if ((bool)summary.Rows[index]["HasPanels"])
-            {   // remove
-                IEnumerable<MPanel> toRemove = from MPanel p in sysDriver.Panels.Values where p.tableName == tableName select p;
+            {
+                IEnumerable<MPanel> toRemove = from MPanel p in mm.SysDriver.Panels.Values where p.tableName == tableName select p;
                 foreach (MPanel p in toRemove)
-                    sysDriver.removePanel(p);
+                    mm.SysDriver.RemovePanel(p);
                 summary.Rows[index]["HasPanels"] = false;
             }
             else
-            {
-                IStats stats = new StatsMySql(CE.project.connstringIS, webDbName);
-                _min.Models.Architect arch = new _min.Models.Architect(sysDriver, stats);
-                arch.mappings = mappings[tableName];
-                arch.hierarchies = new List<string>();  // to speed it up, hierarchy nvigation can be set in panel customization
-                MPanel editPanel = arch.proposeForTable(tableName);
-                MPanel summaryPanel = arch.proposeSummaryPanel(tableName);
+            {   // add new panels
+                mm.Architect.mappings = mm.Stats.Mappings[tableName];
+                mm.Architect.hierarchies = new List<string>();  // to speed it up, hierarchy nvigation can be set in panel customization
+                MPanel editPanel = mm.Architect.proposeForTable(tableName);
+                MPanel summaryPanel = mm.Architect.proposeSummaryPanel(tableName);
 
 
-                summaryPanel.SetParentPanel(sysDriver.MainPanel);       // add to db
-                editPanel.SetParentPanel(sysDriver.MainPanel);
+                summaryPanel.SetParentPanel(mm.SysDriver.MainPanel);       // add to db
+                editPanel.SetParentPanel(mm.SysDriver.MainPanel);
                 summaryPanel.panelName = "Summary of " + tableName;
                 editPanel.panelName = "Editation of " + tableName;
-                sysDriver.StartTransaction();
-                sysDriver.AddPanel(summaryPanel, false);
-                sysDriver.AddPanel(editPanel, false);
+                mm.SysDriver.BeginTransaction();
+                mm.SysDriver.AddPanel(summaryPanel, false);
+                mm.SysDriver.AddPanel(editPanel, false);
+                mm.SysDriver.CommitTransaction();
                 foreach (_min.Models.Control c in summaryPanel.controls)    // simlified for now
                 {
                     c.targetPanelId = editPanel.panelId;
@@ -182,12 +166,10 @@ namespace _min_t7.Architect
                     c.targetPanelId = summaryPanel.panelId;
                     c.targetPanel = summaryPanel;
                 }
-                sysDriver.RewriteControlDefinitions(summaryPanel, false);
-                sysDriver.RewriteControlDefinitions(editPanel, false);
-                sysDriver.CommitTransaction();
                 
                 summary.Rows[index]["HasPanels"] = true;
             }
+            // rebuild the grid
             TablesGrid.DataSource = summary;
             TablesGrid.DataBind();
             ResetActionClickablility();
@@ -195,6 +177,7 @@ namespace _min_t7.Architect
             TablesGrid.SelectedRowStyle.BackColor = System.Drawing.Color.White;
             TablesGrid.SelectedIndex = -1;
             SaveButton.Enabled = false;
+            mm.SysDriver.IncreaseVersionNumber();
         }
 
 

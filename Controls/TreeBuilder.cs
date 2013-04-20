@@ -13,6 +13,10 @@ using System.Data;
 
 namespace _min.Controls
 {
+    /// <summary>
+    /// Used in the editation of the main menu; consists of a treeview of menu nodes and a select box of available panels. Nodes can be added / deleted / renamed
+    /// and bound / unbound form panels. A node not bound to any panel remains in the menu.
+    /// </summary>
     [ToolboxData("<{0}:TreeBuilderControl runat=\"server\"></{0}:TreeBuilderControl>")]
     public class TreeBuilderControl : CompositeControl
     {
@@ -28,6 +32,11 @@ namespace _min.Controls
         private HierarchyNavTable menuHierarchy = null;
         private DataTable panelsTable = null;
 
+        /// <summary>
+        /// stores the orinal hierarchy in a dataset that will be saved to viewstatee so that this doesn`t need to be called upon every postback.
+        /// </summary>
+        /// <param name="hierarchy">The data property of the original menu</param>
+        /// <param name="basePanel">the root panel of the architecture</param>
         public void SetInitialState(DataTable hierarchy, MPanel basePanel)
         {
             hierarchyDataset = new DataSet();
@@ -39,11 +48,7 @@ namespace _min.Controls
             menuHierarchy.Merge(hierarchy);
             hierarchyDataset.Tables.Add(menuHierarchy);
             hierarchyDataset.Relations.Add(new DataRelation("Hierarchy", menuHierarchy.Columns["Id"], menuHierarchy.Columns["ParentId"], true));
-            /*
-            hierarchy.DataSet.Relations.Clear();
-            hierarchy.DataSet.Tables.Remove(hierarchy);
-            hierarchyDataset.Tables.Add(hierarchy);
-            */ 
+            
             AddPanelToList(basePanel);
             panelsTable.TableName = "panelsTable";
             hierarchyDataset.Tables.Add(panelsTable);
@@ -57,13 +62,20 @@ namespace _min.Controls
             set { _ID = value; }
         }
 
+        /// <summary>
+        /// the changed (and changing) menu hierarchy
+        /// </summary>
         public HierarchyNavTable Hierarchy {
             get {
                 return menuHierarchy;
             }
         }
 
-
+        /// <summary>
+        /// called upon building the TreeView from the hierarchy table - creates a new Treenode and sets its parent to the "itme"
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="item"></param>
         private void AddSubtreeForItem(HierarchyRow row, WC.TreeNode item)
         {
             HierarchyRow[] children = row.GetHierarchyChildRows("Hierarchy");
@@ -77,6 +89,11 @@ namespace _min.Controls
             }
         }
 
+        /// <summary>
+        /// initialization - add a Panel to the select box
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <param name="level"></param>
         private void AddPanelToList(MPanel panel, int level = 0) {
             DataRow r = panelsTable.NewRow();
             r["Id"] = panel.panelId;
@@ -86,6 +103,7 @@ namespace _min.Controls
                 AddPanelToList(chp, level+1);
             }
         }
+
         protected override void CreateChildControls()
         {
 
@@ -136,6 +154,11 @@ namespace _min.Controls
             this.Controls.Add(renameButton);
         }
 
+
+        /// <summary>
+        /// loads the current menu hierarchy from the ViewState
+        /// </summary>
+        /// <param name="savedState"></param>
         protected override void LoadViewState(object savedState)
         {
             base.LoadViewState(savedState);
@@ -152,6 +175,11 @@ namespace _min.Controls
             hierarchyDataset.Tables.Add(panelsTable); 
         }
 
+        /// <summary>
+        /// selects the associated panel in the select box (if any)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnSelectedNodeChanged(object sender, EventArgs e)
         {
             int? navId = ((HierarchyNavTable)hierarchyDataset.Tables[0]).Find(Int32.Parse(menuTree.SelectedValue)).NavId;
@@ -163,12 +191,22 @@ namespace _min.Controls
             else panelList.SelectedIndex = -1;
         }
 
+        /// <summary>
+        /// updates the menu hierarchy - the NavId of the currently selected row (TreeView) will point to the selected panel`s ID from the list box
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnBindButtonClicked(object sender, EventArgs e) {
             if (panelList.SelectedIndex != -1 && menuTree.SelectedNode != null) {
                 menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue)).NavId = Int32.Parse(panelList.SelectedValue);
             }
         }
 
+        /// <summary>
+        /// unbounds the selected treenode from its panel
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnUnbindButtonClicked(object sender, EventArgs e)
         {
             if (panelList.SelectedIndex != -1 && menuTree.SelectedNode != null)
@@ -178,7 +216,11 @@ namespace _min.Controls
             }
         }
 
-
+        /// <summary>
+        /// adds a new tree node as a next parent of the currently selected one
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnAddButtonClicked(object sender, EventArgs e) {
             if(newLabelTB.Text == "") return;
             HierarchyRow newRow = (HierarchyRow)(menuHierarchy.NewRow());
@@ -193,6 +235,11 @@ namespace _min.Controls
 
         }
 
+        /// <summary>
+        /// removes the selected TreeNode (if any); if it has any children, they leave too!
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnRemoveButtonClicked(object sender, EventArgs e) {
             if (menuTree.SelectedNode == null) return;
             HierarchyRow toRemove = menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue));
@@ -201,6 +248,12 @@ namespace _min.Controls
             RecreateChildControls();
         }
 
+
+        /// <summary>
+        /// renames the selected TreeNode (if any)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void OnRenameButtonClicked(object sender, EventArgs e)
         {
             if (newLabelTB.Text == "" || menuTree.SelectedNode == null) return;
@@ -211,6 +264,10 @@ namespace _min.Controls
             RecreateChildControls();
         }
 
+        /// <summary>
+        /// Drops all constraint on the stroed dataset and removes the tables - following this the tables are not refferenced by the control
+        /// and can be edited without restrictions.
+        /// </summary>
         public void FreeTables() {
             hierarchyDataset.Relations.Clear();
             hierarchyDataset.Tables.Clear();
@@ -225,6 +282,7 @@ namespace _min.Controls
             writer.RenderBeginTag(HtmlTextWriterTag.Tr);
             writer.RenderBeginTag(HtmlTextWriterTag.Td);
             menuTree.Attributes.Add("runat", "server");
+            menuTree.SelectedNodeStyle.Font.Bold = true;
             menuTree.RenderControl(writer);
             writer.RenderEndTag();
             writer.RenderBeginTag(HtmlTextWriterTag.Td);
