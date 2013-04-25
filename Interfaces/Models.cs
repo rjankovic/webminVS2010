@@ -6,6 +6,7 @@ using _min.Common;
 using _min.Models;
 using MySql.Data.MySqlClient;
 using MySql.Web;
+using CE = _min.Common.Environment;
 
 namespace _min.Interfaces
 {
@@ -23,6 +24,7 @@ namespace _min.Interfaces
         DataTable logTable { get; }
         int LastId();
         int NextAIForTable(string tableName);
+        void TestConnection();
     }
 
     public interface IMySqlQueryDeployable
@@ -35,7 +37,7 @@ namespace _min.Interfaces
     /// itself to a MySqlCommand and is used by BaseDriverMysql.  
     /// </summary>
     public interface IDbDeployableFactory {
-        IDbInStr InStr(string s);
+        IDbInObj InObj(object o);
         
         IDbVals InsVals(Dictionary<string, object> vals);
         IDbVals InsVals(DataRow r);
@@ -62,9 +64,9 @@ namespace _min.Interfaces
         IDbTable Table(string table, string alias = null);
     }
 
-    public interface IDbInStr: IMySqlQueryDeployable
+    public interface IDbInObj: IMySqlQueryDeployable
     {
-        string s { get; set; }
+        object o { get; set; }
         
     }
     public interface IDbVals: IMySqlQueryDeployable
@@ -154,6 +156,7 @@ namespace _min.Interfaces
         //Panel getArchitectureInPanel();
         //Panel GetBasePanel();
         void AddPanel(Panel panel, bool recursive = true);
+        void AddPanels(List<Panel> panels);
         void AddField(Field field);
         void AddControl(Control control);
         void UpdatePanel(Panel panel, bool recursive = true);
@@ -171,8 +174,9 @@ namespace _min.Interfaces
 
         string[] GetProjectNameList();
         DataTable GetProjects();
-        void UpdateProject(int id, Dictionary<string, object> data);
-        int InsertProject(Dictionary<string, object> data);
+        void UpdateProject(CE.Project project);
+        int InsertProject(CE.Project project);
+        void DeleteProject(int projectId);
 
         //void InitArchitecture(Panel mainPanel = null);
         //void InitArchitectureBasePanel(Panel mainPanel = null);
@@ -181,5 +185,12 @@ namespace _min.Interfaces
         void SetUserRights(int user, int? project, int rights);
         int GetUserRights(int user, int? project);
         List<Common.Environment.Project> GetProjectObjects();
+        
+        void ReleaseLock(int user, int project, LockTypes lockType);
+        bool TryGetLock(int user, int project, LockTypes lockType);
+        int? LockOwner(int project, LockTypes lockType);
+        void RemoveForsakenLocks(List<int> activeUsers);
+        void UserMenuOptions(int user, out List<string> adminOf, out List<string> architectOf);
+        void ReleaseLocksExceptProject(int userId, int projectId);
     }
 }

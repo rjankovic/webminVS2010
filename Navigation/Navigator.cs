@@ -12,6 +12,7 @@ using CE = _min.Common.Environment;
 
 namespace _min.Navigation
 {
+
     /// <summary>
     /// handles the redirections when GridView, Button and Menu events are fired
     /// </summary>
@@ -80,7 +81,9 @@ namespace _min.Navigation
             string routeUrl = Page.GetRouteUrl(CE.GlobalState == GlobalState.Architect 
                     ? "ArchitectShowPanelRoute" : "AdministerBrowsePanelRoute",
                     new { panelId = currentTableActionPanels[action], action = command} );
-            string queryString = DataKey2Url(grid.DataKeys[selectedIndex]);
+
+            string queryString = "";   // for the architect
+            if(CE.GlobalState == GlobalState.Administer) queryString = DataKey2Url(grid.DataKeys[selectedIndex]);
             Page.Response.Redirect(routeUrl + queryString);
         }
 

@@ -460,7 +460,7 @@ namespace _min.Models
             }
             set
             {
-                if (value == null || value == DBNull.Value || value == "")
+                if (value == null || value == DBNull.Value || value.ToString() == "")
                     this._value = null;
                 else
                     if (value is string)

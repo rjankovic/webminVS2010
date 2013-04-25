@@ -88,9 +88,9 @@ namespace _min.Sys
 
             ListItemCollection lic = PermissionCheckboxList.Items;
 
-            lic[0].Selected = permissions % 100 / 10 == 1;
-            lic[1].Selected = permissions % 1000 / 100 == 1;
-            lic[2].Selected = permissions / 1000 == 1;
+            lic[0].Selected = permissions % 100 / 10 == 1;      // 10 = administer
+            lic[1].Selected = permissions % 1000 / 100 == 1;    // 100 = architect
+            lic[2].Selected = permissions % 10000 / 1000 == 1;  // 1000 access rights
         }
 
         protected void PermissionsSubmit_Click(object sender, EventArgs e)

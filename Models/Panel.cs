@@ -26,6 +26,8 @@ namespace _min.Models
         [IgnoreDataMember]
         public DataRow PK { get; set; }
         [IgnoreDataMember]
+        public DataRow OriginalData { get; set; }
+        [IgnoreDataMember]
         public DataRow RetrievedData { get; private set; }
         [IgnoreDataMember]
         public DataRow RetrievedInsertData { get; private set; }

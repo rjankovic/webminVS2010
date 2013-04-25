@@ -70,7 +70,7 @@ namespace _min.Models
         [DataMember]
         public bool navThroughPanels { get; set; } // duplicity but...
         [DataMember]
-        public int? targetPanelId { get; set; }
+        public int? targetPanelId { get; set;  }
         [IgnoreDataMember]
         public Panel targetPanel { get; set; }
         [DataMember]
@@ -190,7 +190,7 @@ namespace _min.Models
         
         }
 
-        public virtual void ToUControl(UControl container, WC.GridViewCommandEventHandler handler, string navigateUrl = null)
+        public virtual void ToUControl(UControl container, WC.GridViewCommandEventHandler handler, WC.GridViewPageEventHandler pagingHandler, WC.GridViewSortEventHandler sortingHandler, string navigateUrl = null)
         {
             // take care of all the dependant controls as well
             WC.GridView grid = new WC.GridView();
@@ -209,9 +209,12 @@ namespace _min.Models
             {
                 WC.BoundField bf = new WC.BoundField();
                 bf.DataField = col;
-                bf.HeaderText = col;
+                bf.HeaderText = col + " [-]";
+                bf.SortExpression = col;
+                
                 grid.Columns.Add(bf);
             }
+            // must contain the whole PK even if it is not displayed - for the navigator
             foreach (string col in PKColNames)
             {
                 if (displayColumns.Contains(col)) continue;
@@ -219,8 +222,10 @@ namespace _min.Models
                 bf.DataField = col;
                 bf.Visible = false;
                 grid.Columns.Add(bf);
+                bf.HeaderText = col;
             }
 
+            grid.AllowSorting = true;
             
             //grid.EnableSortingAndPagingCallbacks = true;
             //grid.PageSize = 15;
@@ -228,11 +233,15 @@ namespace _min.Models
 
             container.Controls.Add(grid);
 
+            grid.PagerStyle.CssClass = "navTablePaging";
+            grid.CssClass = "navTable";
             grid.AllowPaging = true;
-            grid.PageSize = 15;
-            grid.PageIndexChanging += GridView_PageIndexChanging;
-            
-            grid.DataSource = data;
+            grid.PageSize = 25;
+
+            grid.PageIndexChanging += pagingHandler;
+            grid.Sorting += sortingHandler;
+
+            grid.DataSource = data.DefaultView;
             grid.DataBind();
             /*
             foreach(WC.DataControlField f in grid.Columns){
@@ -244,16 +253,6 @@ namespace _min.Models
             }*/
             grid.RowCommand += handler;
             grid.ID = "Control" + controlId;
-        }
-
-        protected void GridView_PageIndexChanging(object sender, GridViewPageEventArgs e)
-        {
-            GridView gv = (GridView)sender;
-            DataTable dataTable = gv.DataSource as DataTable;
-            
-            gv.DataSource = dataTable;
-            gv.PageIndex = e.NewPageIndex;
-            gv.DataBind();
         }
 
     }
@@ -344,7 +343,11 @@ namespace _min.Models
             if(panel.type != PanelTypes.MenuDrop) throw new ArgumentException(
                 "MenuEventHandler can operate only on a Menu - within a MenuDrop panel");
             WC.Menu res = new WC.Menu();
+            res.CssClass = "inMenu";
+            res.StaticEnableDefaultPopOutImage = false;
+            res.DynamicEnableDefaultPopOutImage = false;
             res.Orientation = WC.Orientation.Horizontal;
+            res.StaticSubMenuIndent = 0;
             WC.MenuItem item;
             foreach (HierarchyRow r in storedHierarchyData.Rows)
             {

@@ -76,7 +76,6 @@
     <Reference Include="System.Web.ApplicationServices" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="About.aspx" />
     <Content Include="Account\ChangePassword.aspx" />
     <Content Include="Account\ChangePasswordSuccess.aspx" />
     <Content Include="Account\PasswordRecovery.aspx" />
@@ -87,6 +86,9 @@
     <Content Include="Architect\EditEditable.aspx" />
     <Content Include="Architect\EditMenu.aspx" />
     <Content Include="Architect\InitProposal.aspx" />
+    <Content Include="Error\Lockout.aspx" />
+    <Content Include="Misc\KeepAlive.aspx" />
+    <Content Include="Scripts\SessionWarning.js" />
     <Content Include="Scripts\M2NShift.js" />
     <Content Include="Shared\Show.aspx" />
     <Content Include="Styles\Site.css" />
@@ -95,6 +97,7 @@
     <Content Include="Scripts\jquery-1.4.1-vsdoc.js" />
     <Content Include="Scripts\jquery-1.4.1.js" />
     <Content Include="Scripts\jquery-1.4.1.min.js" />
+    <Content Include="Sys\ProjectDetail.aspx" />
     <Content Include="Sys\Projects.aspx" />
     <Content Include="Sys\Users.aspx" />
     <Content Include="Web.config">
@@ -108,13 +111,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="About.aspx.cs">
-      <DependentUpon>About.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="About.aspx.designer.cs">
-      <DependentUpon>About.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Account\ChangePassword.aspx.cs">
       <DependentUpon>ChangePassword.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -185,6 +181,20 @@
     <Compile Include="Architect\InitProposal.aspx.designer.cs">
       <DependentUpon>InitProposal.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Error\Lockout.aspx.cs">
+      <DependentUpon>Lockout.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Error\Lockout.aspx.designer.cs">
+      <DependentUpon>Lockout.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Misc\KeepAlive.aspx.cs">
+      <DependentUpon>KeepAlive.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Misc\KeepAlive.aspx.designer.cs">
+      <DependentUpon>KeepAlive.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Shared\Show.aspx.cs">
       <DependentUpon>Show.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -235,6 +245,13 @@
     <Compile Include="Site.Master.designer.cs">
       <DependentUpon>Site.Master</DependentUpon>
     </Compile>
+    <Compile Include="Sys\ProjectDetail.aspx.cs">
+      <DependentUpon>ProjectDetail.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Sys\ProjectDetail.aspx.designer.cs">
+      <DependentUpon>ProjectDetail.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Sys\Projects.aspx.cs">
       <DependentUpon>Projects.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -259,9 +276,13 @@
     <Content Include="Site.Master" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Architect\Web.config" />
     <None Include="ClassDiagram1.cd" />
     <None Include="ClassDiagram2.cd" />
     <None Include="ClassDiagram3.cd" />
+    <Content Include="Shared\Web.config" />
+    <None Include="Styles\FlyBoyBB.otf" />
+    <Content Include="Sys\Web.config" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
@@ -274,7 +295,7 @@
         <WebProjectProperties>
           <UseIIS>False</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>48743</DevelopmentServerPort>
+          <DevelopmentServerPort>1405</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
           <IISUrl>
           </IISUrl>

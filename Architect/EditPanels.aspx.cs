@@ -150,20 +150,25 @@ namespace _min.Architect
 
                 summaryPanel.SetParentPanel(mm.SysDriver.MainPanel);       // add to db
                 editPanel.SetParentPanel(mm.SysDriver.MainPanel);
+
+                foreach (_min.Models.Control c in editPanel.controls) {
+                    c.targetPanel = summaryPanel;
+                }
+                foreach (_min.Models.Control c in summaryPanel.controls) {
+                    c.targetPanel = editPanel;
+                }
+
                 summaryPanel.panelName = "Summary of " + tableName;
                 editPanel.panelName = "Editation of " + tableName;
                 mm.SysDriver.BeginTransaction();
-                mm.SysDriver.AddPanel(summaryPanel, false);
-                mm.SysDriver.AddPanel(editPanel, false);
+                mm.SysDriver.AddPanels(new List<_min.Models.Panel> { summaryPanel, editPanel });
                 mm.SysDriver.CommitTransaction();
                 foreach (_min.Models.Control c in summaryPanel.controls)    // simlified for now
                 {
-                    c.targetPanelId = editPanel.panelId;
                     c.targetPanel = editPanel;
                 }
                 foreach (_min.Models.Control c in editPanel.controls)
                 {
-                    c.targetPanelId = summaryPanel.panelId;
                     c.targetPanel = summaryPanel;
                 }
                 
@@ -178,6 +183,8 @@ namespace _min.Architect
             TablesGrid.SelectedIndex = -1;
             SaveButton.Enabled = false;
             mm.SysDriver.IncreaseVersionNumber();
+
+            Session["summary"] = summary;
         }
 
 

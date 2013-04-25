@@ -12,6 +12,7 @@ using _min.Navigation;
 using CE = _min.Common.Environment;
 using CC = _min.Common.Constants;
 using MPanel = _min.Models.Panel;
+using WC = System.Web.UI.WebControls;
 
 namespace _min.Shared
 {
@@ -23,7 +24,7 @@ namespace _min.Shared
         //_min.Models.Architect architect;
         DataTable dbLog;
         //_min.Models.Panel basePanel;
-        _min.Models.Panel activePanel;
+        _min.Models.Panel activePanel = null;
         Navigator navigator;
         //IWebDriver webDriver;
         ValidationSummary validationSummary;
@@ -48,21 +49,6 @@ namespace _min.Shared
             MenuEventHandler menuHandler = navigator.MenuHandle;
             ((TreeControl)mm.SysDriver.MainPanel.controls[0]).ToUControl(MainPanel, navigator.MenuHandler);
 
-            // and addtitional options besides it for the architect
-            if (CE.GlobalState == GlobalState.Architect)
-            {
-                LinkButton editMenuLink = new LinkButton();
-                editMenuLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditMenuRoute", new { projectName = CE.project.Name });
-                editMenuLink.Text = "Edit menu structure";
-                editMenuLink.CausesValidation = false;
-                MainPanel.Controls.Add(editMenuLink);
-
-                LinkButton editPanelsLink = new LinkButton();
-                editPanelsLink.PostBackUrl = editPanelsLink.GetRouteUrl("ArchitectEditPanelsRoute", new { projectName = CE.project.Name });
-                editPanelsLink.Text = "Edit panels structure";
-                editPanelsLink.CausesValidation = false;
-                MainPanel.Controls.Add(editPanelsLink);
-            }
 
             // get the active panel, if exists
             if (Page.RouteData.Values.ContainsKey("panelId") && Page.RouteData.Values["panelId"].ToString() == "0")
@@ -85,6 +71,10 @@ namespace _min.Shared
                 {
                     SetRoutedPKForPanel(activePanel, Request.QueryString);
                 }
+                else 
+                {
+                    activePanel.PK = null;
+                }
 
                 // which action on this panel leads where
                 var controlTargetPanels = from _min.Models.Control c in activePanel.controls
@@ -103,30 +93,13 @@ namespace _min.Shared
 
                 navigator.setCurrentTableActionPanels(currentPanelActionPanels);
 
+                CreatePanelHeading(MainPanel);
+
                 CreateWebControlsForPanel(activePanel, MainPanel);
 
-                // architect gets some extra controls for editing the proposal
-                if (CE.GlobalState == GlobalState.Architect)
-                {
-                    if (activePanel.type == PanelTypes.Editable)
-                    {
-                        LinkButton editEditableLink = new LinkButton();
-                        editEditableLink.PostBackUrl = editEditableLink.GetRouteUrl("ArchitectEditEditableRoute",
-                            new { projectName = mm.ProjectName, panelid = Page.RouteData.Values["panelId"] });
-                        editEditableLink.Text = "Edit panel structure";
-                        editEditableLink.CausesValidation = false;
-                        MainPanel.Controls.Add(editEditableLink);
-                    }
-                    else
-                    {
-                        LinkButton editNavLink = new LinkButton();
-                        editNavLink.PostBackUrl = editNavLink.GetRouteUrl("ArchitectEditNavRoute",
-                            new { projectName = CE.project.Name, panelid = Page.RouteData.Values["panelId"] });
-                        editNavLink.Text = "Edit panel structure";
-                        editNavLink.CausesValidation = false;
-                        MainPanel.Controls.Add(editNavLink);
-                    }
-                }
+            }
+            else {
+                CreatePanelHeading(MainPanel);
             }
 
 
@@ -154,11 +127,70 @@ namespace _min.Shared
         }
 
 
+        void CreatePanelHeading(WC.WebControl container) {
+            WC.Panel heading = new WC.Panel();
+
+            if (activePanel is MPanel)
+            {
+                Label panelName = new Label();
+                panelName.CssClass = "panelHeading";
+                panelName.Text = activePanel.panelName;
+                heading.Controls.Add(panelName);
+            }
+            if (CE.GlobalState == GlobalState.Architect)
+            {
+                LinkButton editMenuLink = new LinkButton();
+                editMenuLink.PostBackUrl = editMenuLink.GetRouteUrl("ArchitectEditMenuRoute", new { projectName = CE.project.Name });
+                editMenuLink.Text = "Edit menu structure";
+                editMenuLink.CausesValidation = false;
+                heading.Controls.Add(editMenuLink);
+
+                LinkButton editPanelsLink = new LinkButton();
+                editPanelsLink.PostBackUrl = editPanelsLink.GetRouteUrl("ArchitectEditPanelsRoute", new { projectName = CE.project.Name });
+                editPanelsLink.Text = "Edit panels structure";
+                editPanelsLink.CausesValidation = false;
+                heading.Controls.Add(editPanelsLink);
+
+                if (activePanel is MPanel)
+                {
+
+                    if (activePanel.type == PanelTypes.Editable)
+                    {
+                        LinkButton editEditableLink = new LinkButton();
+                        editEditableLink.PostBackUrl = editEditableLink.GetRouteUrl("ArchitectEditEditableRoute",
+                            new { projectName = mm.ProjectName, panelid = Page.RouteData.Values["panelId"] });
+                        editEditableLink.Text = "Edit panel structure";
+                        editEditableLink.CausesValidation = false;
+                        heading.Controls.Add(editEditableLink);
+                    }
+                    else
+                    {
+                        LinkButton editNavLink = new LinkButton();
+                        editNavLink.PostBackUrl = editNavLink.GetRouteUrl("ArchitectEditNavRoute",
+                            new { projectName = CE.project.Name, panelid = Page.RouteData.Values["panelId"] });
+                        editNavLink.Text = "Edit panel structure";
+                        editNavLink.CausesValidation = false;
+                        heading.Controls.Add(editNavLink);
+                    }
+                }
+            }
+
+            heading.CssClass = "panelHeading";
+            if (heading.Controls.Count > 0)
+            {
+                container.Controls.Add(heading);
+                WC.Panel clear = new WC.Panel();
+                clear.CssClass = "clear";
+                container.Controls.Add(clear);
+            }
+        }
+
+
+
         void CreateWebControlsForPanel(MPanel activePanel, System.Web.UI.WebControls.Panel containerPanel)
         {
             List<AjaxControlToolkit.ExtenderControlBase> extenders = new List<AjaxControlToolkit.ExtenderControlBase>();
             List<BaseValidator> validators = new List<BaseValidator>();
-
 
 
             // no data in active panel => have to fill it
@@ -174,7 +206,14 @@ namespace _min.Shared
                 {
                     mm.WebDriver.FillPanelFKOptions(activePanel);
                     if (activePanel.PK != null || activePanel.type != PanelTypes.Editable)
-                        mm.WebDriver.FillPanel(activePanel);
+                        try
+                        {
+                            mm.WebDriver.FillPanel(activePanel);
+                        }
+                        catch (WebDriverDataModificationException me) {
+                            // the row with the corresponding PK had been deleted in the meantime
+                            _min.Common.ValidationError.Display(me.Message, Page);
+                        }
                 }
                 /*
                 if (activePanel.type == PanelTypes.NavTree
@@ -210,9 +249,11 @@ namespace _min.Shared
             {
                 // create a table with fields and captions tod display
                 Table tbl = new Table();
+                tbl.CssClass = "formTbl";
 
                 foreach (Field f in activePanel.fields)
                 {
+                    if (activePanel.PK == null && !Page.IsPostBack) f.value = null;
                     if (f.type == FieldTypes.Holder) throw new NotImplementedException("Holder fields not yet supported in UI");
                     TableRow row = new TableRow();
                     TableCell captionCell = new TableCell();
@@ -248,7 +289,7 @@ namespace _min.Shared
                 else if (control is NavTableControl)
                 {        // it is a mere gridview of a summary panel
                     NavTableControl ntc = (NavTableControl)control;
-                    ntc.ToUControl(containerPanel, new GridViewCommandEventHandler(GridCommandEventHandler));
+                    ntc.ToUControl(containerPanel, new GridViewCommandEventHandler(GridCommandEventHandler), GridView_PageIndexChanging, GridView_Sorting);
 
                 }
                 else    // a simple Button or alike 
@@ -285,7 +326,7 @@ namespace _min.Shared
 
         }
 
-        // TODO ...
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (Page.IsPostBack && activePanel != null) // retrieve changes from webcontrols and save them to inner value
@@ -303,7 +344,7 @@ namespace _min.Shared
             Response.Cache.SetCacheability(HttpCacheability.NoCache);       // because of back button issues
             Response.Cache.SetExpires(DateTime.Now.AddSeconds(-1));
             Response.Cache.SetNoStore();
-            Response.AppendHeader("Pragma", "no-cache");
+            Response.AppendHeader("Pragma", "no-cache");        // TODO in release
 
 
         }
@@ -311,79 +352,147 @@ namespace _min.Shared
 
         private void UserActionCommandHandler(object sender, CommandEventArgs e)
         {
+            if (CE.GlobalState == GlobalState.Administer && mm.SysDriver.LockOwner(CE.project.Id, LockTypes.AdminLock) != null)
+            {
+                AdminLockAlert();
+                return;
+            }
             bool valid = true;
             UserAction action = (UserAction)Enum.Parse(typeof(UserAction), e.CommandName.Substring(1));
             if (CE.GlobalState == GlobalState.Administer)
             {
-                switch (action)
+                try
                 {
+                    switch (action)
+                    {
 
-                    case UserAction.Insert:
-                        if (activePanel.type != PanelTypes.Editable)        // insert button under NavTable, should be handled differently
+                        case UserAction.Insert:
+                            if (activePanel.type != PanelTypes.Editable)        // insert button under NavTable, should be handled differently
+                                break;
+                            mm.WebDriver.InsertIntoPanel(activePanel);
                             break;
-                        mm.WebDriver.InsertIntoPanel(activePanel);
-                        break;
-                    case UserAction.Update:
-                        try
-                        {
+                        case UserAction.Update:
                             mm.WebDriver.UpdatePanel(activePanel);
-                        }
-                        catch (ConstraintException ce)
-                        {        // unique column constraint exception from db
-                            valid = false;
-                            _min.Common.ValidationError.Display(ce.Message, Page);
-                        }
-                        break;
-                    case UserAction.Delete:
-                        try
-                        {
+                            break;
+                        case UserAction.Delete:
                             mm.WebDriver.DeleteFromPanel(activePanel);
-                        }
-                        catch (ConstraintException ce)
-                        {        // unique column constraint exception from db
-                            valid = false;
-                            _min.Common.ValidationError.Display(ce.Message, Page);
-                        }
-                        break;
-                    default:
-                        throw new NotImplementedException("Unexpected user action type.");
+                            break;
+                        default:
+                            throw new NotImplementedException("Unexpected user action type.");
+                    }
+                }
+                catch (ConstraintException ce)
+                {    
+                    // unique column constraint exception from db
+                    valid = false;
+                    _min.Common.ValidationError.Display(ce.Message, Page);
+                }
+                catch (WebDriverDataModificationException me)
+                {
+                    // data changed while edited
+                    valid = false;
+                    _min.Common.ValidationError.Display(me.Message, Page);
                 }
             }
 
             if (valid) navigator.ActionCommandHandle(sender, e);
         }
 
-        
+
         private void GridCommandEventHandler(object sender, GridViewCommandEventArgs e)
         {
-            if (e.CommandName == "Page") return;
+            if (CE.GlobalState == GlobalState.Administer && mm.SysDriver.LockOwner(CE.project.Id, LockTypes.AdminLock) != null)
+            {
+                AdminLockAlert();
+                return;
+            }
+            if (e.CommandName == "Page" || e.CommandName == "Sort") return;
             if ((UserAction)Enum.Parse(typeof(UserAction), (e.CommandName.Substring(1))) != UserAction.Delete)
             {
-                navigator.GridViewCommandHandler(sender, e);
+                    navigator.GridViewCommandHandler(sender, e);
             }
             else
             {
-                if (CE.GlobalState == GlobalState.Administer || true)
+                GridView grid = (GridView)sender;       // must be fired from a gridview and a gridview only ! (is there another way??)
+                int selectedIndex = ((GridViewRow)((WebControl)(e.CommandSource)).NamingContainer).DataItemIndex;
+                var KeyValues = grid.DataKeys[selectedIndex].Values.Values;
+                DataTable keyTable = new DataTable();
+                foreach (string colName in activePanel.PKColNames)
                 {
-                    GridView grid = (GridView)sender;       // must be fired from a gridview and a gridview only ! (is there another way??)
-                    int selectedIndex = ((GridViewRow)((WebControl)(e.CommandSource)).NamingContainer).DataItemIndex;
-                    var KeyValues = grid.DataKeys[selectedIndex].Values.Values;
-                    DataTable keyTable = new DataTable();
-                    foreach (string colName in activePanel.PKColNames)
-                    {
-                        keyTable.Columns.Add(colName);
-                    }
-                    DataRow r = keyTable.NewRow();
-                    int i = 0;
-                    foreach (var colValue in KeyValues)
-                    {
-                        r[i++] = colValue;
-                    }
-                    activePanel.PK = r;
-                    mm.WebDriver.DeleteFromPanel(activePanel);
-                    activePanel.PK = null;
+                    keyTable.Columns.Add(colName);
                 }
+                DataRow r = keyTable.NewRow();
+                int i = 0;
+                foreach (var colValue in KeyValues)
+                {
+                    r[i++] = colValue;
+                }
+                activePanel.PK = r;
+                mm.WebDriver.DeleteFromPanel(activePanel);
+                activePanel.PK = null;
+                
+            }
+        }
 
+        private void AdminLockAlert() {
+            ScriptManager.RegisterStartupScript(Page, this.GetType(), "myScript",
+                    "alert('The website administration structure is being changed currently. "
+                            + "Please save your data elsewhere if neccessary and come back later.');", true);        
+        }
+
+        protected void GridView_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            GridView gv = (GridView)sender;
+            DataView dataView = gv.DataSource as DataView;
+            dataView.Sort = ViewState["currentGridViewSort"] as string;
+
+
+            gv.DataSource = dataView;
+            gv.PageIndex = e.NewPageIndex;
+            gv.DataBind();
+            LinkButton lb;
+            foreach (TableCell c in gv.HeaderRow.Cells) {
+                if (c.Controls.Count == 0) continue;
+                lb = (LinkButton)(c.Controls[0]);
+                string colName = lb.Text.Substring(0, lb.Text.Length - 3);
+                if(dataView.Sort.StartsWith(colName))
+                    lb.Text = colName + " [" + ((dataView.Sort.EndsWith("ASC")) ? "&#x25B2;" : "&#x25BC;") + "]";
+
+            }
+        }
+
+        protected void GridView_Sorting(object sender, GridViewSortEventArgs e)
+        {
+            GridView gv = (GridView)sender;
+            DataView dataView = gv.DataSource as DataView;
+            
+            string columnName = e.SortExpression;
+            int colIndex = dataView.Table.Columns[columnName].Ordinal + 1;
+
+
+            string currentSort = ViewState["currentGridViewSort"] as string;
+            string se = e.SortExpression + " ASC";
+            if (se == currentSort) se = e.SortExpression + " DESC";
+            ViewState["currentGridViewSort"] = se;
+
+            dataView.Sort = se;
+            gv.DataSource = dataView;
+            gv.PageIndex = 0;
+            gv.DataBind();
+
+            foreach (TableCell hc in gv.HeaderRow.Cells)
+            {
+                if (hc.Text == "") continue;
+                hc.Text = hc.Text.Substring(0, hc.Text.Length - 3) + "[-]";
+            }
+
+            if (se.EndsWith("DESC"))
+            {
+                ((LinkButton)(gv.HeaderRow.Cells[colIndex].Controls[0])).Text = columnName + " [&#x25BC;]";
+            }
+            else
+            {
+                ((LinkButton)(gv.HeaderRow.Cells[colIndex].Controls[0])).Text = columnName + " [&#x25B2;]";
             }
         }
     }

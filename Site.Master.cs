@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Web.Security;
@@ -23,38 +22,79 @@ namespace _min
         public IWebDriver WebDriver { get; private set; }
         public IStats Stats { get; private set; }
         public string ProjectName { get; private set; }
+        public MembershipUser user = null;
 
         protected void Page_Init(object sender, EventArgs e)
         {
+            user = Membership.GetUser();
+            
+            // set the warning only for logged in users
+                System.Configuration.ConfigurationManager.AppSettings["SessionWarning"] = 
+                    (user is MembershipUser) ? (Session.Timeout - 5).ToString() :"-1";
 
 
-            if (Request.Url.LocalPath.StartsWith("/architect"))
-            {
-                _min.Common.Environment.GlobalState = GlobalState.Architect;
+            string lp = Request.Url.LocalPath;
+
+            if (lp.StartsWith("/architect")){
+                Common.Environment.GlobalState = GlobalState.Architect;
             }
-            else
+            else if (lp.StartsWith("/admin")) {
+                Common.Environment.GlobalState = GlobalState.Administer;
+            }
+            else if(lp == "/sys/users"){
+                Common.Environment.GlobalState = GlobalState.UsersManagement;
+            }
+            else if(lp == "/sys/projects"){
+                Common.Environment.GlobalState = GlobalState.ProjectsManagement;
+            }
+            else if(lp.StartsWith("/account")){
+                Common.Environment.GlobalState = GlobalState.Account;
+            }
+            else 
+                Common.Environment.GlobalState = GlobalState.Error;
+
+
+            // session expiry means logout, even if the provider would keep it
+            if (Session.IsNewSession && user != null 
+                && CE.GlobalState != GlobalState.Account && CE.GlobalState != GlobalState.Error)
             {
-                _min.Common.Environment.GlobalState = GlobalState.Administer;
+                FormsAuthentication.SignOut();
+                Response.RedirectToRoute("LockoutRoute", new { message = 7 });
             }
 
+
+            SysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
             
             // global service
+
+            bool NewProjectLoad = false;
 
             // get current project and init drivers and architect
             if (Page.RouteData.Values.ContainsKey("projectName"))
             {
                 ProjectName = Page.RouteData.Values["projectName"] as string;
-                SysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
                 CE.Project actProject = SysDriver.GetProject(ProjectName);
+
                 if (CE.project == null || actProject.Id != CE.project.Id || actProject.Version != CE.project.Version)
                 {
                     Session.Clear();    // may not be neccessary in all cases, but better be safe
+                    NewProjectLoad = true;
                 }
+                
+
                 CE.project = SysDriver.GetProject(ProjectName);
+                
+
                 Stats = new StatsMySql(CE.project.ConnstringIS, CE.project.WebDbName);
                 WebDriver = new WebDriverMySql(CE.project.ConnstringWeb);
                 Architect = new _min.Models.Architect(SysDriver, Stats);
 
+                if ((!Page.IsPostBack || NewProjectLoad) && CE.GlobalState != GlobalState.Error) 
+                    // new version or differnet page ~ othervise access must have remained 
+                    // at least "allowable", if not allowed
+                {
+                    LockingAccess();    // just check
+                }
                 // check whether there is something to load at all
                 if (Page.RouteData.Route != RouteTable.Routes["ArchitectInitRoute"])
                 {
@@ -92,67 +132,187 @@ namespace _min
 
             // local issues
 
-            
             if (!Page.IsPostBack)
             {
-                MembershipUser u = null;
-                try
+
+                if (user != null)
                 {
-                    u = Membership.GetUser();
-                }
-                catch (ArgumentNullException e2)
-                {
-                    if (Request.Url.LocalPath != "/Account/Login.aspx")
-                        Response.Redirect("~/login");
-                    return;
-                }
+
+                    List<string> adminOf;
+                    List<string> architectOf;
+                    List<CE.Project> allProjects = SysDriver.GetProjectObjects();
+                    List<string> allNames = (from CE.Project p in allProjects select p.Name).ToList<string>();
+
+                    int userId = (int)(user.ProviderUserKey);
+                    int globalRights = SysDriver.GetUserRights(userId, null);
+                    // by default, fetch only the sites to which the access rights are set explicitly,
+                    // if global rights are sufficient, replace them with the complete lists
+                    SysDriver.UserMenuOptions(userId, out adminOf, out architectOf);
+                    if (globalRights % 100 >= 10) adminOf = allNames;
+                    if (globalRights % 1000 >= 100) architectOf = allNames;
 
 
-                if (u == null)
-                {
-                    if (Request.Url.LocalPath != "/Account/Login.aspx")
-                        Response.Redirect("~/login");
-                    return;
-                }
-                string[] roles = Roles.GetRolesForUser();
+                    MenuItem administerItem = new MenuItem("Administer", "admin");
+                    foreach (string site in adminOf)
+                    {
+                        administerItem.ChildItems.Add(new MenuItem(site, site, null, "~/admin/" + site));
+                    }
+                    if (adminOf.Count > 0)
+                        NavigationMenu.Items.AddAt(0, administerItem);
 
-                // administration menu
-                var administratorOf = from r in roles
-                                      where r.IndexOf(Constants.ADMIN_PREFIX) == 0
-                                      select
-                                          r.Substring(Constants.ADMIN_PREFIX.Length) as string;
-                MenuItem administerItem = new MenuItem("Administer", "admin");
-                foreach (string site in administratorOf)
-                {
-                    administerItem.ChildItems.Add(new MenuItem(site, site, null, "~/admin/" + site));
-                }
-                NavigationMenu.Items.AddAt(0, administerItem);
+                    // architect menu
+                    MenuItem architectItem = new MenuItem("Architect", "architect");
+                    foreach (string site in architectOf)
+                    {
+                        architectItem.ChildItems.Add(new MenuItem(site, site, null, "~/architect/show/" + Server.UrlEncode(site)));
+                    }
+                    if (architectOf.Count > 0)
+                        NavigationMenu.Items.AddAt(1, architectItem);
 
-                // architect menu
-                var architectOf = from r in roles
-                                  where r.IndexOf(Constants.ARCHITECT_PREFIX) == 0
-                                  select
-                                      r.Substring(Constants.ARCHITECT_PREFIX.Length) as string;
-                MenuItem architectItem = new MenuItem("Architect", "architect");
-                foreach (string site in architectOf)
-                {
-                    architectItem.ChildItems.Add(new MenuItem(site, site, null, "~/architect/show/" + Server.UrlEncode(site)));
-                }
-                NavigationMenu.Items.AddAt(1, architectItem);
 
-                // user & projects management
-                if (Roles.IsUserInRole("System Architect"))
-                {
+
+                    // user & projects management
+
                     NavigationMenu.Items.Add(new MenuItem("Manage users", "users", null, "~/sys/users"));
-                    NavigationMenu.Items.Add(new MenuItem("Manage projects", "projects", null, "~/sys/projects"));
+
+                    if (globalRights >= 10000)   // this is the one and only project manager for this application instance
+                        NavigationMenu.Items.Add(new MenuItem("Manage projects", "projects", null, "~/sys/projects"));
+
+
+                    // account settings for logged in users
+                    MenuItem accountItem = new MenuItem("Account", "account");
+                    accountItem.ChildItems.Add(new MenuItem("Change password", null, null, "~/account/change-password"));
+                    NavigationMenu.Items.Add(accountItem);
                 }
+                else {
+                    MenuItem accountItem = new MenuItem("Account", "account");
+                    accountItem.ChildItems.Add(new MenuItem("Login", null, null, "~/account/login"));
+                    accountItem.ChildItems.Add(new MenuItem("Register", null, null, "~/account/register"));
+                    accountItem.ChildItems.Add(new MenuItem("Password recovery", null, null, "~/account/password-recovery"));
+                    
+                    NavigationMenu.Items.Add(accountItem);
+                }
+
             }
 
         }
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // for the session timer setting in the header 
+            // - must be set after the AppSettings["SessionWarning"] is initalized
+            Page.Header.DataBind();
+        }
 
+
+        /// <summary>
+        /// Checks wheteher the user has the paermission to use the page and if so, ensures tat the page is not locked due to architecture
+        /// modification in progess. Otherwise, redirects the user to the lockout page with an explanation message.
+        /// </summary>
+        private void LockingAccess()    // neccessary for each postback (?)
+        {
+            if (user == null)
+            {
+                Response.RedirectToRoute("LockoutRoute", new { message = 0 });
+                Response.End();
+            }
+
+            List<int> usersOnline = GetUsersOnline();
+            SysDriver.RemoveForsakenLocks(usersOnline);
+            int userId = (int)(user.ProviderUserKey);
+
+            int globalRights = SysDriver.GetUserRights(userId, null);
+            int localRights = SysDriver.GetUserRights(userId, CE.project.Id);
+
+            // totalRights are the maximum from local and global rights, counting by digits
+            int totalRights = 0;
+            int multiply = 1;
+            for (int i = 0; i < 4; i++)
+            {
+                totalRights += Math.Max(localRights % 10, globalRights % 10)*multiply;
+                localRights /= 10;
+                globalRights /= 10;
+                multiply *= 10;
+            }
+
+            // projects management - access rights 10000+ - one such user per application instance, created during installation
+            bool projects = globalRights >= 10000;
+            bool users = totalRights % 10000 >= 1000;
+            bool architect = totalRights % 1000 >= 100;
+            bool admin = totalRights % 100 >= 10;
+
+            // release my locks if not in the architect context
+            if (CE.GlobalState != GlobalState.Architect)
+            {
+                SysDriver.ReleaseLock(userId, CE.project.Id, LockTypes.AdminLock);
+                SysDriver.ReleaseLock(userId, CE.project.Id, LockTypes.ArchitectLock);
+            }
+
+            SysDriver.ReleaseLocksExceptProject(userId, CE.project.Id);
+
+            int errMsg = 0;
+
+            switch (CE.GlobalState)
+            {
+                case GlobalState.Architect:
+                    if (!architect) errMsg = 3;
+                    break;
+                case GlobalState.Administer:
+                    if (!admin) errMsg = 4;
+                    break;
+                case GlobalState.UsersManagement:
+                    if (!users) errMsg = 5;
+                    break;
+                case GlobalState.ProjectsManagement:
+                    if (!projects) errMsg = 6;
+                    break;
+                case GlobalState.Account:
+                    break;
+                case GlobalState.Error:
+                    break;
+                default:
+                    break;
+            }
+            if (errMsg != 0 && CE.GlobalState != GlobalState.Error)
+            {
+                Response.RedirectToRoute("LockoutRoute", new { message = errMsg });
+            }
+
+            // architect must get both architect and administer lock
+            if (CE.GlobalState == GlobalState.Architect)
+            {
+                if (!SysDriver.TryGetLock(userId, CE.project.Id, LockTypes.ArchitectLock)
+                    || !SysDriver.TryGetLock(userId, CE.project.Id, LockTypes.AdminLock))
+                    Response.RedirectToRoute("LockoutRoute", new
+                    {
+                        message = 2
+                    });
+            }
+            // adminin checks the lock
+            else if (CE.GlobalState == GlobalState.Administer && SysDriver.LockOwner(CE.project.Id, LockTypes.AdminLock) != null)
+            {
+                Response.RedirectToRoute("LockoutRoute", new
+                {
+                    message = 1
+                        
+                });
+            }
+        }
+
+        /// <summary>
+        /// lisst the ids of users online
+        /// </summary>
+        /// <returns></returns>
+        private List<int> GetUsersOnline()
+        {
+            MembershipUserCollection all = Membership.GetAllUsers();
+            List<int> res = new List<int>();
+            foreach (MembershipUser u in all)
+            {
+                if (u.IsOnline)
+                    res.Add((int)(u.ProviderUserKey));
+            }
+            return res;
         }
     }
 }

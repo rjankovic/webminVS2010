@@ -17,20 +17,20 @@ namespace _min.Models
         // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong
 
         /// <summary>
-        /// simple string parameter
+        /// simple object parameter
         /// </summary>
-        class InputStr : IDbInStr, IMySqlQueryDeployable
+        class InputObj : IDbInObj, IMySqlQueryDeployable
         { 
-            public string s { get; set; }
-            public InputStr(string s)
+            public object o { get; set; }
+            public InputObj(object o)
             {
-                this.s = s;
+                this.o = o;
             }
 
             public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append(" @param" + paramCount);
-                cmd.Parameters.AddWithValue("@param" + paramCount++, s);
+                cmd.Parameters.AddWithValue("@param" + paramCount++, o);
             }
         }
 
@@ -271,9 +271,9 @@ namespace _min.Models
         }
 
 
-        public IDbInStr InStr(string s)
+        public IDbInObj InObj(object o)
         {
-            return new InputStr(s);
+            return new InputObj(o);
         }
 
         public IDbVals InsVals(Dictionary<string, object> vals)

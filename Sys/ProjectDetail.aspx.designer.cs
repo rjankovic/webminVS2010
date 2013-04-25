@@ -10,7 +10,7 @@
 namespace _min.Sys {
     
     
-    public partial class Projects {
+    public partial class ProjectDetail {
         
         /// <summary>
         /// ProjectsScriptManager control.
@@ -22,6 +22,24 @@ namespace _min.Sys {
         protected global::System.Web.UI.ScriptManager ProjectsScriptManager;
         
         /// <summary>
+        /// DetailsView control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DetailsView DetailsView;
+        
+        /// <summary>
+        /// DeleteButton control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button DeleteButton;
+        
+        /// <summary>
         /// ProjectsUpdatePanel control.
         /// </summary>
         /// <remarks>
@@ -31,21 +49,12 @@ namespace _min.Sys {
         protected global::System.Web.UI.UpdatePanel ProjectsUpdatePanel;
         
         /// <summary>
-        /// ProjectsGrid control.
+        /// InfoList control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.GridView ProjectsGrid;
-        
-        /// <summary>
-        /// InserButton control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button InserButton;
+        protected global::System.Web.UI.WebControls.BulletedList InfoList;
     }
 }

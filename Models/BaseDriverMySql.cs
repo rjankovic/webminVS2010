@@ -22,6 +22,7 @@ namespace _min.Models
         public DataTable logTable { get; private set; }
         protected bool writeLog;
         protected MySqlTransaction currentTransaction;
+        DbDeployableMySql dbe = new DbDeployableMySql();
 
         public virtual bool IsInTransaction
         {
@@ -278,6 +279,51 @@ namespace _min.Models
         public int NextAIForTable(string tableName) {
             DataRow res = fetch("SHOW TABLE STATUS LIKE '" + tableName + "'");
             return (int)res["Auto_increment"];
+        }
+
+        /// <summary>
+        /// Checks whether this column is unique in the table by checking for unique constraint in the schema
+        /// => artificial constraints (not set in database) cannot be created
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        protected bool CheckUniqueness(string tableName, string columnName)
+        {
+            DataTable schema = fetchSchema("SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName));
+            return schema.Columns[0].Unique;
+        }
+
+        /// <summary>
+        /// does the new value in the column keep the column unique?
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnName"></param>
+        /// <param name="newValue"></param>
+        /// <param name="updatedItemPK"></param>
+        /// <returns></returns>
+        protected bool CheckUniqueness(string tableName, string columnName, object newValue, DataRow updatedItemPK = null)
+        {
+            if (updatedItemPK == null)   // INSERT - there can be row with this value
+                return (Int64)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName),
+                    " WHERE", dbe.Col(columnName), " =", dbe.InObj(newValue), ")") == 1;       // boolean return
+            else    // UPDATE - no row except this row
+                return (Int64)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName),
+                " WHERE NOT ", dbe.Condition(updatedItemPK), " AND ", dbe.Col(columnName), " =", dbe.InObj(newValue as object), ")") == 1;   // boolean return
+        }
+
+        protected bool CheckUniqueness(string tableName, string columnName, object newValue, string idColumnName, int id)
+        {
+            return (Int64)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName),
+            " WHERE NOT ", dbe.Col(idColumnName), "=", id, " AND ", dbe.Col(columnName), " =", dbe.InObj(newValue), ")") == 1;     // boolean return
+        }
+
+        public void TestConnection() {
+            MySqlCommand cmd = new MySqlCommand("SELECT 1");
+            cmd.Connection = conn;
+            conn.Open();
+            cmd.ExecuteNonQuery();
+            conn.Close();
         }
 
     }

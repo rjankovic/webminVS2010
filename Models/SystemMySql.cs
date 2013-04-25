@@ -23,6 +23,11 @@ namespace _min.Models
         public Panel MainPanel { get; private set; }
         public Dictionary<int, Panel> Panels { get; private set; }
 
+        private Dictionary<LockTypes, int> lockNumbers = new Dictionary<LockTypes,int>{
+            {LockTypes.AdminLock, 10},
+            {LockTypes.ArchitectLock, 100}
+        };
+
         
         public SystemDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
             : base(connstring, logTable, writeLog)
@@ -302,6 +307,22 @@ namespace _min.Models
         }
 
         /// <summary>
+        /// Adds the list of panels non-recursiverly; neccessary when editing panels - couples of panels must be
+        /// first created both blank before they can bed given controls and fields (targetId...)
+        /// </summary>
+        /// <param name="panels"></param>
+        public void AddPanels(List<Panel> panels) {
+            foreach (Panel p in panels)
+                AddPanelOnly(p, false);
+            foreach (Panel p in panels)
+                SetControlPanelBindings(p, false);
+            foreach (Panel p in panels)
+                AddPanelFieldsOnly(p, false);
+            foreach (Panel p in panels)
+                AddPanelControlsOnly(p, false);
+        }
+
+        /// <summary>
         /// Saves an existing panel to the database, rewriting the original attributes and all the fields and controls (including those that haven`t changed),
         /// </summary>
         /// <param name="panel"></param>
@@ -473,13 +494,40 @@ namespace _min.Models
             return projectsList;
         }
 
-        public void UpdateProject(int id, Dictionary<string,object> data) {
-            query("UPDATE projects SET ", dbe.UpdVals(data), " WHERE id_project = ", id); 
+        public void UpdateProject(CE.Project project) {
+            if (!CheckUniqueness("projects", "name", project.Name, "id_project", project.Id))
+            {
+                throw new ConstraintException("The name of the project must be unique.");
+            }
+
+             Dictionary<string, object> updVals = new Dictionary<string, object>{
+                {"name", project.Name},
+                {"connstring_web", project.ConnstringWeb},
+                {"connstring_information_schema", project.ConnstringIS}
+             };
+
+            query("UPDATE projects SET ", dbe.UpdVals(updVals), " WHERE id_project = ", project.Id); 
         }
 
-        public int InsertProject(Dictionary<string, object> data) {
-            query("INSERT INTO projects ", dbe.InsVals(data));
-            return LastId();
+        public int InsertProject(CE.Project project) {
+            if (!CheckUniqueness("projects", "name", project.Name)) {
+                throw new ConstraintException("The name of the project must be unique.");
+            }
+            Dictionary<string, object> insVals = new Dictionary<string, object>{
+                {"name", project.Name},
+                {"connstring_web", project.ConnstringWeb},
+                {"connstring_information_schema", project.ConnstringIS}
+            };
+
+            BeginTransaction();
+            query("INSERT INTO projects ", dbe.InsVals(insVals));
+            int id = LastId();
+            CommitTransaction();
+            return id;
+        }
+
+        public void DeleteProject(int projectId) {
+            query("DELETE FROM ", dbe.Table("projects"), "WHERE `id_project` = ", projectId);
         }
 
         public bool ProposalExists() {
@@ -534,7 +582,11 @@ namespace _min.Models
                 {"id_project", project},
                 {"access", access}
             };
-            query("REPLACE INTO ", dbe.Table("access_rights"), dbe.InsVals(insertVals));
+            BeginTransaction();
+            query("DELETE FROM ", dbe.Table("access_rights"), "WHERE `id_user` = ", user, " AND `id_project` " +
+                ((project == null) ? "IS NULL" : ("= " + (int)project))); 
+            query("INSERT INTO ", dbe.Table("access_rights"), dbe.InsVals(insertVals));
+            CommitTransaction();
             //Dictionary<string, object> updVals = new Dictionary<string, object> { { "access", access } };
             //query("UPDATE ", dbe.Table("access_rights"), dbe.UpdVals(updVals), "WHERE ", dbe.Col("id_project"), " = ", project, " AND `id_user` = ", user);
         
@@ -553,6 +605,71 @@ namespace _min.Models
                     "WHERE `id_project` = ", project, " AND `id_user` = ", user);
             }
             return rights ?? 0;
+        }
+
+        /// <summary>
+        /// Gets the names of project that the user is administrator / architect of, IGNORING the
+        /// global rights
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="adminOf"></param>
+        /// <param name="architectOf"></param>
+        public void UserMenuOptions(int user, out List<string> adminOf, out List<string> architectOf) { 
+            FK access_project = new FK("access_rights", "id_project", "projects", "id_project", null);
+            DataTable admin = fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM `access_rights` ",
+                dbe.Join(access_project), "WHERE", dbe.Col("access_rights", "access", null), " % 100 >= 10");
+            adminOf = (from DataRow r in admin.Rows select r[0] as string).ToList<string>();
+            
+            DataTable architect = fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM `access_rights` ",
+                dbe.Join(access_project), "WHERE", dbe.Col("access_rights", "access", null), " % 1000 >= 100");
+            architectOf = (from DataRow r in architect.Rows select r[0] as string).ToList<string>();
+        }
+
+        public void ReleaseLock(int user, int project, LockTypes lockType) { 
+            query("DELETE FROM ", dbe.Table("locks"), "WHERE `id_owner` = ", user, "AND `id_project` = ", 
+                project, "AND `lock_type` = ", lockNumbers[lockType]); 
+        }
+
+        public bool TryGetLock(int user, int project, LockTypes lockType) {
+           Dictionary<string, object> insVals = new Dictionary<string,object>{
+                {"id_project", project},
+                {"id_owner", user},
+                {"lock_type", lockNumbers[lockType]}
+            };
+            int? owner = LockOwner(project, lockType);
+            if(owner == user) return true;
+            else if (owner == null)
+            {
+                try
+                {
+                    query("INSERT INTO `locks`", dbe.InsVals(insVals));
+                }
+                catch
+                {
+                    return false;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public int? LockOwner(int project, LockTypes lockType) {
+            
+            object res = fetchSingle("SELECT `id_owner` FROM  `locks` WHERE `id_project` = ", 
+                project, " AND `lock_type` = ", lockNumbers[lockType]);
+            return (int?)(res);
+        }
+
+        public void RemoveForsakenLocks(List<int> activeUsers) {
+            List<object> activeUsersObj = new List<object>();
+            foreach (int i in activeUsers) 
+                activeUsersObj.Add(i);
+            if (activeUsers.Count > 0)
+                query("DELETE FROM `locks` WHERE `id_owner` NOT IN ", dbe.InList(activeUsersObj));
+        }
+
+        public void ReleaseLocksExceptProject(int userId, int projectId) {
+            query("DELETE FROM `locks` WHERE `id_owner` = ", userId, " AND `id_project` != ", projectId);
         }
 
     }

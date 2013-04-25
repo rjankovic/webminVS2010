@@ -16,7 +16,11 @@ namespace _min.Common
     public enum FieldTypes { FK, M2NMapping, Date, DateTime, Time, Holder, ShortText, Text, Bool, Enum }
     public enum PropertyConcerns { Control, Validation, View }
     public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, Unique }
-    public enum GlobalState { Unknown, Architect, Administer }
+    public enum GlobalState { Architect, Administer, UsersManagement, ProjectsManagement, Account, Error, Unknown }
+    public enum LockTypes { AdminLock, ArchitectLock }
+
+    public class LockAcquiryException : Exception
+    { }
 
     public static class Environment
     {

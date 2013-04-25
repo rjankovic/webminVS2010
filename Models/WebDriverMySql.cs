@@ -12,6 +12,12 @@ namespace _min.Models
         { }
     }
 
+    class WebDriverDataModificationException : DataException {
+        public WebDriverDataModificationException(string message)
+            :base(message)
+        { }
+    }
+
     class WebDriverMySql : BaseDriverMySql, IWebDriver
     {
 
@@ -32,8 +38,10 @@ namespace _min.Models
                 var columns = panel.fields.Where(x => !(x is M2NMappingField)).Select(x => x.column).ToList<string>();
                 DataTable table = fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
-                if (table.Rows.Count == 0) throw new Exception("No data fullfill the condition");
+                if (table.Rows.Count == 0) throw new WebDriverDataModificationException(
+                    "No data fulfill the condition. The record may have been removed.");
                 DataRow row = table.Rows[0];
+                panel.OriginalData = table.Rows[0];
                 
                 foreach (Field field in panel.fields)       // fill the fields
                 {
@@ -78,8 +86,10 @@ namespace _min.Models
                 }
             }
 
+            /*
             foreach (Panel p in panel.children)
                 FillPanel(p);
+             */ 
         }
 
         public void FillPanelFKOptions(Panel panel)
@@ -427,6 +437,7 @@ namespace _min.Models
         // TODO : row PK cannot change once created!
         public void UpdatePanel(Panel panel)
         {
+            CheckAgainstOriginalDataRow(panel);
             foreach (Field f in panel.fields) {
                 if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique)) {
                     if (panel.RetrievedData[f.column] != null)       // TODO make sure all fields are set to null when should be
@@ -469,6 +480,19 @@ namespace _min.Models
             }
         }
 
+        private void CheckAgainstOriginalDataRow(Panel panel){
+            var columns = panel.fields.Where(x => !(x is M2NMappingField)).Select(x => x.column).ToList<string>();
+            DataRow actualRow = fetch("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
+            if (actualRow == null) throw new WebDriverDataModificationException(
+                "The record could not be found. It may have been removed in the meantime.");
+            foreach(DataColumn col in actualRow.Table.Columns){
+                if(actualRow[col.ColumnName] != panel.OriginalData[col.ColumnName])
+                    throw new WebDriverDataModificationException(
+                        "The record has been modified since loaded."
+                    + " Please save your data elsewhere and check for the new values.");
+            }
+        }
+
         /// <summary>
         /// Deletes the row determined by the panel`s PK from the panl`s table.
         /// Also clears the mapping (this may not be neccessary if the constraint CASCADEs, but it is probably the desired behaviour in either case).
@@ -500,7 +524,7 @@ namespace _min.Models
             foreach (DataRow r in tbl.Rows)
             {
                 if (r[0] == DBNull.Value || r[0].ToString() == "") continue;
-                res.Add((int)r[0], r[1].ToString());
+                res.Add(Int32.Parse(r[0].ToString()), r[1].ToString());     // awful... obj to int through int - find a better way
             }
             return res;
         }
@@ -555,35 +579,6 @@ namespace _min.Models
         public DataRow PKColRowFormat(Panel panel)
         {
             return fetchSchema("SELECT ", dbe.Cols(panel.PKColNames), " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
-        }
-
-        /// <summary>
-        /// Checks whether this column is unique in the table by checking for unique constraint in the schema
-        /// => artificial constraints (not set in database) cannot be created
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="columnName"></param>
-        /// <returns></returns>
-        private bool CheckUniqueness(string tableName, string columnName) {
-            DataTable schema = fetchSchema("SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName));
-            return schema.Columns[0].Unique;
-        }
-
-        /// <summary>
-        /// does the new value in the column keep the column unique?
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="columnName"></param>
-        /// <param name="newValue"></param>
-        /// <param name="updatedItemPK"></param>
-        /// <returns></returns>
-        private bool CheckUniqueness(string tableName, string columnName, object newValue, DataRow updatedItemPK = null) { 
-            if(updatedItemPK == null)   // INSERT - there can be row with this value
-                return (int)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName),
-                    " WHERE", dbe.Col(columnName), " =", newValue, ")") == 1;
-            else    // UPDATE - no row except this row
-                return (int)fetchSingle("SELECT NOT EXISTS( SELECT", dbe.Col(columnName), " FROM", dbe.Table(tableName), 
-                " WHERE NOT ", dbe.Condition(updatedItemPK), " AND ",  dbe.Col(columnName), " =", newValue, ")") == 1;
         }
 
         /// <summary>

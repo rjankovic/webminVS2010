@@ -16,16 +16,26 @@ namespace _min
             // Code that runs on application startup
 
             RouteTable.Routes.MapPageRoute("DefaultRoute", "", "~/Default.aspx");
-            RouteTable.Routes.MapPageRoute("LoginRoute", "login", "~/Account/Login.aspx");
+            
+            RouteTable.Routes.MapPageRoute("AccountLoginRoute", "account/login", "~/Account/Login.aspx");
+            RouteTable.Routes.MapPageRoute("AccountRegisterRoute", "account/register", "~/Account/Register.aspx");
+            RouteTable.Routes.MapPageRoute("AccountChpswdRoute", "account/change-password", 
+                "~/Account/ChangePassword.aspx");
+            RouteTable.Routes.MapPageRoute("AccountRepswdRoute", "account/password-recovery", 
+                "~/Account/PasswordRecovery.aspx");
+            RouteTable.Routes.MapPageRoute("AccountPswdsuccRoute", "account/password-changed", 
+                "~/Account/ChangePasswordSuccess.aspx");
+
+
             RouteTable.Routes.MapPageRoute("UsersRoute", "sys/users", "~/Sys/Users.aspx");
             RouteTable.Routes.MapPageRoute("ProjectsRoute", "sys/projects", "~/Sys/Projects.aspx");
+            RouteTable.Routes.MapPageRoute("ProjectDetailRoute", "sys/projects/{projectId}", "~/Sys/ProjectDetail.aspx");
 
             RouteTable.Routes.MapPageRoute("ArchitectInitRoute", "architect/init/{projectName}", "~/Architect/InitProposal.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectShowRoute", "architect/show/{projectName}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectShowPanelDefaultRoute", "architect/show/{projectName}/{panelId}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectShowPanelRoute", "architect/show/{projectName}/{panelId}/{action}", "~/Shared/Show.aspx");
-            //RouteTable.Routes.MapPageRoute("ArchitectShowPanelSpecRoute", "architect/show/{projectName}/{panelId}/{action}/{itemKey}", 
-            //    "~/Shared/Show.aspx");
+            
 
             RouteTable.Routes.MapPageRoute("ArchitectEditMenuRoute", "architect/editMenu/{projectName}", 
                 "~/Architect/EditMenu.aspx");
@@ -40,8 +50,9 @@ namespace _min
             RouteTable.Routes.MapPageRoute("AdministerBrowsePanelDefaultRoute", "admin/{projectName}/{panelId}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("AdministerBrowsePanelPagingRoute", "admin/{projectName}/{panelId}/{page}", "~/Shared/Show.aspx");
             RouteTable.Routes.MapPageRoute("AdministerBrowsePanelRoute", "admin/{projectName}/{panelId}/{action}", "~/Shared/Show.aspx");
-            //RouteTable.Routes.MapPageRoute("AdministerBrowsePanelSpecRoute", "admin/{projectName}/{panelId}/{action}/{itemKey}", "~/Shared/Show.aspx");
 
+
+            RouteTable.Routes.MapPageRoute("LockoutRoute", "lockout/{message}", "~/Error/Lockout.aspx");
         }
 
         void Application_End(object sender, EventArgs e)

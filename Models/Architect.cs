@@ -371,13 +371,16 @@ namespace _min.Models
                                 good = false;
                             }
 
+                            /*
                             if ((r.Contains(ValidationRules.Date) || r.Contains(ValidationRules.DateTime))
-                                && !(cols[field.column].DataType == typeof(DateTime)))
+                                // TODO do not handle these MySQL issues in here
+                                && !(cols[field.column].DataType == typeof(DateTime) || cols[field.column].DataType == typeof(MySql.Data.Types.MySqlDateTime)))
                             {
                                 errorMsgs.Add(messageBeginning +
                                     "is not a date / datetime, thus cannot be edited as a date");
                                 good = false;
                             }
+                            */
 
                             DataColumn fieldColumn = cols[field.column];
                             if (field.type != FieldTypes.ShortText)

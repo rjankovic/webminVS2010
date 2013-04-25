@@ -9,20 +9,9 @@
     <asp:UpdatePanel ID="MainUpdatePanel" runat="server">
         <ContentTemplate>
             <asp:Wizard ID="InitProposalWizard" runat="server" ActiveStepIndex="4" Height="159px"
-                Width="920px" BackColor="#EFF3FB" BorderColor="#B5C7DE" BorderWidth="1px" 
-                Font-Names="Verdana" Font-Size="Medium" 
+                Width="920px" 
                 onnextbuttonclick="InitProposalWizard_NextButtonClick" 
                 OnFinishButtonClick="InitProposalWizard_FinishButtonClick">
-                <HeaderStyle BackColor="#284E98" BorderColor="#EFF3FB" BorderStyle="Solid" 
-                    BorderWidth="2px" Font-Bold="True" Font-Size="0.9em" ForeColor="White" 
-                    HorizontalAlign="Center" />
-                <NavigationButtonStyle BackColor="White" BorderColor="#507CD1" 
-                    BorderStyle="Solid" BorderWidth="1px" Font-Names="Verdana" Font-Size="0.8em" 
-                    ForeColor="#284E98" />
-                <SideBarButtonStyle BackColor="#507CD1" Font-Names="Verdana" 
-                    ForeColor="White" />
-                <SideBarStyle BackColor="#507CD1" Font-Size="0.9em" VerticalAlign="Top" />
-                <StepStyle Font-Size="0.8em" ForeColor="#333333" />
                 <WizardSteps>
 
                     <asp:WizardStep ID="WizardStepFatalProblems" runat="server" Title="Found problems">

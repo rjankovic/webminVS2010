@@ -3,23 +3,25 @@
 
 body   
 {
-    background: #b6b7bc;
+    background: #FFF;
     font-size: .80em;
     font-family: "Helvetica Neue", "Lucida Grande", "Segoe UI", Arial, Helvetica, Verdana, sans-serif;
     margin: 0px;
     padding: 0px;
-    color: #696969;
+    color: #222;
+    height: 100%;
 }
 
 a:link, a:visited
 {
-    color: #034af3;
+    color: #222;
+    text-decoration: none;
 }
 
 a:hover
 {
-    color: #1d60ff;
-    text-decoration: none;
+    color: #444;
+    text-decoration: underline;
 }
 
 a:active
@@ -33,6 +35,12 @@ p
     line-height: 1.6em;
 }
 
+
+@font-face {  
+  font-family: "Flyboy";  
+  src: url(FlyBoyBB.otf ); /* IE */  
+  src: local("Flyboy BB"), url(FlyBoyBB.otf ) format("opentype"); /* non-IE */  
+}  
 
 /* HEADINGS   
 ----------------------------------------------------------*/
@@ -88,10 +96,10 @@ first child of the left and right table columns */
 
 .page
 {
-    width: 960px;
+    width: 100%;
     background-color: #fff;
-    margin: 20px auto 0px auto;
-    border: 1px solid #496077;
+    margin: 0px auto 0px auto;
+    height: 100%;
 }
 
 .header
@@ -99,8 +107,26 @@ first child of the left and right table columns */
     position: relative;
     margin: 0px;
     padding: 0px;
-    background: #4b6c9e;
+    background: #000;
+    color: #FFF;
     width: 100%;
+}
+
+.pride
+{
+ width: 100%;
+ font-size: 120px;
+ color: #EEE;
+ font-family:"Flyboy";
+ text-align:center;
+ }
+
+.WMCorner
+{
+    padding: 5px 10px 5px 10px;
+    float:left;
+    font-size: 1.35em;
+    border-right: 2px solid #444;
 }
 
 .header h1
@@ -116,9 +142,10 @@ first child of the left and right table columns */
 
 .main
 {
-    padding: 0px 12px;
-    margin: 12px 8px 8px 8px;
-    min-height: 420px;
+    width: 920px;
+    margin: 20px auto;
+    padding: 10px;
+    min-height: 100%;
 }
 
 .leftCol
@@ -150,45 +177,108 @@ div.hideSkiplink
 
 div.menu
 {
-    padding: 4px 0px 4px 8px;
+    /*padding: 4px 0px 4px 8px;*/
+    float: left;
 }
 
 div.menu ul
 {
+    background: #000;
     list-style: none;
     margin: 0px;
-    padding: 0px;
+    padding: 0px ;
     width: auto;
+    color: #FFF;
 }
 
 div.menu ul li a, div.menu ul li a:visited
 {
-    background-color: #465c71;
-    border: 1px #4e667d solid;
-    color: #dde4ec;
     display: block;
     line-height: 1.35em;
-    padding: 4px 20px;
+    padding: 8px 20px 4px;
     text-decoration: none;
     white-space: nowrap;
+    color: #AAA;
+}
+
+div.menu ul li ul
+{
+    background-color: #222;    
 }
 
 div.menu ul li a:hover
 {
-    background-color: #bfcbd6;
-    color: #465c71;
-    text-decoration: none;
+    color: #FFF;
 }
 
-div.menu ul li a:active
+
+
+div.menu ul li ul li a:hover
 {
-    background-color: #465c71;
-    color: #cfdbe6;
-    text-decoration: none;
+     color: #FFF;
+    border-bottom: 4px solid #444;
 }
 
 /* FORM ELEMENTS   
 ----------------------------------------------------------*/
+
+div.inMenu
+{
+    margin: 0 auto;
+    width: 100%;
+    border-bottom: 1px solid #AAA;
+}
+
+
+
+div.inMenu ul li
+{
+    
+    padding: 0px 10px 0px 0px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+div.inMenu ul li a
+{
+    font-size: 14px;
+    font-weight: bold;
+    color: #666;
+    padding-bottom: 5px;
+}
+div.inMenu ul li a:hvoer
+{
+    border-bottom: 3px solid #666;
+}
+
+
+
+div.inMenu ul li ul li
+{
+    padding: 0;    
+    text-align: left;
+    border-left: 1px solid #AAA;
+}
+
+div.inMenu ul li ul li:first-child
+{
+    padding-top: 15px;    
+}
+
+div.inMenu ul li ul li ul li:first-child
+{
+    padding-top: 0px;
+}
+
+div.inMenu ul li ul li a
+{
+    padding: 0px 20px 5px 20px;
+}
+div.inMenu ul li ul li:hover
+{
+    border-bottom: 1px solid #AAA;    
+}
+
+
 
 fieldset
 {
@@ -235,6 +325,135 @@ div.accountInfo
 {
     width: 42%;
 }
+
+/* PANEL HEADING
+----------------------------------------------------------*/
+
+div.panelHeading
+{
+    float:left;
+    background-color: #444;
+    color: #DDD;  
+    padding: 0px 10px 0px 10px;
+    margin-bottom: 30px;
+    
+    border-color: #444;
+    -webkit-border-bottom-right-radius: 10px;
+    -moz-border-radius-bottomright: 10px;
+    border-bottom-right-radius: 10px;  
+}
+
+div.panelHeading a, div.panelHeading a:visited, div.panelHeading span
+{
+    float: left;
+    color: #DDD;
+    padding: 5px 10px 5px 10px;
+    font-size: 1.0em;
+    text-decoration: none;
+}
+
+div.panelHeading a
+{
+    color: #BBB;
+    }
+div.panelHeading a:hover
+{
+    color: #DDD;
+    }
+/*    
+div.panelHeading a:nth-child(2)
+{
+    border-left: 1px solid #AAA;
+    }
+*/
+
+
+/* NavTable
+----------------------------------------------------------*/
+
+.navTable
+{
+    border-color: #AAA;
+}
+
+.navTable a
+{
+    margin-left: 10px;
+    }
+.navTable td
+{
+    padding: 3px 6px 3px 6px;
+    }
+.navTable th
+{
+    padding: 3px 6px 3px 6px;
+    font-weight: bold;
+    color: #000;
+    background-color: #AAA;
+    }
+.navTablePaging a, .navTablePaging span
+{
+    margin: 0;
+    padding: 5px;
+    font-weight: bold;
+    color: #444;
+}
+
+.navTablePaging
+{
+    background-color: #AAA;
+    }
+.navTablePaging a:hover
+{
+    color: #000;
+    text-decoration: none;
+    }
+    
+/* INPUTS
+----------------------------------------------------------*/
+
+input, select, textarea
+{
+    border: 1px solid #999;
+    padding: 5px;
+    background-color: #F9F9F9;
+    margin: 15px 10px 0 0px;
+}
+input:active, select:active, textarea:active
+{
+    border-color: #444;
+    
+    }
+select
+{
+    padding: 0;
+    }
+    
+.ajax__html_editor_extender_container input
+{
+    margin: 0;
+    padding: 0;
+}
+.ajax__html_editor_extender_container
+{
+    margin: 15px 10px 0 0;
+}
+
+.formTbl tr td:first-child
+{
+    padding-top: 1em;
+    padding-right: 20px;
+    text-align:right;
+    }
+    
+.projectDetail input[type="text"]
+{
+    width: 500px;
+    }
+.projectDetail tr td:first-child
+{
+    padding-right: 50px;
+    }
 
 /* MISC  
 ----------------------------------------------------------*/
