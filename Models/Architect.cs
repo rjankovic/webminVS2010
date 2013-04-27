@@ -107,7 +107,7 @@ namespace _min.Models
                 {
                     fieldType = FieldTypes.Bool;
                 }
-                else if (col.DataType == typeof(DateTime))
+                else if (col.DataType == typeof(DateTime) || col.DataType == typeof(MySql.Data.Types.MySqlDateTime))
                 {
                     fieldType = FieldTypes.Date;
                     validation.Add(ValidationRules.Date);

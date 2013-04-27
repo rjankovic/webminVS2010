@@ -1,5 +1,5 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Lockout.aspx.cs" EnableEventValidation="false" Inherits="_min.Error.Lockout"%>
-<%@ MasterType  virtualPath="~/Site.Master"%>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="Lockout.aspx.cs" EnableEventValidation="false" Inherits="_min.Error.Lockout"%>
+<%@ MasterType  virtualPath="~/Site.master"%>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
         <script src="/Scripts/jquery-1.4.1.min.js" type="text/javascript"></script>

@@ -14,6 +14,7 @@ using _min.Controls;
 using UControl = System.Web.UI.Control;
 using WC = System.Web.UI.WebControls;
 using System.Web.UI.WebControls;
+using CE = _min.Common.Environment;
 
 namespace _min.Models
 {
@@ -130,10 +131,7 @@ namespace _min.Models
 
         public void SetCreationId(int id)
         {
-            if (this.controlId == null)
-            {
                 this.controlId = id;
-            }
         }
 
         public void RefreshPanelId()
@@ -267,8 +265,6 @@ namespace _min.Models
         public string parentColName { get; private set; }
         [DataMember]
         public string displayColName { get; private set; }
-        [DataMember]
-        public DataSet storedHierarchyDataSet { get; set; }
         [IgnoreDataMember]
         public HierarchyNavTable storedHierarchyData { get; set; }
         [IgnoreDataMember]
@@ -315,11 +311,7 @@ namespace _min.Models
             this.parentColName = parentColName;
             this.displayColName = displayColName;
             this.displayColumns = new List<string> { displayColName };
-            ds = new DataSet();
-            //this.data.DataSet = null;
-            this.data.TableName = "data";
-            ds.Tables.Add(this.data);
-            storedHierarchyDataSet = storedHierarchyData.DataSet;
+            this.data = data;
         }
 
         public TreeControl(int panelId, HierarchyNavTable data, string PKColName,    // tree controls must have a single-column primary key
@@ -331,19 +323,15 @@ namespace _min.Models
             this.parentColName = parentColName;
             this.displayColName = displayColName;
             this.displayColumns = new List<string> { displayColName };
-            ds = new DataSet();
-            //this.data.DataSet = null;
-            this.data.TableName = "data";
-            ds.Tables.Add(this.data);
-            storedHierarchyDataSet = storedHierarchyData.DataSet;
+            this.data = data;
         }
 
         public void ToUControl(UControl container, WC.MenuEventHandler handler, string navigateUrl = null)
         {
             if(panel.type != PanelTypes.MenuDrop) throw new ArgumentException(
                 "MenuEventHandler can operate only on a Menu - within a MenuDrop panel");
-            WC.Menu res = new WC.Menu();
-            res.CssClass = "inMenu";
+            WC.Menu res = new _min.Controls.CssMenu();
+            //res.CssClass = "inMenu";
             res.StaticEnableDefaultPopOutImage = false;
             res.DynamicEnableDefaultPopOutImage = false;
             res.Orientation = WC.Orientation.Horizontal;
@@ -353,14 +341,23 @@ namespace _min.Models
             {
                 if (r.ParentId == null)
                 {
-                    item = new WC.MenuItem(r.Caption, r.NavId.ToString());
+                    item = new WC.MenuItem(r.Caption, null, null,  "/" +
+                        ((CE.GlobalState == GlobalState.Administer) ? "admin/" : "architect/show/") +
+                        CE.project.Name + "/" + 
+                        r.NavId.ToString());
                     AddSubmenuForItem(r, item);
                     res.Items.Add(item);
                 }
             }
             res.MenuItemClick += handler;
             res.ID = "Control" + controlId;
+            res.CssClass = "inMenu";
+
+            WC.Panel cleaner = new WC.Panel();
+            
             container.Controls.Add(res);
+            cleaner.CssClass = "clear";
+            container.Controls.Add(cleaner);
         }
 
         public override void ToUControl(UControl container, WC.CommandEventHandler handler, string navigateUrl = null)
@@ -376,7 +373,10 @@ namespace _min.Models
             WC.MenuItem childItem;
             foreach (HierarchyRow child in children)
             {
-                childItem = new WC.MenuItem(child.Caption, child.NavId.ToString());
+                childItem = new WC.MenuItem(child.Caption, null, null, "/" +
+                        ((CE.GlobalState == GlobalState.Administer) ? "admin/" : "architect/show/") +
+                        CE.project.Name + "/" +  
+                        child.NavId.ToString());
                 item.ChildItems.Add(childItem);
                 AddSubmenuForItem(child, childItem);
             }

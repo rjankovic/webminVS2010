@@ -117,10 +117,15 @@ namespace _min.Controls
             AddAttributesToRender(writer);
             writer.AddAttribute(HtmlTextWriterAttribute.Cellpadding, "10", false);
             writer.RenderBeginTag(HtmlTextWriterTag.Table);
+
             writer.RenderBeginTag(HtmlTextWriterTag.Tr);
             writer.RenderBeginTag(HtmlTextWriterTag.Td);
             inList.AutoPostBack = false;
             outList.AutoPostBack = false;
+            inList.CssClass = "noShrink";
+            outList.CssClass = "noShrink";
+            inList.Attributes.Add("title", "Included items");
+            outList.Attributes.Add("title", "Excluded items");
             inList.Attributes.Add("runat", "server");
             inList.RenderControl(writer);
             writer.RenderEndTag();

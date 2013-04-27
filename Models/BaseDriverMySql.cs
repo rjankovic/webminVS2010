@@ -176,6 +176,12 @@ namespace _min.Models
                     conn.Open();
                 adapter.Fill(result);
             }
+            catch (Exception e)
+            {
+                if (IsInTransaction)
+                    RollbackTransaction();
+                throw e;
+            }
             finally {
                 if(!IsInTransaction)
                 conn.Close();
@@ -233,9 +239,15 @@ namespace _min.Models
             }
             try
             {
-                if(!IsInTransaction)
+                if (!IsInTransaction)
                     conn.Open();
                 rowsAffected = cmd.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                if (IsInTransaction)
+                    RollbackTransaction();
+                throw e;
             }
             finally {
                 if(!IsInTransaction)    // wrong?

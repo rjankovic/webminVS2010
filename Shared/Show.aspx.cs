@@ -7,6 +7,7 @@ using System.Web.UI.WebControls;
 using System.Data;
 using _min.Common;
 using _min.Models;
+using System.Text;
 
 using _min.Navigation;
 using CE = _min.Common.Environment;
@@ -46,9 +47,10 @@ namespace _min.Shared
 
 
             // whether in a specific panel or not, we need a menu
+            /**/
             MenuEventHandler menuHandler = navigator.MenuHandle;
             ((TreeControl)mm.SysDriver.MainPanel.controls[0]).ToUControl(MainPanel, navigator.MenuHandler);
-
+            /**/
 
             // get the active panel, if exists
             if (Page.RouteData.Values.ContainsKey("panelId") && Page.RouteData.Values["panelId"].ToString() == "0")
@@ -189,10 +191,10 @@ namespace _min.Shared
 
         void CreateWebControlsForPanel(MPanel activePanel, System.Web.UI.WebControls.Panel containerPanel)
         {
-            List<AjaxControlToolkit.ExtenderControlBase> extenders = new List<AjaxControlToolkit.ExtenderControlBase>();
             List<BaseValidator> validators = new List<BaseValidator>();
-
-
+            
+            
+            
             // no data in active panel => have to fill it
             if (!Page.IsPostBack || noSessionForActPanel)
             {
@@ -263,7 +265,7 @@ namespace _min.Shared
                     row.Cells.Add(captionCell);
 
                     TableCell fieldCell = new TableCell();
-                    System.Web.UI.Control c = f.ToUControl(extenders);
+                    System.Web.UI.Control c = f.ToUControl();
                     validators.AddRange(f.GetValidator());
 
                     foreach (BaseValidator v in validators)
@@ -301,13 +303,7 @@ namespace _min.Shared
                 // not GridViewCommandEventHandler
             }
 
-            // finally the extenders of fields
-            foreach (AjaxControlToolkit.ExtenderControlBase extender in extenders)
-            {
-                extender.EnableClientState = false;
-                MainPanel.Controls.Add(extender);
-            }
-
+            
             foreach (BaseValidator validator in validators)
             {
                 MainPanel.Controls.Add(validator);

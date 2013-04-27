@@ -121,6 +121,7 @@ namespace _min.Models
         /// </summary>
         /// <param name="pref">user display preferences</param>
         public void SetDisplayPreferences(Dictionary<string, string> pref) {
+            /*
             if (columnsToDisplay == null)
                 FindColumnsToDisplay();
             foreach (string tblName in pref.Keys) {
@@ -130,6 +131,7 @@ namespace _min.Models
                     columnsToDisplay[tblName][0] = pref[tblName];
                 }
             }
+             */ 
         }
 
         /// <summary>

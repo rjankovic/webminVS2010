@@ -264,15 +264,6 @@ namespace _min.Controls
             RecreateChildControls();
         }
 
-        /// <summary>
-        /// Drops all constraint on the stroed dataset and removes the tables - following this the tables are not refferenced by the control
-        /// and can be edited without restrictions.
-        /// </summary>
-        public void FreeTables() {
-            hierarchyDataset.Relations.Clear();
-            hierarchyDataset.Tables.Clear();
-        }
-
         protected override void Render(HtmlTextWriter writer)
         {
 

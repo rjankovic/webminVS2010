@@ -155,7 +155,7 @@ namespace _min
                     MenuItem administerItem = new MenuItem("Administer", "admin");
                     foreach (string site in adminOf)
                     {
-                        administerItem.ChildItems.Add(new MenuItem(site, site, null, "~/admin/" + site));
+                        administerItem.ChildItems.Add(new MenuItem(site, site, null, "/admin/" + site));
                     }
                     if (adminOf.Count > 0)
                         NavigationMenu.Items.AddAt(0, administerItem);
@@ -164,7 +164,7 @@ namespace _min
                     MenuItem architectItem = new MenuItem("Architect", "architect");
                     foreach (string site in architectOf)
                     {
-                        architectItem.ChildItems.Add(new MenuItem(site, site, null, "~/architect/show/" + Server.UrlEncode(site)));
+                        architectItem.ChildItems.Add(new MenuItem(site, site, null, "/architect/show/" + Server.UrlEncode(site)));
                     }
                     if (architectOf.Count > 0)
                         NavigationMenu.Items.AddAt(1, architectItem);
@@ -173,22 +173,22 @@ namespace _min
 
                     // user & projects management
 
-                    NavigationMenu.Items.Add(new MenuItem("Manage users", "users", null, "~/sys/users"));
+                    NavigationMenu.Items.Add(new MenuItem("Manage users", "users", null, "/sys/users"));
 
                     if (globalRights >= 10000)   // this is the one and only project manager for this application instance
-                        NavigationMenu.Items.Add(new MenuItem("Manage projects", "projects", null, "~/sys/projects"));
+                        NavigationMenu.Items.Add(new MenuItem("Manage projects", "projects", null, "/sys/projects"));
 
 
                     // account settings for logged in users
                     MenuItem accountItem = new MenuItem("Account", "account");
-                    accountItem.ChildItems.Add(new MenuItem("Change password", null, null, "~/account/change-password"));
+                    accountItem.ChildItems.Add(new MenuItem("Change password", null, null, "/account/change-password"));
                     NavigationMenu.Items.Add(accountItem);
                 }
                 else {
                     MenuItem accountItem = new MenuItem("Account", "account");
-                    accountItem.ChildItems.Add(new MenuItem("Login", null, null, "~/account/login"));
-                    accountItem.ChildItems.Add(new MenuItem("Register", null, null, "~/account/register"));
-                    accountItem.ChildItems.Add(new MenuItem("Password recovery", null, null, "~/account/password-recovery"));
+                    accountItem.ChildItems.Add(new MenuItem("Login", null, null, "/account/login"));
+                    accountItem.ChildItems.Add(new MenuItem("Register", null, null, "/account/register"));
+                    accountItem.ChildItems.Add(new MenuItem("Password recovery", null, null, "/account/password-recovery"));
                     
                     NavigationMenu.Items.Add(accountItem);
                 }

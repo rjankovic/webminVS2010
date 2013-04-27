@@ -6,7 +6,5 @@
 <asp:Content ID="BodyContent" runat="server" ContentPlaceHolderID="MainContent">
     <asp:ScriptManager ID="ScriptManager1" runat="server">
     </asp:ScriptManager>
-    <p class="pride">WebMin</p>
-
-    
+    <p class="pride">WebMin</p>    
 </asp:Content>

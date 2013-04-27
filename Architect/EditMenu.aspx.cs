@@ -45,17 +45,16 @@ namespace _min.Architect
 
         protected void OnSaveButtonClicked(object sender, EventArgs e) {
             TreeControl tc = ((TreeControl)(mm.SysDriver.MainPanel.controls[0]));
-            tc.storedHierarchyDataSet.Relations.Clear();
-            tc.storedHierarchyDataSet.Tables.Clear();
+            
+            //tc.storedHierarchyData.ChildRelations.Clear();
             // so that they dont`t remain constrained by their original dataset and can be saved to the db and eliminated arbitrarily
-            tbc.FreeTables();
-            tc.storedHierarchyDataSet.Tables.Add(tbc.Hierarchy);
-            tc.storedHierarchyData = (HierarchyNavTable)tc.storedHierarchyDataSet.Tables[0];
+            
             mm.SysDriver.BeginTransaction();
+            ((TreeControl)(mm.SysDriver.MainPanel.controls[0])).storedHierarchyData = tbc.Hierarchy;
             mm.SysDriver.UpdatePanel(mm.SysDriver.MainPanel, false);
             mm.SysDriver.CommitTransaction();
-            tc.storedHierarchyData.DataSet.Relations.Add("Hierarchy",
-                tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], false);
+            //tc.storedHierarchyData.ChildRelations.Add("Hierarchy",
+            //    tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], false);
             Response.RedirectToRoute("ArchitectShowRoute", new { projectName = Page.RouteData.Values["projectName"] });
         }
 

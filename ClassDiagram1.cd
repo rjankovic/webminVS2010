@@ -31,7 +31,7 @@
     <Position X="13.25" Y="4.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAACABAACAAAAAAQAAAAABAAAAAAIAAAA=</HashCode>
-      <FileName>Site.Master.cs</FileName>
+      <FileName>Site.master.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="_min_t7.Account.ChangePassword" Collapsed="true">

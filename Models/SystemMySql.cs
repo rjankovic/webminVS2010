@@ -55,15 +55,17 @@ namespace _min.Models
             DataTable controls = fetchAll("SELECT controls.* FROM ", dbe.Table("controls"), dbe.Join(control_panel), "WHERE id_project =", CE.project.Id);
             DataTable fields = fetchAll("SELECT fields.* FROM ", dbe.Table("fields"), dbe.Join(field_panel), "WHERE id_project =", CE.project.Id);
             CommitTransaction();
+            
             panels.TableName = "panels";
             controls.TableName = "controls";
             fields.TableName = "fields";
-            DataSet ds = new DataSet();
             
+            DataSet ds = new DataSet();
+            /*
             panels.PrimaryKey = new DataColumn[] { panels.Columns["id_panel"] };
             controls.PrimaryKey = new DataColumn[] { panels.Columns["id_control"] };
             fields.PrimaryKey = new DataColumn[] { panels.Columns["id_field"] };
-
+            */
             ds.Tables.Add(panels);
             ds.Tables.Add(controls);
             ds.Tables.Add(fields);
@@ -72,6 +74,7 @@ namespace _min.Models
             ds.Relations.Add(new DataRelation(CC.SYSDRIVER_FK_FIELD_PANEL, ds.Tables["panels"].Columns["id_panel"], ds.Tables["fields"].Columns["id_panel"], true));
             ds.Relations.Add(new DataRelation(CC.SYSDRIVER_FK_PANEL_PARENT, ds.Tables["panels"].Columns["id_panel"], ds.Tables["panels"].Columns["id_parent"], true));
             DataSet2Architecture(ds);
+            
         }
 
         /// <summary>
@@ -92,7 +95,7 @@ namespace _min.Models
         private Panel DataSet2Panel(DataSet ds, int panelId) {
             List<Field> fields = DataSet2PanelFields(ds, panelId);
             List<Control> controls = DataSet2PanelControls(ds, panelId);
-            DataRow panelRow = ds.Tables["panels"].Rows.Find(panelId);
+            DataRow panelRow = ds.Tables["panels"].AsEnumerable().Where(x => (Int32)x["id_panel"] == panelId).First();
             Panel res = DeserializePanel(panelRow["content"] as string);
             res.panelId = panelId;
 
@@ -113,13 +116,12 @@ namespace _min.Models
         /// </summary>
         /// <param name="ds">the dataset from FullProjectLoad</param>
         private List<Control> DataSet2PanelControls(DataSet ds, int panelId) {
-            DataRow panelRow = ds.Tables["panels"].Rows.Find(panelId);
+            DataRow panelRow = ds.Tables["panels"].AsEnumerable().Where(x => (Int32)x["id_panel"] == panelId).First();
             DataRow[] controlRows = panelRow.GetChildRows(CC.SYSDRIVER_FK_CONTROL_PANEL);
             List<Control> res = new List<Control>();
             Control c;
             foreach (DataRow controlRow in controlRows) {
-                c = DeserializeControl(controlRow["content"] as string);
-                c.controlId = (int)(controlRow["id_control"]);
+                c = DeserializeControl(controlRow["content"] as string, (int)(controlRow["id_control"]));
                 res.Add(c);
             }
             return res;
@@ -130,14 +132,13 @@ namespace _min.Models
         /// </summary>
         /// <param name="ds">the dataset from FullProjectLoad</param>
         private List<Field> DataSet2PanelFields(DataSet ds, int panelId) {
-            DataRow panelRow = ds.Tables["panels"].Rows.Find(panelId);
+            DataRow panelRow = ds.Tables["panels"].AsEnumerable().Where(x => (Int32)x["id_panel"] == panelId).First();
             DataRow[] fieldRows = panelRow.GetChildRows(CC.SYSDRIVER_FK_FIELD_PANEL);
             List<Field> res = new List<Field>();
             Field f;
             foreach (DataRow fieldRow in fieldRows)
             {
-                f = DeserializeField(fieldRow["content"] as string);
-                f.fieldId = (int)(fieldRow["id_field"]);
+                f = DeserializeField(fieldRow["content"] as string, (int)(fieldRow["id_field"]));
                 res.Add(f);
             }
             return res;
@@ -155,29 +156,35 @@ namespace _min.Models
         /// </summary>
         /// <param name="s">serialized control</param>
         /// <returns>the deserialized Control object</returns>
-        private Control DeserializeControl(string s) { 
+        private Control DeserializeControl(string s, int id) {
+            if (s.Contains("storedHierarchyDataSet")) return new Control(0, "", UserAction.Delete);
                 DataContractSerializer serializer = new DataContractSerializer(typeof(Control));
                 Control res = (Control)(serializer.ReadObject(Functions.GenerateStreamFromString(s)));
+                res.controlId = id;
                 if (res is TreeControl)
                 {
-                    TreeControl c2 = res as TreeControl;
-                    c2.storedHierarchyData = new HierarchyNavTable();
-                    if (c2.storedHierarchyDataSet.Tables.Count > 0)
+                    AssignSotredHierarchyToControl((TreeControl)res);
+                    TreeControl tc = res as TreeControl;
+                    if (tc.storedHierarchyData is HierarchyNavTable)
                     {
-                        c2.storedHierarchyData.Merge(c2.storedHierarchyDataSet.Tables[0]);
-                        c2.storedHierarchyDataSet.Tables.Add(c2.storedHierarchyData);
-                        c2.storedHierarchyDataSet.Relations.Clear();
-                        c2.storedHierarchyData.DataSet.Relations.Add(CC.CONTROL_HIERARCHY_RELATION,
-                        c2.storedHierarchyData.Columns["Id"], c2.storedHierarchyData.Columns["ParentId"], true);
+                        DataSet ds = new DataSet();
+                        if (tc.storedHierarchyData.DataSet != null)
+                        {
+                            tc.storedHierarchyData.DataSet.Relations.Clear();
+                            tc.storedHierarchyData.DataSet.Tables.Clear();
+                        }
+                        ds.Tables.Add(tc.storedHierarchyData);
+                        tc.storedHierarchyData.ChildRelations.Add(new DataRelation(CC.CONTROL_HIERARCHY_RELATION,
+                        tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], true));
                     }
                 }
-
-            return res;
+                return res;
         }
 
-        private Field DeserializeField(string s) {
+        private Field DeserializeField(string s, int id) {
             DataContractSerializer serializer = new DataContractSerializer(typeof(Field));
             Field f = (Field)(serializer.ReadObject(Functions.GenerateStreamFromString(s)));
+            f.fieldId = id;
             return f;
         }
 
@@ -333,8 +340,11 @@ namespace _min.Models
             if (panel.parent != null)
                 updateVals["id_parent"] = panel.parent.panelId;
             updateVals["content"] = panel.Serialize();
-            query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
-            query("DELETE FROM fields WHERE id_panel = ", panel.panelId);
+             
+                query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
+                foreach (Control c in panel.controls)
+                    RemoveControl(c);
+            
             foreach (Field field in panel.fields)
             {
                 AddField(field);
@@ -424,6 +434,23 @@ namespace _min.Models
                 query("INSERT INTO controls", dbe.InsVals(insertVals));
                 control.SetCreationId(LastId());    // must be 0 in creation
             }
+            if (control is TreeControl)
+            {
+                SaveStroedHierarchyOfControl((TreeControl)control);
+                TreeControl tc = control as TreeControl;
+                if (tc.storedHierarchyData is HierarchyNavTable)
+                {
+                    DataSet ds = new DataSet();
+                    if (tc.storedHierarchyData.DataSet != null)
+                    {
+                        tc.storedHierarchyData.DataSet.Relations.Clear();
+                        tc.storedHierarchyData.DataSet.Tables.Clear();
+                    }
+                    ds.Tables.Add(tc.storedHierarchyData);
+                    tc.storedHierarchyData.ChildRelations.Add(new DataRelation(CC.CONTROL_HIERARCHY_RELATION,
+                    tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], true));
+                }
+            }
 
 
         }
@@ -434,12 +461,63 @@ namespace _min.Models
             DataContractSerializer ser = new DataContractSerializer(typeof(Control));
             ser.WriteObject(ms, control);
             query("UPDATE controls SET content = ", Functions.StreamToString(ms), " WHERE id_control = ", control.controlId);
-
+            if (control is TreeControl) {
+                SaveStroedHierarchyOfControl((TreeControl)control);
+            }
         }
 
         public void RemoveControl(Control control)
         {
-            query("DELETE FROM controls WHERE id_control = ", control.controlId);
+            query("DELETE FROM `controls` WHERE id_control = ", control.controlId);
+            query("DELETE FROM `hierarchy_nav_tables` WHERE `id_control` = ", control.controlId);
+        }
+
+
+        /// <summary>
+        /// Saves the content of stored hierarchy of a TreeControl to the database
+        /// </summary>
+        /// <param name="control"></param>
+        private void SaveStroedHierarchyOfControl(TreeControl control) { 
+            if(control.controlId != null)
+                query("DELETE FROM ", dbe.Table("hierarchy_nav_tables"), "WHERE `id_control` = ", control.controlId);
+            bool wasInTran = IsInTransaction;
+
+            Dictionary<string, object> insVals = new Dictionary<string, object> { 
+                { "id_control", control.controlId } 
+            };
+            
+            if (!wasInTran)
+                BeginTransaction();
+            foreach (HierarchyRow r in control.storedHierarchyData.Rows) {
+                insVals["id_item"] = r.Id; 
+                insVals["id_parent"] = r.ParentId;
+                insVals["caption"] = r.Caption;
+                insVals["id_nav"] = r.NavId;
+                query("INSERT INTO `hierarchy_nav_tables`", dbe.InsVals(insVals));
+            }
+            if (!wasInTran)
+                CommitTransaction();
+        }
+
+        /// <summary>
+        /// Extrats the hierchy data for the given TreeControl and assigns it to it. If there is no
+        /// data present, the data property of the control remains unchanged.
+        /// </summary>
+        /// <param name="control"></param>
+        public void AssignSotredHierarchyToControl(TreeControl control) {
+            if (control.controlId == null) return;
+
+            List<IDbCol> cols = new List<IDbCol>();
+            cols.Add(dbe.Col("id_item", "Id"));
+            cols.Add(dbe.Col("id_parent", "ParentId"));
+            cols.Add(dbe.Col("caption", "Caption"));
+            cols.Add(dbe.Col("id_nav", "NavId"));
+            DataTable tbl = fetchAll("SELECT ", dbe.Cols(cols), 
+                " FROM ", dbe.Table("hierarchy_nav_tables"), "WHERE  id_control = ", control.controlId);
+
+            HierarchyNavTable resHierarchy = new HierarchyNavTable();
+            resHierarchy.Merge(tbl);
+            control.storedHierarchyData = resHierarchy;
         }
         
         /// <summary>

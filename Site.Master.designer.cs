@@ -37,7 +37,7 @@ namespace _min {
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Menu NavigationMenu;
+        protected global::_min.Controls.CssMenu NavigationMenu;
         
         /// <summary>
         /// MainContent control.

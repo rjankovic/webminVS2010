@@ -24,9 +24,6 @@ C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7222\_min_t7\obj\Debug\_
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7222\_min_t7\obj\Debug\_min_t7.pdb
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\_min_t7.dll
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\_min_t7.pdb
-C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\HtmlAgilityPack.dll
-C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\NLipsum.Core.dll
-C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\SanitizerProviders.dll
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\obj\Debug\_min_t7.dll
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\obj\Debug\_min_t7.pdb
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\obj\Debug\_min_t7.csprojResolveAssemblyReference.cache

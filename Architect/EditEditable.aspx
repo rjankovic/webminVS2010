@@ -1,5 +1,5 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="EditEditable.aspx.cs" Inherits="_min.Architect.EditEditable" %>
-<%@ MasterType  virtualPath="~/Site.Master"%>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="EditEditable.aspx.cs" Inherits="_min.Architect.EditEditable" %>
+<%@ MasterType  virtualPath="~/Site.master"%>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
 </asp:Content>

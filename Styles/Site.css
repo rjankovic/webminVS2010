@@ -10,6 +10,7 @@ body
     padding: 0px;
     color: #222;
     height: 100%;
+    z-index:0;
 }
 
 a:link, a:visited
@@ -98,8 +99,10 @@ first child of the left and right table columns */
 {
     width: 100%;
     background-color: #fff;
+    padding: 0;
     margin: 0px auto 0px auto;
     height: 100%;
+    border-top: 1px solid #000;
 }
 
 .header
@@ -110,6 +113,8 @@ first child of the left and right table columns */
     background: #000;
     color: #FFF;
     width: 100%;
+    float:left;
+    position: absolute;
 }
 
 .pride
@@ -119,6 +124,7 @@ first child of the left and right table columns */
  color: #EEE;
  font-family:"Flyboy";
  text-align:center;
+ float: left;
  }
 
 .WMCorner
@@ -143,7 +149,7 @@ first child of the left and right table columns */
 .main
 {
     width: 920px;
-    margin: 20px auto;
+    margin: 60px auto;
     padding: 10px;
     min-height: 100%;
 }
@@ -178,7 +184,6 @@ div.hideSkiplink
 div.menu
 {
     /*padding: 4px 0px 4px 8px;*/
-    float: left;
 }
 
 div.menu ul
@@ -224,7 +229,7 @@ div.menu ul li ul li a:hover
 
 div.inMenu
 {
-    margin: 0 auto;
+    /*margin: 0 auto;*/
     width: 100%;
     border-bottom: 1px solid #AAA;
 }
@@ -506,9 +511,136 @@ select
     font-weight: bold;
 }
 
+.noShrink
+{
+    width:200px;
+    }
+/*
 .submitButton
 {
     text-align: right;
     padding-right: 10px;
 }
+
+/* DROPDOWN MENU
+---leave it------------------------------------------------*/
+
+/*
+.cssMenuContainer {position:relative; float:left;}
+
+.cssMenuNav, 
+.cssMenuNav ul {padding:0; margin:0; list-style:none; position:relative; z-index:100;}
+.cssMenuNav {float:left; padding:0; position:relative;}
+
+.cssMenuNav table {border-collapse:collapse;}
+.cssMenuNav li {float:left;}
+.cssMenuNav li li {float:none;}
+
+.cssMenuNav li a li {float:left;}
+
+.cssMenuNav li a {display:block; float:left; line-height:30px; white-space:nowrap;}
+.cssMenuNav li li a {float:none;}
+
+.cssMenuNav li:hover {position:relative; z-index:100;}
+.cssMenuNav a:hover {position:relative; z-index:100; border:0;}
+.cssMenuNav li:hover > a {}
+
+.cssMenuNav :hover  ul {left:0; z-index:300; op:30px;}
+.cssMenuNav a:hover ul {left:-1px; }
+
+.cssMenuNav ul {position:absolute; left:-9999px; top:-9999px;}
+
+
+.cssMenuNav li:hover li:hover > ul {left:0; margin-left:100%; top:0;}
+
+.cssMenuNav li:hover > ul ul {position:absolute; left:-9999px; top:-9999px; width:auto;}
+
+.cssMenuNav li:hover li:hover > a {}
+
+.cssMenuNav li a:hover ul li a:hover {}
+
+
+.cssMenuNav a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover a:hover ul
+{left:100%; top:0;}
+
+.cssMenuNav a:hover ul ul,
+.cssMenuNav a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul ul
+{position:absolute; left:-9999px; top:-9999px;}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+div.cssMenuContainer {position:relative; float:left; margin: 0 auto; padding: 0;}
+
+.cssMenuNav, 
+.cssMenuNav ul {padding:0; margin:0; list-style:none; position:relative; z-index:100;}
+.cssMenuNav {float:left; padding:0; position:relative;}
+
+.cssMenuNav table {border-collapse:collapse;}
+.cssMenuNav li {float:left;}
+.cssMenuNav li li {float:none;}
+/* a hack for IE5.x and IE6 */
+.cssMenuNav li a li {float:left;}
+
+.cssMenuNav li a {display:block; float:left; height:30px; padding:0 20px 0 10px; line-height:30px; white-space:nowrap;}
+.cssMenuNav li li a {float:none;}
+
+.cssMenuNav li:hover {position:relative; z-index:100;}
+.cssMenuNav a:hover {position:relative; z-index:100; border:0;}
+.cssMenuNav li:hover > a {}
+
+.cssMenuNav :hover  ul {left:0; top:30px; z-index:300;}
+.cssMenuNav a:hover ul {left:-1px;}
+
+.cssMenuNav ul {position:absolute; left:-9999px; top:-9999px;}
+
+/* it could have been this simple if all browsers understood */
+/* show next level */
+.cssMenuNav li:hover li:hover > ul {left:0; margin-left:100%; top:0;}
+/* keep further levels hidden */
+.cssMenuNav li:hover > ul ul {position:absolute; left:-9999px; top:-9999px; width:auto;}
+/* show path followed */
+.cssMenuNav li:hover li:hover > a {}
+
+.cssMenuNav li a:hover ul li a:hover {}
+
+/* but IE5.x and IE6 need this lot to style the flyouts*/
+/* show next level */
+.cssMenuNav a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover a:hover ul
+{left:100%; top:0;}
+
+/* keep further levels hidden */
+.cssMenuNav a:hover ul ul,
+.cssMenuNav a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul ul
+{position:absolute; left:-9999px; top:-9999px;}
 

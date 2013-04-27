@@ -85,9 +85,7 @@ namespace _min.Models
 
         public void SetCreationId(int id)
         {
-            if (fieldId == 0) fieldId = id;
-            else
-                throw new Exception("Field id already initialized");
+            fieldId = id;
         }
 
         public void RefreshPanelId()
@@ -101,7 +99,7 @@ namespace _min.Models
         /// <param name="extenders">AjaxControlToolkit extenders, for the needs of a html text field</param>
         /// <param name="handler">General event handler for events on text fields, that there for any fieldtype so far</param>
         /// <returns></returns>
-        public virtual UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
+        public virtual UControl ToUControl(EventHandler handler = null)
         {
             System.Web.UI.Control res;
             switch (type)
@@ -110,9 +108,11 @@ namespace _min.Models
                 case FieldTypes.Date:
                     WC.TextBox resCal = new WC.TextBox();
                     resCal.ID = "Field" + fieldId.ToString();
-                    AjaxControlToolkit.CalendarExtender calendarExtender = new AjaxControlToolkit.CalendarExtender();
-                    calendarExtender.TargetControlID = resCal.ID;
-                    extenders.Add(calendarExtender);
+                    resCal.CssClass = "includeDatePicker";
+                    //AjaxControlToolkit.CalendarExtender calendarExtender = new AjaxControlToolkit.CalendarExtender();
+                    //calendarExtender.TargetControlID = resCal.ID;
+                    //extenders.Add(calendarExtender);
+
                     res = resCal;
                     break;
                 case FieldTypes.DateTime:
@@ -134,16 +134,17 @@ namespace _min.Models
                     res = resTxt;
                     break;
                 case FieldTypes.Text:
-                    AjaxControlToolkit.HtmlEditorExtender editor = new AjaxControlToolkit.HtmlEditorExtender();
+                    //AjaxControlToolkit.HtmlEditorExtender editor = new AjaxControlToolkit.HtmlEditorExtender();
                     WC.TextBox tb = new WC.TextBox();
                     //if(value is string)
                     //    tb.Text = (string)value;
                     tb.ID = "Field" + fieldId.ToString();
                     tb.Width = 500;
                     tb.Height = 250;
-                    editor.Enabled = true;
-                    editor.TargetControlID = tb.ID;
-                    extenders.Add(editor);
+                    tb.CssClass = "includeEditor";
+                    //editor.Enabled = true;
+                    //editor.TargetControlID = tb.ID;
+                    //extenders.Add(editor);
                     res = tb;
                     break;
                 case FieldTypes.Bool:
@@ -334,7 +335,7 @@ namespace _min.Models
             else throw new Exception("FK Options already set");
         }
 
-        public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
+        public override UControl ToUControl(EventHandler handler = null)
         {
             WC.DropDownList res = new WC.DropDownList();
             res.ID = "Field" + fieldId;
@@ -419,7 +420,7 @@ namespace _min.Models
         }
 
 
-        public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
+        public override UControl ToUControl(EventHandler handler = null)
         {
             _min.Controls.M2NMappingControl res = new M2NMappingControl();
             res.ID = "Field" + fieldId;
@@ -484,7 +485,7 @@ namespace _min.Models
         }
 
 
-        public override UControl ToUControl(List<AjaxControlToolkit.ExtenderControlBase> extenders, EventHandler handler = null)
+        public override UControl ToUControl(EventHandler handler = null)
         {
             WC.DropDownList res = new WC.DropDownList();
             res.ID = "Field" + fieldId;
