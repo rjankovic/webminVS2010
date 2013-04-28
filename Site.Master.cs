@@ -192,7 +192,7 @@ namespace _min
                     
                     NavigationMenu.Items.Add(accountItem);
                 }
-
+                NavigationMenu.RenderingMode = MenuRenderingMode.Table;
             }
 
         }

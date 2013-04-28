@@ -112,13 +112,13 @@ namespace _min.Architect {
         protected global::System.Web.UI.WebControls.Label Label4;
         
         /// <summary>
-        /// allowedActions control.
+        /// actions control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBoxList allowedActions;
+        protected global::_min.Controls.M2NMappingControl actions;
         
         /// <summary>
         /// saveButton control.

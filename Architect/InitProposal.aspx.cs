@@ -26,6 +26,9 @@ namespace _min.Architect
         {
             mm = (MinMaster)Master;
             _min.Common.Environment.GlobalState = GlobalState.Architect;
+
+            mm.SysDriver.ClearProposal();
+
             if (!Page.IsPostBack)
             {
                 InitProposalWizard.ActiveStepIndex = 0;
@@ -96,9 +99,12 @@ namespace _min.Architect
                         string tableName = allTables[i++];
                         while(PKless.Contains(tableName)) tableName = allTables[i++];
 
+                        // we shall keep preferences only for the included tables 
+                        // (and that is a subset of tables with a PK)
                         if (!((CheckBox)(gr.FindControl("DirectEditCheck"))).Checked)
                             excludedTables.Add(tableName);
-                        displayColumnPreferences[tableName] = ((DropDownList)(gr.FindControl("DisplayColumnDrop"))).SelectedValue;
+                        else
+                            displayColumnPreferences[tableName] = ((DropDownList)(gr.FindControl("DisplayColumnDrop"))).SelectedValue;
                     }
                     PKless = (List<string>)Session["PKless"];
                     foreach (string Pkl in PKless) {

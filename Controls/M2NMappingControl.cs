@@ -92,6 +92,7 @@ namespace _min.Controls
 
         public List<string> RetrieveStringData() {
             string results = Page.Request.Form[inList.UniqueID];
+            if (results == null) return new List<string>();
             return new List<string>(results.Split(','));
         }
 

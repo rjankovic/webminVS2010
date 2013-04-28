@@ -2,6 +2,7 @@
 All the M2NMapping Fields (which have their ID set to one with the suffix of "_M2NIN"and "_M2NOUT" upon render) will, after a double-click on one of thier items,
 transfer this item to the other select box in the pair. The "IN" items must be selected upon form submittion so that their values can be retrieved from the form
 using Reques(Form[...]).
+Also calls datepicker and text editor extenders (for inputs identified by a class).
 */
 
 $(function () {

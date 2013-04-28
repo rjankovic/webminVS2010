@@ -56,20 +56,31 @@ namespace _min.Architect
             DisplayCols.SetOptions(colNames);
             DisplayCols.SetIncludedOptions(control.displayColumns);
             
-            string[] possibleAcitons = { UserAction.Insert.ToString(), UserAction.View.ToString(), 
-                                           UserAction.Delete.ToString() };
-            AllowedActions.DataSource = possibleAcitons;
-            AllowedActions.DataBind();
-            List<UserAction> originalActions = (control is NavTableControl) ? 
-                ((NavTableControl)control).actions : ((TreeControl)control).actions;
+            List<string> possibleAcitons = new List<string>(new string[] { UserAction.Insert.ToString(), UserAction.View.ToString(), 
+                                           UserAction.Delete.ToString() });
+            List<UserAction> originalActions = new List<UserAction>();
+            if (control is NavTableControl) { 
+                foreach(UserAction ua in ((NavTableControl)control).actions)
+                    originalActions.Add(ua);
+            }
+            else{
+                foreach(UserAction ua in ((TreeControl)control).actions)
+                    originalActions.Add(ua);
+            }
+            
+
             foreach(_min.Models.Control simpleControl in actPanel.controls){
                 if(simpleControl == control) continue;
                 originalActions.Add(simpleControl.action);
             }
-            foreach (ListItem item in AllowedActions.Items) { 
-                if(originalActions.Contains((UserAction)Enum.Parse(typeof(UserAction), item.Text))) 
-                    item.Selected = true;
-            }
+
+            List<string> originalActionStrings = new List<string>();
+            foreach (UserAction a in originalActions) 
+                originalActionStrings.Add(a.ToString());
+
+            actionsControl.SetOptions(possibleAcitons);
+            actionsControl.SetIncludedOptions(originalActionStrings);
+            
 
             hierarchy = mm.Stats.SelfRefFKs().Find(x => x.myTable == actPanel.tableName);
             string[] CTypeOptions = hierarchy == null ? new string[] {"Navigation Table"} : 
@@ -91,8 +102,8 @@ namespace _min.Architect
             string panelName = PanelName.Text;
             List<string> displayCols = DisplayCols.RetrieveStringData();
             List<UserAction> actions = new List<UserAction>();
-            foreach(ListItem item in AllowedActions.Items){
-                if(item.Selected) actions.Add((UserAction)Enum.Parse(typeof(UserAction), item.Text));
+            foreach(string s in actionsControl.RetrieveStringData()){
+                actions.Add((UserAction)Enum.Parse(typeof(UserAction), s));
             }
 
             ValidationResult.Items.Clear();
@@ -153,11 +164,10 @@ namespace _min.Architect
 
                 mm.SysDriver.BeginTransaction();
                 mm.SysDriver.UpdatePanel(actPanel);
-                Session.Clear();
                 mm.SysDriver.CommitTransaction();
                 mm.SysDriver.IncreaseVersionNumber();
                 ValidationResult.Items.Add("Saved");
-                
+                Response.Redirect(Page.Request.RawUrl);
             }
 
         }

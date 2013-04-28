@@ -82,13 +82,13 @@ namespace _min.Controls
             this.Controls.Add(radios);
         }
 
-        private void AddSubtreeForItem(DataRow row, WC.TreeNode item)
+        private void AddSubtreeForItem(HierarchyRow row, WC.TreeNode item)
         {
-            DataRow[] children = row.GetChildRows("Hierarchy");
+            HierarchyRow[] children = row.GetHierarchyChildRows("Hierarchy");
             WC.TreeNode childItem;
-            foreach (DataRow child in children)
+            foreach (HierarchyRow child in children)
             {
-                childItem = new WC.TreeNode(child["Caption"].ToString(), child["NavId"].ToString());
+                childItem = new WC.TreeNode((child.Caption ?? "NULL"), child["NavId"].ToString());
                 item.ChildNodes.Add(childItem);
                 AddSubtreeForItem(child, childItem);
             }

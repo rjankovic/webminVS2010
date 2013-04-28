@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Data;
 using _min.Interfaces;
+using CE = _min.Common.Environment;
+using CC = _min.Common.Constants;
 
 namespace _min.Models
 {
@@ -250,7 +252,7 @@ namespace _min.Models
                         foreach (DataRow r in rows)
                             c.data.Rows.Add(r);
                     }
-                    if (c.panel.type == Common.PanelTypes.NavTree && c.data is DataTable)
+                    else if (c is TreeControl)
                     {
                         c.data.DataSet.EnforceConstraints = false;
                         c.data.Rows.Clear();
@@ -328,6 +330,7 @@ namespace _min.Models
             
             List<string> toSelect = ntc.displayColumns.Union(ntc.PKColNames).ToList();
             List<IDbCol> specSelect = new List<IDbCol>();
+            List<IDbCol> prefixedKeys = new List<IDbCol>();
             List<string> neededTables = new List<string>();
             // different FKs to the same table - JOIN colision prevention by giving each table an alias
             Dictionary<string, int> countingForeignTableUse = new Dictionary<string, int>();
@@ -350,12 +353,19 @@ namespace _min.Models
                         specSelect.Add(dbe.Col(correspondingFK.refTable + Common.Constants.SALT + countingForeignTableUse[correspondingFK.refTable],
                             correspondingFK.displayColumn, col));
                     }
+
+                    // we must provide the real column value (its a part of the PK) in another column
+                    if (ntc.PKColNames.Contains(col) && correspondingFK is FK) { 
+                        prefixedKeys.Add(dbe.Col(ntc.panel.tableName, col, CC.TABLE_COLUMN_REAL_VALUE_PREFIX + col));
+                    }
                 }
                 else
                 {       // no FK, just use the original column name
                     specSelect.Add(dbe.Col(ntc.panel.tableName, col, col));
                 }
             }
+
+            specSelect.AddRange(prefixedKeys);
 
             FetchMethod fetchAccordingly;       // so that we can use the same fetch-code for both Architect and Admin mode
             if (schemaOnly)
@@ -413,12 +423,15 @@ namespace _min.Models
                 ID = LastId();      // TODO safe? Does transaction ensure insert separation?
                 CommitTransaction();
             }
-            catch (ConstraintException ce) {
+            catch (MySql.Data.MySqlClient.MySqlException mye) {
                 // Can occur, if there is a unique Key on multiple columns - such constraint cannot be set in panel management
                 // (very rare indeed). The exception is attached a user-friendly comment and bubbles to the Show.cs, where
                 // it will be displayed as a standard validation error (but probably with a notable delay).
-                RollbackTransaction();
-                throw new ConstraintException(FriendlyConstraintException(ce.Message, panel), null);
+                
+                // will already be out of transaction - BaseDriver closes it immediately
+                //if(IsInTransaction)
+                //    RollbackTransaction();
+                throw new ConstraintException(FriendlyConstraintException(mye.Message, panel), null);
             }
             foreach (Field f in panel.fields) {
                 if (f is M2NMappingField)
@@ -485,8 +498,9 @@ namespace _min.Models
             DataRow actualRow = fetch("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
             if (actualRow == null) throw new WebDriverDataModificationException(
                 "The record could not be found. It may have been removed in the meantime.");
+            //if(!DataRowComparer.Equals(actualRow, panel.OriginalData))
             foreach(DataColumn col in actualRow.Table.Columns){
-                if(actualRow[col.ColumnName] != panel.OriginalData[col.ColumnName])
+                if((actualRow[col.ColumnName]).ToString() != (panel.OriginalData[col.ColumnName]).ToString())   // did not match equal rows otherways
                     throw new WebDriverDataModificationException(
                         "The record has been modified since loaded."
                     + " Please save your data elsewhere and check for the new values.");

@@ -55,6 +55,7 @@ namespace _min.Architect
             mm.SysDriver.CommitTransaction();
             //tc.storedHierarchyData.ChildRelations.Add("Hierarchy",
             //    tc.storedHierarchyData.Columns["Id"], tc.storedHierarchyData.Columns["ParentId"], false);
+            mm.SysDriver.IncreaseVersionNumber();
             Response.RedirectToRoute("ArchitectShowRoute", new { projectName = Page.RouteData.Values["projectName"] });
         }
 

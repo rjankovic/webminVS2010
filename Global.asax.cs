@@ -53,12 +53,12 @@ namespace _min
 
 
             RouteTable.Routes.MapPageRoute("LockoutRoute", "lockout/{message}", "~/Error/Lockout.aspx");
+
         }
 
         void Application_End(object sender, EventArgs e)
         {
             //  Code that runs on application shutdown
-
         }
 
         void Application_Error(object sender, EventArgs e)

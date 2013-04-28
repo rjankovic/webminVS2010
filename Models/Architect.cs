@@ -128,10 +128,11 @@ namespace _min.Models
             
             List<Control> controls = new List<Control>();
 
-            // no delete (?)
+            // all the controls
             controls.Add(new Control(0, UserAction.Insert.ToString(), UserAction.Insert));
             controls.Add(new Control(0, UserAction.Update.ToString(), UserAction.Update));
-            
+            controls.Add(new Control(0, UserAction.Update.ToString(), UserAction.Delete));
+
             List<Control> controlsAsControl = new List<Control>(controls);
 
             Panel res = new Panel(tableName, 0, PanelTypes.Editable,

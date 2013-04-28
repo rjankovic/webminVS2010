@@ -3,8 +3,7 @@
 <%@ Register assembly="_min_t7" namespace="_min.Controls" tagprefix="cc1" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
-        <script src="/Scripts/jquery-1.4.1.min.js" type="text/javascript"></script>
-        <script src="/Scripts/M2NShift.js?<%=DateTime.Now.Ticks.ToString()%>" type="text/javascript"></script>
+        <script src="/Scripts/globalUI.js?<%=DateTime.Now.Ticks.ToString()%>" type="text/javascript"></script>
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 <asp:ScriptManager ID="ScriptManager1" runat="server">
@@ -19,8 +18,7 @@
         </asp:RadioButtonList>
         <asp:Label ID="UserActions" runat="server" 
             Text="Allowed user actions - delete does not apply for Navigation Trees"></asp:Label>
-        <asp:CheckBoxList ID="AllowedActions" runat="server">
-        </asp:CheckBoxList>
+        <cc1:M2NMappingControl ID="actionsControl" runat="server" />
         <asp:Button ID="SaveButton" runat="server" onclick="SaveButton_Click" 
             Text="Save" />
         <asp:LinkButton ID="BackButton" runat="server">Back</asp:LinkButton>

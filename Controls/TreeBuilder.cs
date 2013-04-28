@@ -245,6 +245,14 @@ namespace _min.Controls
             HierarchyRow toRemove = menuHierarchy.Find(Int32.Parse(menuTree.SelectedValue));
             hierarchyDataset.Relations["Hierarchy"].ChildKeyConstraint.DeleteRule = Rule.Cascade;
             menuHierarchy.Rows.Remove(toRemove);
+
+            // the cascading constraint deletes all the child rows of the deleted row, but that only sets them to "Deleted",
+            // they remain in the table (http://msmvps.com/blogs/williamryan/archive/2005/05/10/46445.aspx).
+            List<HierarchyRow> deletedRows = (from HierarchyRow r in menuHierarchy.Rows where r.RowState == DataRowState.Deleted select r)
+                .ToList<HierarchyRow>();
+            foreach (HierarchyRow r in deletedRows)
+                menuHierarchy.Rows.Remove(r);
+
             RecreateChildControls();
         }
 

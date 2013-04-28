@@ -341,15 +341,14 @@ namespace _min.Models
                 updateVals["id_parent"] = panel.parent.panelId;
             updateVals["content"] = panel.Serialize();
              
-                query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
-                foreach (Control c in panel.controls)
-                    RemoveControl(c);
-            
+            query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
+
+            query("DELETE FROM `fields` WHERE `id_panel` = ", panel.panelId);
             foreach (Field field in panel.fields)
             {
                 AddField(field);
             }
-            query("DELETE FROM controls WHERE id_panel = ", panel.panelId);
+            query("DELETE FROM `controls` WHERE `id_panel` = ", panel.panelId);
             foreach (Control control in panel.controls)
             {
                 AddControl(control);
@@ -615,6 +614,7 @@ namespace _min.Models
 
         public void ClearProposal() {
             query("DELETE FROM panels WHERE id_project = ", CE.project.Id);
+
         }
 
         public void ProcessLogTable() {
@@ -695,11 +695,11 @@ namespace _min.Models
         public void UserMenuOptions(int user, out List<string> adminOf, out List<string> architectOf) { 
             FK access_project = new FK("access_rights", "id_project", "projects", "id_project", null);
             DataTable admin = fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM `access_rights` ",
-                dbe.Join(access_project), "WHERE", dbe.Col("access_rights", "access", null), " % 100 >= 10");
+                dbe.Join(access_project), "WHERE `id_user` = ", user, " AND " , dbe.Col("access_rights", "access", null), " % 100 >= 10");
             adminOf = (from DataRow r in admin.Rows select r[0] as string).ToList<string>();
             
             DataTable architect = fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM `access_rights` ",
-                dbe.Join(access_project), "WHERE", dbe.Col("access_rights", "access", null), " % 1000 >= 100");
+                dbe.Join(access_project), "WHERE `id_user` = ", user, " AND ", dbe.Col("access_rights", "access", null), " % 1000 >= 100");
             architectOf = (from DataRow r in architect.Rows select r[0] as string).ToList<string>();
         }
 

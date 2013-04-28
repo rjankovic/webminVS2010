@@ -15,6 +15,7 @@ using UControl = System.Web.UI.Control;
 using WC = System.Web.UI.WebControls;
 using System.Web.UI.WebControls;
 using CE = _min.Common.Environment;
+using CC = _min.Common.Constants;
 
 namespace _min.Models
 {
@@ -192,7 +193,22 @@ namespace _min.Models
         {
             // take care of all the dependant controls as well
             WC.GridView grid = new WC.GridView();
-            grid.DataKeyNames = PKColNames.ToArray();
+            
+            
+            string[] DataKeyNames = PKColNames.ToArray();
+            
+            // one of our datakeys may have been a FK and its value is now the representative field of the
+            // foreign table, not our key, but in such cases the key will be stored in a prefixed column.
+            for (int i = 0; i < DataKeyNames.Length; i++) {
+                FK fk = FKs.Where(x => x.myColumn == DataKeyNames[i]).FirstOrDefault();
+                if (fk is FK) {
+                    DataKeyNames[i] = CC.TABLE_COLUMN_REAL_VALUE_PREFIX + DataKeyNames[i];
+                }
+            }
+
+
+            grid.DataKeyNames = DataKeyNames;
+            
 
             grid.AutoGenerateColumns = false;
 
@@ -213,7 +229,8 @@ namespace _min.Models
                 grid.Columns.Add(bf);
             }
             // must contain the whole PK even if it is not displayed - for the navigator
-            foreach (string col in PKColNames)
+            // DataKeyNames are the real ones - including "_" prefixing
+            foreach (string col in DataKeyNames)
             {
                 if (displayColumns.Contains(col)) continue;
                 WC.BoundField bf = new WC.BoundField();
@@ -326,11 +343,15 @@ namespace _min.Models
             this.data = data;
         }
 
+
+        // when creating the main project menu, the control is passed a MenuHandler 
+        // instead of Event handler and is created specially for this puropose
         public void ToUControl(UControl container, WC.MenuEventHandler handler, string navigateUrl = null)
         {
             if(panel.type != PanelTypes.MenuDrop) throw new ArgumentException(
                 "MenuEventHandler can operate only on a Menu - within a MenuDrop panel");
             WC.Menu res = new _min.Controls.CssMenu();
+            res.RenderingMode = MenuRenderingMode.Table;
             //res.CssClass = "inMenu";
             res.StaticEnableDefaultPopOutImage = false;
             res.DynamicEnableDefaultPopOutImage = false;
@@ -339,7 +360,7 @@ namespace _min.Models
             WC.MenuItem item;
             foreach (HierarchyRow r in storedHierarchyData.Rows)
             {
-                if (r.ParentId == null)
+                if (r.ParentId == null) // root nodes first
                 {
                     item = new WC.MenuItem(r.Caption, null, null,  "/" +
                         ((CE.GlobalState == GlobalState.Administer) ? "admin/" : "architect/show/") +
@@ -362,6 +383,7 @@ namespace _min.Models
 
         public override void ToUControl(UControl container, WC.CommandEventHandler handler, string navigateUrl = null)
         {
+            // see Controls
             TreeNavigatorControl tn = new TreeNavigatorControl(storedHierarchyData, actions);
             tn.ActionChosen += handler;
             container.Controls.Add(tn);

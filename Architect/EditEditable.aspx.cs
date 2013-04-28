@@ -50,6 +50,16 @@ namespace _min.Architect
             string[] FKtype = new string[] { FieldTypes.FK.ToString() };
             string[] mappingType = new string[] { FieldTypes.M2NMapping.ToString() };
             string[] validationRules = Enum.GetNames(typeof(ValidationRules));
+            
+            // replace required with empty field and push it to the top
+            for (int i = 0; i < validationRules.Length; i++) {
+                if (validationRules[i] == ValidationRules.Required.ToString())
+                {
+                    validationRules[i] = validationRules[0];
+                    validationRules[i] = "";
+                    break;
+                }
+            }
             // a  FKField can be only required - let referential integrity take care of the rest
             string[] requiredRule = new string[] { Enum.GetName(typeof(ValidationRules), ValidationRules.Required) };
             FKs = mm.Stats.FKs[actPanel.tableName];
@@ -118,20 +128,40 @@ namespace _min.Architect
 
                 //...the validation rules...
                 TableCell validCell = new TableCell();
-                CheckBoxList vcbl = new CheckBoxList();
-                if (fk == null)
-                    vcbl.DataSource = validationRules;
-                else
-                    vcbl.DataSource = requiredRule;
-                vcbl.DataBind();
-                validCell.Controls.Add(vcbl);
-                r.Cells.Add(validCell);
 
-                if (f != null) {
-                    foreach (ValidationRules rule in f.validationRules) {
-                        vcbl.Items.FindByText(rule.ToString()).Selected = true;
+                CheckBox requiredCb = new CheckBox();
+                Label requiredlabel = new Label();
+                requiredlabel.Text = "required ";
+                requiredCb.Checked = f is Field && f.validationRules.Contains(ValidationRules.Required);
+
+                DropDownList vddl = new DropDownList();
+                vddl.DataSource = validationRules;
+                vddl.DataBind();
+                if (fk == null)
+                    vddl.DataSource = validationRules;
+                else
+                    vddl.DataSource = requiredRule;
+                validCell.Controls.Add(requiredlabel);
+                validCell.Controls.Add(requiredCb);
+                
+                if (fk == null)
+                    validCell.Controls.Add(vddl);
+
+
+                if (f != null)
+                {
+                    foreach (ValidationRules rule in f.validationRules)
+                    {
+                        if (rule == ValidationRules.Required) continue;
+                        else
+                        {
+                            vddl.Items.FindByText(rule.ToString()).Selected = true;
+                            break;
+                        }
                     }
                 }
+
+                r.Cells.Add(validCell);
 
                 //...and the caption
                 TableCell captionCell = new TableCell();
@@ -207,10 +237,8 @@ namespace _min.Architect
             List<string> activeActions = (from _min.Models.Control control in actPanel.controls 
                                           select Enum.GetName(typeof(UserAction), control.action)).ToList<string>();
 
-            allowedActions.DataSource = actionTypes;
-            allowedActions.DataBind();
-            foreach (ListItem item in allowedActions.Items)
-                item.Selected = activeActions.Contains(item.Value);
+            actions.SetOptions(new List<string>(actionTypes));
+            actions.SetIncludedOptions(activeActions);
             
             
             backButton.PostBackUrl = backButton.GetRouteUrl("ArchitectShowRoute", new { projectName = mm.ProjectName });
@@ -238,13 +266,14 @@ namespace _min.Architect
                 // cell 3 is for FK display column dropList
 
                 List<ValidationRules> rules = new List<ValidationRules>();
-                CheckBoxList checkBoxList = (CheckBoxList)r.Cells[4].Controls[0];
-                foreach (ListItem item in checkBoxList.Items)
-                {
-                    if (item.Selected)
-                        rules.Add((ValidationRules)Enum.Parse(typeof(ValidationRules), item.Value));
+                CheckBox reqChb = (CheckBox)r.Cells[4].Controls[1];
+                if(reqChb.Checked) rules.Add(ValidationRules.Required);
+                if(r.Cells[4].Controls.Count == 3){
+                    DropDownList ddl = (DropDownList)r.Cells[4].Controls[2];
+                    if(ddl.SelectedValue != "")
+                        rules.Add((ValidationRules)Enum.Parse(typeof(ValidationRules), ddl.SelectedValue));
                 }
-
+                
                 string caption = ((TextBox)r.Cells[5].Controls[0]).Text;
                 if (caption == "") caption = null;
 
@@ -292,27 +321,31 @@ namespace _min.Architect
 
             // crate a control for each checked action
             List<_min.Models.Control> controls = new List<_min.Models.Control>();           // controls
-            
-            foreach (ListItem item in allowedActions.Items)
+
+            bool valid = true;
+            List<string> errorMsgs = new List<string>();
+            if (actions.RetrieveStringData().Count == 0) {
+                valid = false;
+                errorMsgs.Add("Choose at least one action for the panel, please.");
+            }
+
+            foreach (string actionString in actions.RetrieveStringData())
             {
-                if (item.Selected)
-                {
-                    _min.Models.Control c = new _min.Models.Control(0, item.Value,
-                        (UserAction)Enum.Parse(typeof(UserAction), item.Value));
+                    _min.Models.Control c = new _min.Models.Control(0, actionString,
+                        (UserAction)Enum.Parse(typeof(UserAction), actionString));
                     c.targetPanel = actPanel.controls[0].targetPanel;
                     
                     c.targetPanelId = actPanel.controls[0].targetPanelId;   // bad...really
                     
                     controls.Add(c);
-                }
             }
 
             MPanel resPanel = new MPanel(actPanel.tableName, actPanel.panelId, PanelTypes.Editable, new List<MPanel>(),
                 fields, controls, actPanel.PKColNames, null, actPanel.parent);
             resPanel.panelName = panelName.Text;
 
-            List<string> errorMsgs;
-            bool valid = mm.Architect.checkPanelProposal(resPanel, out errorMsgs);
+            
+            valid = valid && mm.Architect.checkPanelProposal(resPanel, out errorMsgs);
             
             // validate the Panel using Architect`s validator - don`t edit PKs, unique columns must have the constraint, must contain all collumns except Nullable
             // and AI and more rules
@@ -329,6 +362,7 @@ namespace _min.Architect
                 mm.SysDriver.CommitTransaction();
                 
                 validationResult.Items.Add(new ListItem("Saved"));
+                Response.Redirect(Page.Request.RawUrl);
             }
             else
             {

@@ -65,7 +65,16 @@ namespace _min.Shared
                 else
                 {
                     noSessionForActPanel = true;
+                    Session[CC.SESSION_ACTIVE_PANEL] = null;
                     activePanel = mm.SysDriver.Panels[Int32.Parse(Page.RouteData.Values["panelId"].ToString())];
+                }
+
+                if (activePanel.isBaseNavPanel)
+                {
+                    Response.RedirectToRoute(
+                        CE.GlobalState == GlobalState.Architect ? "ArchitectShowRoute" : "AdministerBrowseRoute",
+                        new { projectName = CE.project.Name });
+                    return;
                 }
 
                 // panels is focused to a certain item (row in table)
@@ -175,6 +184,13 @@ namespace _min.Shared
                         heading.Controls.Add(editNavLink);
                     }
                 }
+
+                LinkButton reproposeLink = new LinkButton();
+                reproposeLink.CausesValidation = false;
+                reproposeLink.Click += Repropose_Click;
+                reproposeLink.Text = "Repropose";
+                reproposeLink.OnClientClick = "return confirm('Think twice')";
+                heading.Controls.Add(reproposeLink);
             }
 
             heading.CssClass = "panelHeading";
@@ -192,8 +208,10 @@ namespace _min.Shared
         void CreateWebControlsForPanel(MPanel activePanel, System.Web.UI.WebControls.Panel containerPanel)
         {
             List<BaseValidator> validators = new List<BaseValidator>();
-            
-            
+
+            validationSummary = new ValidationSummary();
+            validationSummary.BorderWidth = 0;
+            MainPanel.Controls.Add(validationSummary);
             
             // no data in active panel => have to fill it
             if (!Page.IsPostBack || noSessionForActPanel)
@@ -309,10 +327,6 @@ namespace _min.Shared
                 MainPanel.Controls.Add(validator);
             }
 
-            validationSummary = new ValidationSummary();
-            validationSummary.BorderWidth = 1;
-            MainPanel.Controls.Add(validationSummary);
-
 
             // set the webcontrols from the stored value (initially null)
             foreach (Field f in activePanel.fields)
@@ -345,6 +359,22 @@ namespace _min.Shared
 
         }
 
+        protected void Page_LoadComplete(object sender, EventArgs e) {
+            Session[CC.SESSION_ACTIVE_PANEL] = activePanel;
+        }
+
+
+        private bool ServerValidate(MPanel panel) {
+            bool valid = true;
+            foreach (Field f in panel.fields) {
+                List<string> errors = f.Validate();
+                foreach (string s in errors) {
+                    valid = false;
+                    _min.Common.ValidationError.Display(s, Page);
+                }
+            }
+            return valid;
+        }
 
         private void UserActionCommandHandler(object sender, CommandEventArgs e)
         {
@@ -365,10 +395,14 @@ namespace _min.Shared
                         case UserAction.Insert:
                             if (activePanel.type != PanelTypes.Editable)        // insert button under NavTable, should be handled differently
                                 break;
-                            mm.WebDriver.InsertIntoPanel(activePanel);
+                            if (ServerValidate(activePanel))
+                                mm.WebDriver.InsertIntoPanel(activePanel);
+                            else valid = false;
                             break;
                         case UserAction.Update:
-                            mm.WebDriver.UpdatePanel(activePanel);
+                            if (ServerValidate(activePanel))
+                                mm.WebDriver.UpdatePanel(activePanel);
+                            else valid = false;
                             break;
                         case UserAction.Delete:
                             mm.WebDriver.DeleteFromPanel(activePanel);
@@ -426,7 +460,10 @@ namespace _min.Shared
                 activePanel.PK = r;
                 mm.WebDriver.DeleteFromPanel(activePanel);
                 activePanel.PK = null;
-                
+
+                // so that the GridView will get refreshed
+                Session[CC.SESSION_ACTIVE_PANEL] = null;
+                Response.Redirect(Request.RawUrl);
             }
         }
 
@@ -463,8 +500,11 @@ namespace _min.Shared
             DataView dataView = gv.DataSource as DataView;
             
             string columnName = e.SortExpression;
+            // colIndex is the index of the visible column that was clicked
             int colIndex = dataView.Table.Columns[columnName].Ordinal + 1;
-
+            // in addition, the view can have more columns than the displayed, 
+            // but they were positioned at the end of the view table
+            
 
             string currentSort = ViewState["currentGridViewSort"] as string;
             string se = e.SortExpression + " ASC";
@@ -478,8 +518,10 @@ namespace _min.Shared
 
             foreach (TableCell hc in gv.HeaderRow.Cells)
             {
-                if (hc.Text == "") continue;
-                hc.Text = hc.Text.Substring(0, hc.Text.Length - 3) + "[-]";
+                if (hc.Controls.Count == 0) continue;
+                LinkButton lb = hc.Controls[0] as LinkButton;
+                if (lb == null) continue;
+                lb.Text = lb.Text.Substring(0, lb.Text.Length - 3) + "[-]";
             }
 
             if (se.EndsWith("DESC"))
@@ -490,6 +532,10 @@ namespace _min.Shared
             {
                 ((LinkButton)(gv.HeaderRow.Cells[colIndex].Controls[0])).Text = columnName + " [&#x25B2;]";
             }
+        }
+
+        protected void Repropose_Click(object sender, EventArgs e) {
+            Response.RedirectToRoute("ArchitectInitRoute", new { projectName = CE.project.Name });
         }
     }
 }

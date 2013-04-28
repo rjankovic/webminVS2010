@@ -40,7 +40,7 @@
                 </asp:LoginView>
             </div>
             -->
-                <cc1:CssMenu ID="NavigationMenu" runat="server" CssClass="menu" 
+                <cc1:CssMenu ID="NavigationMenu" runat="server" CssClass="menu"
                     EnableViewState="true" IncludeStyleBlock="false" Orientation="Horizontal">
                     <Items>
                     </Items>

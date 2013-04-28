@@ -101,6 +101,8 @@ namespace _min.Common
         public const string SESSION_ARCHITECTURE_VERSION = "ArchitectureVersion";
         public const string SESSION_ACTIVE_PANEL = "ActivePanel";
 
+        public const string TABLE_COLUMN_REAL_VALUE_PREFIX = "__";
+
 
     }
 

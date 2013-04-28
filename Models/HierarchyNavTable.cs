@@ -114,8 +114,20 @@ namespace _min.Models
 
         public string Caption
         {
-            get { return (string)base["Caption"]; }
-            set { base["Caption"] = value; }
+            // nulls can occur if the user chooses a nullable column as the top representative in EditNav
+            // (which would be foolish); are hand
+            get {
+                if (base["Caption"] == DBNull.Value)
+                    return null;
+                else
+                    return (string)base["Caption"]; 
+            }
+            set {
+                if (value == null)
+                    base["Caption"] = DBNull.Value;
+                else
+                    base["Caption"] = value; 
+            }
         }
 
         internal HierarchyRow(DataRowBuilder builder)

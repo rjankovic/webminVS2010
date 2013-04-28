@@ -121,17 +121,19 @@ namespace _min.Models
         /// </summary>
         /// <param name="pref">user display preferences</param>
         public void SetDisplayPreferences(Dictionary<string, string> pref) {
-            /*
+            
             if (columnsToDisplay == null)
                 FindColumnsToDisplay();
             foreach (string tblName in pref.Keys) {
                 if (columnsToDisplay[tblName][0] != pref[tblName]) {
                     string top = columnsToDisplay[tblName][0];
+                    // automatically proposed top of display order will now be at the position where the new
+                    // top (given by the user preference) used to be - simpy swap
                     columnsToDisplay[tblName][columnsToDisplay[tblName].FindIndex(x => x == pref[tblName])] = top;
                     columnsToDisplay[tblName][0] = pref[tblName];
                 }
             }
-             */ 
+             
         }
 
         /// <summary>
@@ -313,8 +315,8 @@ namespace _min.Models
         /// </summary>
         /// <returns>list of the tables</returns>
         public List<string> TablesMissingPK() {
-            DataTable stats = fetchAll("SELECT L.TABLE_NAME FROM (SELECT TABLE_NAME FROM KEY_COLUMN_USAGE WHERE TABLE_SCHEMA =  '"
-                + webDb + "' GROUP BY TABLE_NAME) AS L LEFT JOIN (SELECT TABLE_NAME FROM KEY_COLUMN_USAGE WHERE TABLE_SCHEMA =  '"
+            DataTable stats = fetchAll("SELECT L.TABLE_NAME FROM (SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA =  '"
+                + webDb + "' AND TABLE_TYPE = 'BASE TABLE') AS L LEFT JOIN (SELECT TABLE_NAME FROM KEY_COLUMN_USAGE WHERE TABLE_SCHEMA =  '"
                 + webDb + "' AND CONSTRAINT_NAME =  'PRIMARY' GROUP BY TABLE_NAME) AS R USING ( TABLE_NAME ) WHERE R.TABLE_NAME IS NULL");
             return new List<string>(from row in stats.AsEnumerable() select row["TABLE_NAME"] as string);
         }
@@ -324,7 +326,7 @@ namespace _min.Models
         /// </summary>
         /// <returns></returns>
         public List<string> TableList() {
-            DataTable tab = fetchAll("SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA = '" + webDb + "' AND TABLE_TYPE = \"BASE TABLE\" ORDER BY CREATE_TIME");
+            DataTable tab = fetchAll("SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA = '" + webDb + "' AND TABLE_TYPE = \"BASE TABLE\" ORDER BY TABLE_NAME");
             return new List<string>(from row in tab.AsEnumerable() select row["TABLE_NAME"] as string);
         }
 

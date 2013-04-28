@@ -5,6 +5,7 @@ using System.Text;
 using System.Data;
 using System.Runtime.Serialization;
 using System.IO;
+using System.Text.RegularExpressions;
 
 using _min.Interfaces;
 using _min.Common;
@@ -267,6 +268,38 @@ namespace _min.Models
                         regexVal2.ErrorMessage = this.caption + " must be a decimal number";
                         regexVal2.Display = WC.ValidatorDisplay.None;
                         res.Add(regexVal2);
+                        break;
+                    case ValidationRules.Unique:
+                        // will be ensured during Webdriver insert / update
+                        break;
+                    default:
+                        break;
+                }
+            }
+            return res;
+        }
+
+        // does server-side validation (which is neccessary with mono)
+        public virtual List<string> Validate()
+        {
+            List<string> res = new List<string>();
+            UControl fieldControl = myControl;
+
+            foreach (ValidationRules rule in validationRules)
+            {
+                switch (rule)
+                {
+                    case ValidationRules.Required:
+                        if(value == null || String.IsNullOrEmpty(value.ToString()))
+                            res.Add(this.caption + " is required");
+                        break;
+                    case ValidationRules.Ordinal:
+                        if (!(value == null || String.IsNullOrEmpty(value.ToString())) && !Regex.IsMatch(value as string, "[0-9]+"))
+                            res.Add(this.caption + " must be an integer");
+                        break;
+                    case ValidationRules.Decimal:
+                        if (!(value == null || String.IsNullOrEmpty(value.ToString())) && !Regex.IsMatch(value as string, "[0-9]+([.,][0-9]+)?"))
+                            res.Add(this.caption + " must be a decimal number");
                         break;
                     case ValidationRules.Unique:
                         // will be ensured during Webdriver insert / update

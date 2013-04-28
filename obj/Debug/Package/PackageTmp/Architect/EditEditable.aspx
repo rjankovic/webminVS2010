@@ -1,7 +1,11 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="EditEditable.aspx.cs" Inherits="_min.Architect.EditEditable" %>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="EditEditable.aspx.cs" Inherits="_min.Architect.EditEditable"
+ EnableEventValidation="false" %>
 <%@ MasterType  virtualPath="~/Site.master"%>
 
+<%@ Register assembly="_min_t7" namespace="_min.Controls" tagprefix="cc1" %>
+
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
+        <script src="/Scripts/globalUI.js?<%=DateTime.Now.Ticks.ToString()%>" type="text/javascript"></script>
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 <asp:ScriptManager ID="ScriptManager1" runat="server">
@@ -33,8 +37,7 @@
         </asp:Table>
         <asp:Label ID="Label5" runat="server" Text="Allowed actions"></asp:Label>
         <asp:Label ID="Label4" runat="server" Text=" "></asp:Label>
-        <asp:CheckBoxList ID="allowedActions" runat="server" Height="22px">
-        </asp:CheckBoxList>
+        <cc1:M2NMappingControl ID="actions" runat="server" />
         <asp:Button ID="saveButton" runat="server" onclick="SaveButton_Click" 
             Text="Save" />
         <asp:LinkButton ID="backButton" runat="server">Back</asp:LinkButton>
