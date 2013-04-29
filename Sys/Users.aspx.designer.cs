@@ -67,13 +67,58 @@ namespace _min.Sys {
         protected global::System.Web.UI.WebControls.Label Label1;
         
         /// <summary>
-        /// PermissionCheckboxList control.
+        /// AdministerCb control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBoxList PermissionCheckboxList;
+        protected global::System.Web.UI.WebControls.CheckBox AdministerCb;
+        
+        /// <summary>
+        /// AdministerLabel control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label AdministerLabel;
+        
+        /// <summary>
+        /// ArchitectCb control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox ArchitectCb;
+        
+        /// <summary>
+        /// ArchitectLable control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label ArchitectLable;
+        
+        /// <summary>
+        /// PermitCb control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox PermitCb;
+        
+        /// <summary>
+        /// PermitLabel control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label PermitLabel;
         
         /// <summary>
         /// PermissionsSubmit control.

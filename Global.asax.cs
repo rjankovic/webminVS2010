@@ -18,6 +18,7 @@ namespace _min
             RouteTable.Routes.MapPageRoute("DefaultRoute", "", "~/Default.aspx");
             
             RouteTable.Routes.MapPageRoute("AccountLoginRoute", "account/login", "~/Account/Login.aspx");
+            RouteTable.Routes.MapPageRoute("AccountLogoutRoute", "account/logout", "~/Account/Logout.aspx");
             RouteTable.Routes.MapPageRoute("AccountRegisterRoute", "account/register", "~/Account/Register.aspx");
             RouteTable.Routes.MapPageRoute("AccountChpswdRoute", "account/change-password", 
                 "~/Account/ChangePassword.aspx");

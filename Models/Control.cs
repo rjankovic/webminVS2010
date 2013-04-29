@@ -350,7 +350,7 @@ namespace _min.Models
         {
             if(panel.type != PanelTypes.MenuDrop) throw new ArgumentException(
                 "MenuEventHandler can operate only on a Menu - within a MenuDrop panel");
-            WC.Menu res = new _min.Controls.CssMenu();
+            WC.Menu res = new CssMenu();
             res.RenderingMode = MenuRenderingMode.Table;
             //res.CssClass = "inMenu";
             res.StaticEnableDefaultPopOutImage = false;

@@ -234,11 +234,10 @@ div.menu ul li ul li a:hover
 
 div.inMenu
 {
-    /*margin: 0 auto;*/
+    /* margin: 0 auto; */
     width: 100%;
     border-bottom: 1px solid #AAA;
 }
-
 
 
 div.inMenu ul li
@@ -288,7 +287,8 @@ div.inMenu ul li ul li:hover
     border-bottom: 1px solid #AAA;    
 }
 
-
+/* FORMS
+-----------------------------------------------------------------------------*/
 
 fieldset
 {
@@ -472,6 +472,11 @@ select
 {
     clear: both;
 }
+
+.noBullets
+{
+    list-style-type:none;
+    }
 
 .title
 {

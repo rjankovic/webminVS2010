@@ -86,11 +86,10 @@ namespace _min.Sys
                 permissions = sysDriver.GetUserRights(user, null);
             }
 
-            ListItemCollection lic = PermissionCheckboxList.Items;
-
-            lic[0].Selected = permissions % 100 / 10 == 1;      // 10 = administer
-            lic[1].Selected = permissions % 1000 / 100 == 1;    // 100 = architect
-            lic[2].Selected = permissions % 10000 / 1000 == 1;  // 1000 access rights
+            
+            AdministerCb.Checked = permissions % 100 / 10 == 1;      // 10 = administer
+            ArchitectCb.Checked = permissions % 1000 / 100 == 1;    // 100 = architect
+            PermitCb.Checked = permissions % 10000 / 1000 == 1;  // 1000 access rights
         }
 
         protected void PermissionsSubmit_Click(object sender, EventArgs e)
@@ -106,10 +105,9 @@ namespace _min.Sys
             if(project == 0) project = null;
 
             int permissions = 0;
-            ListItemCollection lic = PermissionCheckboxList.Items;
-            if (lic[0].Selected) permissions += 10;
-            if (lic[1].Selected) permissions += 100;
-            if (lic[2].Selected) permissions += 1000;
+            if (AdministerCb.Checked) permissions += 10;
+            if (ArchitectCb.Checked) permissions += 100;
+            if (PermitCb.Checked) permissions += 1000;
 
             sysDriver.SetUserRights(user, project, permissions);
         }

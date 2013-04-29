@@ -182,6 +182,7 @@ namespace _min
                     // account settings for logged in users
                     MenuItem accountItem = new MenuItem("Account", "account");
                     accountItem.ChildItems.Add(new MenuItem("Change password", null, null, "/account/change-password"));
+                    accountItem.ChildItems.Add(new MenuItem("Logout", null, null, "/account/logout"));
                     NavigationMenu.Items.Add(accountItem);
                 }
                 else {

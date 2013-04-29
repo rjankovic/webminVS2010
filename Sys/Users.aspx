@@ -16,11 +16,14 @@
             onselectedindexchanged="SomeSelect_SelectedIndexChanged" AutoPostBack="True">
             </asp:DropDownList>
             <asp:Label ID="Label1" runat="server" Text="is permitted to"></asp:Label>
-    <asp:CheckBoxList ID="PermissionCheckboxList" runat="server">
-        <asp:ListItem Value="10">Administer</asp:ListItem>
-        <asp:ListItem Value="100">Change architecture</asp:ListItem>
-        <asp:ListItem Value="1000">Manage permissions</asp:ListItem>
-    </asp:CheckBoxList>
+            <ul class="noBullets">
+            <li><asp:CheckBox ID="AdministerCb" runat="server" />
+            <asp:Label ID="AdministerLabel" runat="server" Text="Administer"></asp:Label>
+            </li><li><asp:CheckBox ID="ArchitectCb" runat="server" />
+            <asp:Label ID="ArchitectLable" runat="server" Text="Change architecture"></asp:Label>
+            </li><li><asp:CheckBox ID="PermitCb" runat="server" />
+            <asp:Label ID="PermitLabel" runat="server" Text="Manage User Permissions"></asp:Label>
+            </ul>
     <asp:Button ID="PermissionsSubmit" runat="server" Text="Save" 
         onclick="PermissionsSubmit_Click" />
         </ContentTemplate>
