@@ -9,6 +9,7 @@ using _min.Common;
 using _min.Models;
 using System.Text;
 
+using _min.Interfaces;
 using _min.Navigation;
 using CE = _min.Common.Environment;
 using CC = _min.Common.Constants;
@@ -218,9 +219,13 @@ namespace _min.Shared
             {
                 if (CE.GlobalState == GlobalState.Architect)
                 {
-                    mm.WebDriver.FillPanelFKOptionsArchitect(activePanel);
-                    if (activePanel.PK != null || activePanel.type != PanelTypes.Editable)
-                        mm.WebDriver.FillPanelArchitect(activePanel);
+                    foreach (IField field in activePanel.fields) {
+                        field.InventData();
+                    }
+                    foreach (_min.Models.Control c in activePanel.controls)
+                    {
+                        c.InventData();
+                    }
                 }
                 else
                 {
@@ -235,34 +240,7 @@ namespace _min.Shared
                             _min.Common.ValidationError.Display(me.Message, Page);
                         }
                 }
-                /*
-                if (activePanel.type == PanelTypes.NavTree
-                    || activePanel.type == PanelTypes.NavTable
-                    || Request.QueryString.Count > 0)
-                {
-                    if (CE.GlobalState == GlobalState.Architect)
-                    {
-                        webDriver.FillPanelFKOptionsArchitect(activePanel);
-                        webDriver.FillPanelArchitect(activePanel);
-                    }
-                    else if (CE.GlobalState == GlobalState.Administer)
-                    {
-                        webDriver.FillPanelFKOptions(activePanel);
-                        webDriver.FillPanel(activePanel);
-                    }
-                    else
-                    {
-                        // this basically cannot happen
-                        throw new Exception("Unknown global application state (Proposal/Production).");
-                    }
-                }
-                else if (activePanel.type == PanelTypes.Editable) 
-                {
-                    if (CE.GlobalState == GlobalState.Administer)
-                        webDriver.FillPanelFKOptions(activePanel);
-                    else webDriver.FillPanelFKOptionsArchitect(activePanel);
-                }
-                 */
+                 
             }
 
             if (activePanel.type == PanelTypes.Editable)
@@ -271,20 +249,20 @@ namespace _min.Shared
                 Table tbl = new Table();
                 tbl.CssClass = "formTbl";
 
-                foreach (Field f in activePanel.fields)
+                foreach (IField f in activePanel.fields)
                 {
-                    if (activePanel.PK == null && !Page.IsPostBack) f.value = null;
-                    if (f.type == FieldTypes.Holder) throw new NotImplementedException("Holder fields not yet supported in UI");
+                    if (activePanel.PK == null && !Page.IsPostBack) f.Data = null;
+                    //if (f.type == FieldTypes.Holder) throw new NotImplementedException("Holder fields not yet supported in UI");
                     TableRow row = new TableRow();
                     TableCell captionCell = new TableCell();
                     Label caption = new Label();
-                    caption.Text = f.caption;
+                    caption.Text = f.Caption;
                     captionCell.Controls.Add(caption);
                     row.Cells.Add(captionCell);
 
                     TableCell fieldCell = new TableCell();
-                    System.Web.UI.Control c = f.ToUControl();
-                    validators.AddRange(f.GetValidator());
+                    System.Web.UI.WebControls.WebControl c = f.MyControl;
+                    validators.AddRange(f.GetValidators());
 
                     foreach (BaseValidator v in validators)
                     {
@@ -329,9 +307,9 @@ namespace _min.Shared
 
 
             // set the webcontrols from the stored value (initially null)
-            foreach (Field f in activePanel.fields)
+            foreach (_min.Interfaces.IField f in activePanel.fields)
             {
-                f.SetControlData();
+                f.FillData();
             }
 
         }
@@ -341,7 +319,7 @@ namespace _min.Shared
         {
             if (Page.IsPostBack && activePanel != null) // retrieve changes from webcontrols and save them to inner value
             {
-                foreach (Field f in activePanel.fields)
+                foreach (_min.Interfaces.IField f in activePanel.fields)
                 {
                     f.RetrieveData();
                 }
@@ -366,11 +344,11 @@ namespace _min.Shared
 
         private bool ServerValidate(MPanel panel) {
             bool valid = true;
-            foreach (Field f in panel.fields) {
-                List<string> errors = f.Validate();
-                foreach (string s in errors) {
+            foreach (_min.Interfaces.IField f in panel.fields) {
+                f.Validate();
+                if(f.ErrorMessage != null){
                     valid = false;
-                    _min.Common.ValidationError.Display(s, Page);
+                    _min.Common.ValidationError.Display(f.ErrorMessage, Page);
                 }
             }
             return valid;

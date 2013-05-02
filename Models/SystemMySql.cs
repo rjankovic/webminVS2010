@@ -93,7 +93,7 @@ namespace _min.Models
         /// </summary>
         /// <param name="ds">the dataset from FullProjectLoad</param>
         private Panel DataSet2Panel(DataSet ds, int panelId) {
-            List<Field> fields = DataSet2PanelFields(ds, panelId);
+            List<IField> fields = DataSet2PanelFields(ds, panelId);
             List<Control> controls = DataSet2PanelControls(ds, panelId);
             DataRow panelRow = ds.Tables["panels"].AsEnumerable().Where(x => (Int32)x["id_panel"] == panelId).First();
             Panel res = DeserializePanel(panelRow["content"] as string);
@@ -131,11 +131,11 @@ namespace _min.Models
         /// deserializes a panel`s fields
         /// </summary>
         /// <param name="ds">the dataset from FullProjectLoad</param>
-        private List<Field> DataSet2PanelFields(DataSet ds, int panelId) {
+        private List<IField> DataSet2PanelFields(DataSet ds, int panelId) {
             DataRow panelRow = ds.Tables["panels"].AsEnumerable().Where(x => (Int32)x["id_panel"] == panelId).First();
             DataRow[] fieldRows = panelRow.GetChildRows(CC.SYSDRIVER_FK_FIELD_PANEL);
-            List<Field> res = new List<Field>();
-            Field f;
+            List<IField> res = new List<IField>();
+            IField f;
             foreach (DataRow fieldRow in fieldRows)
             {
                 f = DeserializeField(fieldRow["content"] as string, (int)(fieldRow["id_field"]));
@@ -181,10 +181,10 @@ namespace _min.Models
                 return res;
         }
 
-        private Field DeserializeField(string s, int id) {
-            DataContractSerializer serializer = new DataContractSerializer(typeof(Field));
-            Field f = (Field)(serializer.ReadObject(Functions.GenerateStreamFromString(s)));
-            f.fieldId = id;
+        private IField DeserializeField(string s, int id) {
+            DataContractSerializer serializer = new DataContractSerializer(typeof(FieldBase));
+            IField f = (IField)(serializer.ReadObject(Functions.GenerateStreamFromString(s)));
+            f.SetId(id);
             return f;
         }
 
@@ -268,7 +268,7 @@ namespace _min.Models
         // not relly needed (unike AddPanelControlsOnly), just for the sake of unified pattern
         {
 
-            foreach (Field field in panel.fields)
+            foreach (IField field in panel.fields)
             {
                 field.RefreshPanelId();
                 AddField(field);
@@ -344,7 +344,7 @@ namespace _min.Models
             query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
 
             query("DELETE FROM `fields` WHERE `id_panel` = ", panel.panelId);
-            foreach (Field field in panel.fields)
+            foreach (IField field in panel.fields)
             {
                 AddField(field);
             }
@@ -374,21 +374,21 @@ namespace _min.Models
         /// Saves a new field to the databse (must have null ID, which will be set to the AI from the database).
         /// </summary>
         /// <param name="field"></param>
-        public void AddField(Field field) {   // fieldId = 0
+        public void AddField(IField field) {   // fieldId = 0
             Dictionary<string, object> insertVals = new Dictionary<string,object>();
             
-            insertVals["id_panel"] = field.panelId;
+            insertVals["id_panel"] = field.PanelId;
             insertVals["content"] = field.Serialize();
             if (!IsInTransaction)
             {
                 BeginTransaction();
                 query("INSERT INTO fields", dbe.InsVals(insertVals));
-                field.SetCreationId(LastId());    // must be 0 in creation
+                field.SetId(LastId());    // must be 0 in creation
                 CommitTransaction();
             }
             else {
                 query("INSERT INTO fields", dbe.InsVals(insertVals));
-                field.SetCreationId(LastId());    // must be 0 in creation
+                field.SetId(LastId());    // must be 0 in creation
             }
 
 
@@ -398,17 +398,14 @@ namespace _min.Models
         /// Rewrites the properties of a given field in the database.
         /// </summary>
         /// <param name="field"></param>
-        private void UpdateField(Field field){
-            MemoryStream ms = new MemoryStream();
-            DataContractSerializer ser = new DataContractSerializer(typeof(Field));
-            ser.WriteObject(ms, field);
-            query("UPDATE fields SET content = ", Functions.StreamToString(ms), " WHERE id_field = ", field.fieldId);
+        private void UpdateField(IField field){
+            query("UPDATE fields SET content = ", field.Serialize(), " WHERE id_field = ", field.FieldId);
             
         }
 
-        public void RemoveField(Field field)
+        public void RemoveField(IField field)
         {
-            query("DELETE FROM fields WHERE id_field = ", field.fieldId);
+            query("DELETE FROM fields WHERE id_field = ", field.FieldId);
         }
 
         /// <summary>

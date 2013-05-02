@@ -5,6 +5,10 @@ using System.Web;
 using System.Web.Security;
 using System.Web.SessionState;
 using System.Web.Routing;
+using System.IO;
+using System.Reflection;
+
+using _min.Interfaces;
 
 namespace _min
 {
@@ -71,6 +75,34 @@ namespace _min
         void Session_Start(object sender, EventArgs e)
         {
             // Code that runs when a new session is started
+
+            /*
+             DirectoryInfo dir = new DirectoryInfo("/ColumnFields/");
+            FileInfo[] dlls = dir.GetFiles("*.dll");
+            
+            foreach (FileInfo fi in dlls)
+            {
+                Assembly.LoadFrom(fi.FullName);
+            }*/
+
+            //List<_min.Interfaces.IColumnFieldFactory> factories = new List<Interfaces.IColumnFieldFactory>();
+            Type factoryType = typeof(IColumnFieldFactory);
+
+            List<IColumnFieldFactory> factories = (from t in Assembly.GetExecutingAssembly().GetTypes()
+                                                   where t.GetInterfaces().Contains(factoryType)
+                                                            && t.GetConstructor(Type.EmptyTypes) != null
+                                                   select Activator.CreateInstance(t) as IColumnFieldFactory).ToList<IColumnFieldFactory>();
+
+            /*
+            IEnumerable<Type> factoryDerivedTypes = Assembly.GetExecutingAssembly().GetTypes().Where(cl => factoryType.IsAssignableFrom(cl));
+            foreach (var instance in factoryDerivedTypes)
+            {
+                var instance = Activator.CreateInstance(t);
+                factories.Add((_min.Interfaces.IColumnFieldFactory)instance);
+            }
+            */
+
+            Application["ColumnFieldFactories"] = factories;
 
         }
 

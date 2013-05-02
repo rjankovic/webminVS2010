@@ -8,6 +8,7 @@ using _min.Models;
 
 namespace _min.Models
 {
+
     class StatsMySql : BaseDriverMySql, IStats 
     {
         private string webDb;
@@ -23,7 +24,7 @@ namespace _min.Models
         /// <summary>
         /// stores resrutn value of GetColumnTYpes
         /// </summary>
-        public Dictionary<string, DataColumnCollection> ColumnTypes {
+        public Dictionary<string, DataColumnCollection> ColumnTypes {       // actually Extended datacolumn collection
             get {
                 if (columnTypes == null)
                     GetColumnTypes();
@@ -38,13 +39,14 @@ namespace _min.Models
         /// <summary>
         /// stores return of ColumnsToDisplay - preferred colums to display in summaries for each table
         /// </summary>
-        public Dictionary<string, List<string>> ColumnsToDisplay {
+        public Dictionary<string, List<string>> ColumnsToDisplay
+        {
             get
             {
                 if (columnsToDisplay == null)
-                    FindColumnsToDisplay();
+                    GetColumnTypes();
                 return columnsToDisplay;
-            
+
             }
             private set {
                 columnsToDisplay = value;
@@ -122,10 +124,8 @@ namespace _min.Models
         /// <param name="pref">user display preferences</param>
         public void SetDisplayPreferences(Dictionary<string, string> pref) {
             
-            if (columnsToDisplay == null)
-                FindColumnsToDisplay();
             foreach (string tblName in pref.Keys) {
-                if (columnsToDisplay[tblName][0] != pref[tblName]) {
+                if (ColumnsToDisplay[tblName][0] != pref[tblName]) {
                     string top = columnsToDisplay[tblName][0];
                     // automatically proposed top of display order will now be at the position where the new
                     // top (given by the user preference) used to be - simpy swap
@@ -139,13 +139,14 @@ namespace _min.Models
         /// <summary>
         /// sets default value to ColumnsToDisplay - preferrably use short text fields
         /// </summary>
+        /*
         private void FindColumnsToDisplay()
         {
             columnsToDisplay = new Dictionary<string, List<string>>();
-            foreach (string tab in ColumnTypes.Keys)
+            foreach (string tab in columnTypes.Keys)
             {
                 DataColumnCollection cols = ColumnTypes[tab];
-
+               
                 List<DataColumn> innerList = new List<DataColumn>();
                 foreach (DataColumn col in cols)
                     innerList.Add(col);
@@ -158,6 +159,7 @@ namespace _min.Models
                 }
             }
         }
+         */ 
 
         /// <summary>
         /// extracts information from the COLUMNS table of INFORMATION_SCHEMA
@@ -185,8 +187,10 @@ namespace _min.Models
             tempWebDb.CommitTransaction();
             tempWebDb = null;
 
+
             foreach (DataRow r in stats.Rows) {
                 DataColumn col = res[r["TABLE_NAME"] as string][r["COLUMN_NAME"] as string];        // set ColumnName
+
 
                 string columnType = r["COLUMN_TYPE"] as string;
                 if (columnType.StartsWith("enum")) {        // enum type
@@ -228,6 +232,24 @@ namespace _min.Models
                 
             }       // for each row in stats
             columnTypes = res;
+
+            ColumnsToDisplay = new Dictionary<string, List<string>>();
+            IComparer<DataColumn> comparer = new Common.ColumnDisplayComparer();
+            foreach (string tableName in columnTypes.Keys) {
+                List<DataColumn> innerList = new List<DataColumn>();
+                foreach (DataColumn col in columnTypes[tableName])
+                    innerList.Add(col);
+                innerList.Sort(comparer);
+                columnsToDisplay[tableName] = (from DataColumn c in innerList select c.ColumnName).ToList<string>();
+            
+            }
+            
+            foreach (string tableName in FKs.Keys) {
+                foreach (FK fk in FKs[tableName]) { 
+                    columnTypes[fk.myTable][fk.myColumn].ExtendedProperties["FK"] = fk;
+                }
+            }
+
         }
 
         /// <summary>

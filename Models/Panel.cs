@@ -18,7 +18,7 @@ namespace _min.Models
         [IgnoreDataMember]
         public List<Panel> children { get; private set; }
         [IgnoreDataMember]
-        public List<Field> fields { get; private set; }    // including Docks
+        public List<IField> fields { get; private set; }    // including Docks
         [IgnoreDataMember]
         public List<Control> controls { get; private set; }
         [DataMember]
@@ -62,7 +62,7 @@ namespace _min.Models
         public int displayAccessRights { get; set; }
 
         public Panel(string tableName, int panelId, PanelTypes type, List<Panel> children,
-            List<Field> fields, List<Control> controls, List<string> PKColNames, DataRow PK = null, Panel parent = null)
+            List<IField> fields, List<Control> controls, List<string> PKColNames, DataRow PK = null, Panel parent = null)
         {
             this.tableName = tableName;
             this.panelId = panelId;
@@ -74,16 +74,16 @@ namespace _min.Models
             this.parent = parent;
             this.type = type;
             if (this.controls == null) this.controls = new List<Control>();
-            if (this.fields == null) this.fields = new List<Field>();
+            if (this.fields == null) this.fields = new List<IField>();
             if (this.PKColNames == null) this.PKColNames = new List<string>();
             if (this.children == null) this.children = new List<Panel>();
             foreach (Panel child in this.children)
             {
                 child.parent = this;
             }
-            foreach (Field f in this.fields)
+            foreach (IField f in this.fields)
             {
-                f.panel = this;
+                f.Panel = this;
             }
             foreach (Control c in this.controls)
             {
@@ -137,14 +137,14 @@ namespace _min.Models
                 throw new Exception("Panel parent already initialized");
         }
 
-        public void AddFields(List<Field> fields)
+        public void AddFields(List<IField> fields)
         {
-            foreach (Field newField in fields)
+            foreach (IField newField in fields)
             {
-                if (this.fields.Any(f => f.fieldId == newField.fieldId && this.panelId != 0))
+                if (this.fields.Any(f => f.FieldId == newField.FieldId && this.panelId != 0))
                     throw new Exception("Panel already contains a field with this id.");
                 this.fields.Add(newField);
-                newField.panel = this;
+                newField.Panel = this;
             }
         }
 
@@ -170,7 +170,7 @@ namespace _min.Models
             if (this.children != null || this.fields != null || this.controls != null)
                 throw new Exception("Some of the collections have already been initializaed");
             this.children = new List<Panel>();
-            this.fields = new List<Field>();
+            this.fields = new List<IField>();
             this.controls = new List<Control>();
         }
 
@@ -183,20 +183,21 @@ namespace _min.Models
                 foreach (DataColumn col in PK.Table.Columns)
                     tbl.Columns.Add(new DataColumn(col.ColumnName, col.DataType));
             }
-            foreach (Field f in fields)
+            foreach (IField f in fields)
             {
-                if (f is M2NMappingField) continue;
-                if (f.value != null && f.value != DBNull.Value)
+                if (!(f is IColumnField)) continue;
+                IColumnField cf = f as IColumnField;
+                if (cf.Data != null && cf.Data != DBNull.Value)
                 {
-                    if (PK == null || !PK.Table.Columns.Contains(f.column))
-                        tbl.Columns.Add(new DataColumn(f.column, f.value.GetType()));
-                    insTbl.Columns.Add(new DataColumn(f.column, f.value.GetType()));
+                    if (PK == null || !PK.Table.Columns.Contains(cf.ColumnName))
+                        tbl.Columns.Add(new DataColumn(cf.ColumnName, cf.Data.GetType()));
+                    insTbl.Columns.Add(new DataColumn(cf.ColumnName, cf.Data.GetType()));
                 }
                 else
                 {
-                    if (PK == null || !PK.Table.Columns.Contains(f.column))
-                        tbl.Columns.Add(new DataColumn(f.column, typeof(int)));
-                    insTbl.Columns.Add(new DataColumn(f.column, typeof(int)));
+                    if (PK == null || !PK.Table.Columns.Contains(cf.ColumnName))
+                        tbl.Columns.Add(new DataColumn(cf.ColumnName, typeof(int)));
+                    insTbl.Columns.Add(new DataColumn(cf.ColumnName, typeof(int)));
                 }
             }
 
@@ -207,18 +208,19 @@ namespace _min.Models
                 foreach (DataColumn col in PK.Table.Columns)
                     RetrievedData[col.ColumnName] = PK[col.ColumnName];
             }
-            foreach (Field f in fields)
+            foreach (IField f in fields)
             {
-                if (f is M2NMappingField) continue;
-                if (f.value != null && (f.value.ToString() != ""))      // dangerous?
+                if (!(f is IColumnField)) continue;
+                IColumnField cf = f as IColumnField;
+                if (cf.Data != null && (cf.Data.ToString() != ""))      // dangerous?
                 {
-                    RetrievedData[f.column] = f.value;
-                    RetrievedInsertData[f.column] = f.value;
+                    RetrievedData[cf.ColumnName] = cf.Data;
+                    RetrievedInsertData[cf.ColumnName] = cf.Data;
                 }
                 else
                 {
-                    RetrievedData[f.column] = DBNull.Value;
-                    RetrievedInsertData[f.column] = DBNull.Value;
+                    RetrievedData[cf.ColumnName] = DBNull.Value;
+                    RetrievedInsertData[cf.ColumnName] = DBNull.Value;
                 }
             }
         }

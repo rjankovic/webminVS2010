@@ -7,13 +7,12 @@ using _min.Models;
 using MySql.Data.MySqlClient;
 using MySql.Web;
 using CE = _min.Common.Environment;
+using WC = System.Web.UI.WebControls;
 
 namespace _min.Interfaces
 {
     public interface IBaseDriver 
     {
-        // + constructor from connection
-        // 3 connections total
         DataTable fetchAll(params object[] parts);
         DataRow fetch(params object[] parts);
         object fetchSingle(params object[] parts);
@@ -108,32 +107,20 @@ namespace _min.Interfaces
     {
         void FillPanel(Panel panel);
         void FillPanelFKOptions(Panel panel);
-        void FillPanelArchitect(Panel panel);
-        void FillPanelFKOptionsArchitect(Panel panel);
         int InsertIntoPanel(Panel panel);  // returns insertedId
         void UpdatePanel(Panel panel);
         void DeleteFromPanel(Panel panel);
-        //DataTable fetchFKOptions(FK fk);
-        //void MapM2NVals(M2NMapping mapping, int key, int[] vals);
-        //void UnmapM2NMappingKey(M2NMapping mapping, int key);
         DataRow PKColRowFormat(Panel panel);
     }
 
     public interface IStats : IBaseDriver {    // information_schema
         Dictionary<string, DataColumnCollection> ColumnTypes { get; }
         Dictionary<string, List<string>> ColumnsToDisplay { get; }
-        //List<FK> ForeignKeys(string tableName);
-        //List<List<string>> Indexes(string tableName);
-        //List<string> PrimaryKeyCols(string tableName);
         List<string> TwoColumnTables();
-        //List<string> TableList();
-        //List<M2NMapping> FindMappings();
         List<string> TablesMissingPK();
-        //Dictionary<string, List<string>> PrimaryKeyCols();
         List<FK> SelfRefFKs();
         Dictionary<string, List<M2NMapping>> Mappings { get; }
         Dictionary<string, List<string>> PKs { get; }
-        //FK SelfRefFKStrict(string tableName);
         Dictionary<string, List<FK>> FKs { get; }
         List<string> Tables { get; }
         void SetDisplayPreferences(Dictionary<string, string> pref);
@@ -149,39 +136,24 @@ namespace _min.Interfaces
         void ProcessLogTable(DataTable data);
         void LogUserAction(DataRow data);
         void FullProjectLoad();
-        //bool isUserAuthorized(int panelId, UserAction act);
-        //void doRequests();
-        //Panel getPanel(string tableName, UserAction action, bool recursive = true, Panel parent = null);
-        //Panel getPanel(int panelId, bool recursive = true, Panel parent = null);
-        //Panel getArchitectureInPanel();
-        //Panel GetBasePanel();
+        
         void AddPanel(Panel panel, bool recursive = true);
         void AddPanels(List<Panel> panels);
-        void AddField(Field field);
+        void AddField(IField field);
         void AddControl(Control control);
         void UpdatePanel(Panel panel, bool recursive = true);
-        //void updatePanelProperty(Panel panel, string propertyName);
         void RemovePanel(Panel panel);
-        //void RewriteControlDefinitions(Panel panel, bool recursive = true);
-        //void RewriteFieldDefinitions(Panel panel, bool recursive = true);
-        //Common.Environment.User getUser(string userName, string password);
+        
         Common.Environment.Project GetProject(int projectId);
         Common.Environment.Project GetProject(string projectName);
-
         bool ProposalExists();
         void ClearProposal();
-        //DataTable fetchBaseNavControlTable();   // the DataTable for main TreeControl / MenuDrop
-
-        string[] GetProjectNameList();
         DataTable GetProjects();
         void UpdateProject(CE.Project project);
         int InsertProject(CE.Project project);
         void DeleteProject(int projectId);
 
-        //void InitArchitecture(Panel mainPanel = null);
-        //void InitArchitectureBasePanel(Panel mainPanel = null);
         void IncreaseVersionNumber();
-        //Dictionary<UserAction, int> GetPanelActionPanels(int currentPanel);
         void SetUserRights(int user, int? project, int rights);
         int GetUserRights(int user, int? project);
         List<Common.Environment.Project> GetProjectObjects();
@@ -193,4 +165,80 @@ namespace _min.Interfaces
         void UserMenuOptions(int user, out List<string> adminOf, out List<string> architectOf);
         void ReleaseLocksExceptProject(int userId, int projectId);
     }
+
+
+    public enum FieldSpecificityLevel
+    {
+        Low, Medium, High
+    };
+
+    public interface IField {
+        System.Web.UI.WebControls.WebControl MyControl { get; }     // created upon call
+        int? FieldId { get; }
+        void SetId(int id);
+        Panel Panel { get; set; }
+        int? PanelId { get; }
+        void RefreshPanelId();
+        string Caption { get; set; }
+        bool Required {get; set;}
+        string ErrorMessage { get; }
+        void Validate();        // server-side
+        List<System.Web.UI.WebControls.BaseValidator> GetValidators();
+        
+        void RetrieveData();    // from the webcontrol
+        void FillData();    // to the webcontrol
+        void InventData();  // for the architect mode
+        object Data { get; set; }
+
+        string Serialize();
+    }
+
+    public interface IColumnField : IField{
+        string ColumnName {get;}
+        bool Unique { get; set; }
+        
+    }
+
+
+    public interface IFieldFactory
+    {
+        string UIName { get; }
+        FieldSpecificityLevel Specificity { get; }
+    }
+    
+    public interface IColumnFieldFactory : IFieldFactory {
+        bool CanHandle(DataColumn column);
+        ColumnField Create(DataColumn column);
+        Type ProductionType { get; }
+    }
+
+    public interface ICustomizableFieldFactory : IFieldFactory {
+        void ShowForm(WC.Panel panel);
+        bool ValidateForm();
+        void LoadProduct(IField field);
+        void UpdateProduct(IField field);
+    }
+
+    /*
+    public interface IDependentTableField : IField{
+        string TableName {get;}
+        DataTable Data {get; set;}          // with table PK set
+        DataTable ObsoleteData {get; set;}  // with table PK set
+
+        bool CanHandle(DataTable table, List<DataColumn> constCols);
+        // columns in primary table -> corresponding in mapping table
+        Dictionary<string, string> constColsMapping;
+        // columns that will be determined by the current row edited in the panel, in the names of the mapping table
+        // these will be removed in a single query and replaced by new mapping
+        DataRow ConstCols { get; set; }
+        IDependentTableField Create(DataTable table, List<DataColumn> constCols);
+    }
+
+    public interface IDependentTableFactory
+    {
+        bool CanHandle(DataTable table, List<DataColumn> constCols);
+        IDependentTableField Create(DataTable table, List<DataColumn> constCols);
+        bool MyProduct(IDependentTableField field);
+    }
+    */
 }

@@ -157,7 +157,7 @@ namespace _min.Architect
 
                 MPanel resPanel = new MPanel(actPanel.tableName, actPanel.panelId, 
                     c is TreeControl ? PanelTypes.NavTree : PanelTypes.NavTable, new List<MPanel>(), 
-                    new List<Field>(), controls, actPanel.PKColNames, null, actPanel.parent);
+                    new List<IField>(), controls, actPanel.PKColNames, null, actPanel.parent);
                 resPanel.panelName = panelName;
 
                 actPanel = resPanel;

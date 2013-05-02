@@ -16,6 +16,7 @@ using CC = _min.Common.Constants;
 using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
 using _min.Controls;
+using _min.Interfaces;
 
 
 namespace _min.Architect
@@ -30,10 +31,13 @@ namespace _min.Architect
         List<FK> FKs;
         List<M2NMapping> mappings;
         MinMaster mm;
+        List<IColumnFieldFactory> factories;
+                
 
         protected void Page_Init(object sender, EventArgs e)
         {
             mm = (MinMaster)Master;
+            factories = (List<IColumnFieldFactory>)Application["ColumnFiledFactories"];
             _min.Common.Environment.GlobalState = GlobalState.Architect;
 
             int panelId = Int32.Parse(Page.RouteData.Values["panelId"] as string);
@@ -71,7 +75,7 @@ namespace _min.Architect
             // create a datarow for each column, specifiing...
             foreach (DataColumn col in cols) {          // std. fields (incl. FKs)
 
-                Field f = actPanel.fields.Find(x => x.column == col.ColumnName && !(x is M2NMappingField));
+                IColumnField cf = (IColumnField)actPanel.fields.Find(x => x is IColumnField && ((IColumnField)x).ColumnName == col.ColumnName);
                 
                 TableRow r = new TableRow();
                 r.ID = col.ColumnName;
@@ -86,22 +90,37 @@ namespace _min.Architect
                 //...whether the column will be accessible to editation at all,...
                 TableCell presentCell = new TableCell();
                 CheckBox present = new CheckBox();
-                present.Checked = f != null;
+                present.Checked = cf != null;
                 presentCell.Controls.Add(present);
                 r.Cells.Add(presentCell);
 
+                
                 FK fk = FKs.Find(x => x.myColumn == col.ColumnName);
-                if(f != null && f is FKField) fk = ((FKField)f).FK;
+                if(cf != null && cf is FKField) fk = ((FKField)cf).FK;
                 //...the FieldType,...
                 TableCell typeCell = new TableCell();
                 DropDownList dl = new DropDownList();
-                if (f is EnumField)
-                    dl.DataSource = EnumType;
-                else if (fk == null)
-                    dl.DataSource = fieldTypes;
-                else
-                    dl.DataSource = FKtype;
+                Dictionary<int, string> typeOptions = new Dictionary<int, string>();
+                
+                int current = -1;
+                for (int i = 0; i < factories.Count; i++) {
+                    if (factories[i].CanHandle(col))
+                        typeOptions.Add(i, factories[i].UIName);
+                    if(cf != null && cf.GetType() == (factories[i].ProductionType)){
+                        current = i;
+                    }
+                }
+
+
+                    /*if (f is EnumField)
+                        dl.DataSource = EnumType;
+                    else*/
+
+                dl.DataSource = typeOptions;
+                dl.DataValueField = "Key";
+                dl.DataTextField = "Value";
                 dl.DataBind();
+                dl.SelectedIndex = current;
                 typeCell.Controls.Add(dl);
                 r.Cells.Add(typeCell);
 
@@ -113,16 +132,16 @@ namespace _min.Architect
                     DropDownList fkddl = new DropDownList();
                     fkddl.DataSource = mm.Stats.ColumnsToDisplay[fk.refTable];
                     fkddl.DataBind();
-                    if(f != null)
-                        fkddl.SelectedIndex = fkddl.Items.IndexOf(fkddl.Items.FindByValue(((FKField)f).FK.displayColumn));
+                    if(cf != null)
+                        fkddl.SelectedIndex = fkddl.Items.IndexOf(fkddl.Items.FindByValue(((FKField)cf).FK.displayColumn));
                     FKDisplayCell.Controls.Add(fkddl);
                     
                 }
                 r.Cells.Add(FKDisplayCell);
-
-                if (f != null) {
-                    dl.SelectedIndex = dl.Items.IndexOf(dl.Items.FindByText(f.type.ToString()));
-                }
+                /*
+                if (cf != null) {
+                    dl.SelectedIndex = dl.Items.IndexOf(dl.Items.FindByText(cf.type.ToString()));
+                }*/
                 // else set default baed on  datatype - could build a dictionary...
 
 
@@ -132,33 +151,18 @@ namespace _min.Architect
                 CheckBox requiredCb = new CheckBox();
                 Label requiredlabel = new Label();
                 requiredlabel.Text = "required ";
-                requiredCb.Checked = f is Field && f.validationRules.Contains(ValidationRules.Required);
+                requiredCb.Checked = cf.Required;
+                CheckBox uniCheck = new CheckBox();
+                Label uniLabel = new Label();
+                uniLabel.Text = "unique";
+                uniCheck.Checked = cf.Unique;
 
-                DropDownList vddl = new DropDownList();
-                vddl.DataSource = validationRules;
-                vddl.DataBind();
-                if (fk == null)
-                    vddl.DataSource = validationRules;
-                else
-                    vddl.DataSource = requiredRule;
-                validCell.Controls.Add(requiredlabel);
-                validCell.Controls.Add(requiredCb);
-                
-                if (fk == null)
-                    validCell.Controls.Add(vddl);
-
-
-                if (f != null)
+                if (!(cf is CheckBoxField))
                 {
-                    foreach (ValidationRules rule in f.validationRules)
-                    {
-                        if (rule == ValidationRules.Required) continue;
-                        else
-                        {
-                            vddl.Items.FindByText(rule.ToString()).Selected = true;
-                            break;
-                        }
-                    }
+                    validCell.Controls.Add(requiredlabel);
+                    validCell.Controls.Add(requiredCb);
+                    validCell.Controls.Add(uniLabel);
+                    validCell.Controls.Add(uniCheck);
                 }
 
                 r.Cells.Add(validCell);
@@ -169,8 +173,8 @@ namespace _min.Architect
                 captionCell.Controls.Add(caption);
                 r.Cells.Add(captionCell);
 
-                if (f != null) {
-                    caption.Text = f.caption;
+                if (cf != null) {
+                    caption.Text = cf.Caption;
                 }
                 
                 tbl.Rows.Add(r);
@@ -224,7 +228,7 @@ namespace _min.Architect
 
                 if (f != null)
                 {
-                    caption.Text = f.caption;
+                    caption.Text = f.Caption;
                 }
 
                 mappingsTbl.Rows.Add(r);
@@ -250,7 +254,7 @@ namespace _min.Architect
         protected void SaveButton_Click(object sender, EventArgs e)
         {
             // extract the data for fields from the table
-            List<Field> fields = new List<Field>();
+            List<IField> fields = new List<IField>();
             int i = 1;
 
             foreach (DataColumn col in mm.Stats.ColumnTypes[actPanel.tableName])
@@ -260,8 +264,7 @@ namespace _min.Architect
                     continue;
                 // label, present, type, valid, caption
 
-                FieldTypes type = (FieldTypes)Enum.Parse(typeof(FieldTypes), 
-                    ((DropDownList)r.Cells[2].Controls[0]).SelectedValue);
+               IColumnFieldFactory factory = factories[Int32.Parse(((DropDownList)r.Cells[2].Controls[0]).SelectedValue)];
 
                 // cell 3 is for FK display column dropList
 
@@ -277,24 +280,26 @@ namespace _min.Architect
                 string caption = ((TextBox)r.Cells[5].Controls[0]).Text;
                 if (caption == "") caption = null;
 
-                Field newField;
+                IField newField;
+                /*
                 if (type == FieldTypes.FK)
                 {
                     FK fk = FKs.Find(x => x.myColumn == col.ColumnName);
                     fk.displayColumn = ((DropDownList)(r.Cells[3].Controls[0])).SelectedValue;
-                    newField = new FKField(0, col.ColumnName, actPanel.panelId, FKs.Find(x => x.myColumn == col.ColumnName), caption);
-                }
-                else if (type == FieldTypes.Enum)
+                    newField = new FKField(col.ColumnName, caption, FKs.Find(x => x.myColumn == col.ColumnName));
+                    newField.Panel = actPanel;
+                }*/
+                /*else if (type == FieldTypes.Enum)
                 {
                     newField = new EnumField(0, col.ColumnName, actPanel.panelId,
                         (List<string>)mm.Stats.ColumnTypes[actPanel.tableName][col.ColumnName].ExtendedProperties[CC.ENUM_COLUMN_VALUES],
                         caption);
-                }
-                else
-                {
-                    newField = new Field(0, col.ColumnName, type, actPanel.panelId, caption);
-                }
-                newField.validationRules = rules;
+                }*/
+                //else
+                //{
+                    newField = factory.Create(col);
+                    newField.Caption = caption;
+                //}
                 fields.Add(newField);
             }
 
@@ -315,7 +320,7 @@ namespace _min.Architect
 
                 string caption = ((TextBox)r.Cells[5].Controls[0]).Text;
 
-                M2NMappingField m2nf = new M2NMappingField(0, null, 0, mapping, caption);
+                M2NMappingField m2nf = new M2NMappingField(mapping, caption);
                 fields.Add(m2nf);
             }
 

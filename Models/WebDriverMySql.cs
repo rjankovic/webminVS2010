@@ -37,7 +37,7 @@ namespace _min.Models
         {
             if (panel.fields.Count() > 0)
             { // editable Panel, fetch the DataRow, simple controls - must have unique PK
-                var columns = panel.fields.Where(x => !(x is M2NMappingField)).Select(x => x.column).ToList<string>();
+                var columns = panel.fields.Where(x => x is IColumnField).Select(x => ((IColumnField)x).ColumnName).ToList<string>();
                 DataTable table = fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new WebDriverDataModificationException(
@@ -45,15 +45,18 @@ namespace _min.Models
                 DataRow row = table.Rows[0];
                 panel.OriginalData = table.Rows[0];
                 
-                foreach (Field field in panel.fields)       // fill the fields
+                foreach (IField field in panel.fields)       // fill the fields
                 {
-                    if (!(field is M2NMappingField))        // value
-                        field.value =  row[field.column].GetType() != typeof(MySql.Data.Types.MySqlDateTime) ? row[field.column] : 
-                            ((MySql.Data.Types.MySqlDateTime)row[field.column]).GetDateTime();
+                    if (field is IColumnField)
+                    {        // value
+                        IColumnField cf = (IColumnField)field;
+                        cf.Data = row[cf.ColumnName].GetType() != typeof(MySql.Data.Types.MySqlDateTime) ? row[cf.ColumnName] :
+                            ((MySql.Data.Types.MySqlDateTime)row[cf.ColumnName]).GetDateTime();
+                    }
                     else
                     {           // mapping values are yet to fetch
                         M2NMappingField m2nf = (M2NMappingField)field;
-                        m2nf.value = FetchMappingValues(m2nf.Mapping, (int)panel.PK[0]);
+                        m2nf.Data = FetchMappingValues(m2nf.Mapping, (int)panel.PK[0]);
                     }
                 }
             }
@@ -96,17 +99,17 @@ namespace _min.Models
 
         public void FillPanelFKOptions(Panel panel)
         {
-            foreach (Field field in panel.fields)
+            foreach (IField field in panel.fields)
             {
                 if (field is FKField)
                 {     // FK options
                     FKField fkf = (FKField)field;
-                    fkf.options = FetchFKOptions(fkf.FK);
+                    fkf.FKOptions = FetchFKOptions(fkf.FK);
                 }
                 else if (field is M2NMappingField)
                 {
                     M2NMappingField m2nf = (M2NMappingField)field;
-                    m2nf.options = FetchFKOptions((FK)m2nf.Mapping);
+                    m2nf.FKOptions = FetchFKOptions((FK)m2nf.Mapping);
                 }
             }
             //foreach (Panel p in panel.children)
@@ -149,7 +152,7 @@ namespace _min.Models
         {
             return NLipsum.Core.LipsumGenerator.GenerateHtml(3);
         }
-
+        /*
         /// <summary>
         /// fill the panel with example data in Architect mode
         /// </summary>
@@ -316,7 +319,7 @@ namespace _min.Models
                 }
             }
         }
-
+        */  // will be done by the fields & controls
         // used by AssignDataForNavTable
         delegate DataTable FetchMethod(params object[] parts);
 
@@ -403,15 +406,16 @@ namespace _min.Models
         /// <returns></returns>
         public int InsertIntoPanel(Panel panel)
         {
-            foreach (Field f in panel.fields)
+            foreach (IField f in panel.fields)
             {
-                if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique))
+                if(f is IColumnField)
                 {
-                    if (panel.RetrievedData[f.column] != null)
+                    IColumnField cf = (IColumnField)f;
+                    if (panel.RetrievedData[cf.ColumnName] != null && cf.Unique)
                     {
-                        bool unique = CheckUniqueness(panel.tableName, f.column, panel.RetrievedData[f.column]);
-                        if (!unique) throw new ConstraintException("Field \"" + f.caption + "\" is restrained to be unique and \""
-                             + f.value.ToString() + "\" is already present");
+                        bool unique = CheckUniqueness(panel.tableName, cf.ColumnName, panel.RetrievedData[cf.ColumnName]);
+                        if (!unique) throw new ConstraintException("Field \"" + cf.Caption + "\" is restrained to be unique and \""
+                             + cf.Data.ToString() + "\" is already present");
                     }
                 }
             }
@@ -433,11 +437,11 @@ namespace _min.Models
                 //    RollbackTransaction();
                 throw new ConstraintException(FriendlyConstraintException(mye.Message, panel), null);
             }
-            foreach (Field f in panel.fields) {
+            foreach (IField f in panel.fields) {
                 if (f is M2NMappingField)
                 {
                     M2NMappingField m2nf = (M2NMappingField)f;
-                    MapM2NVals(m2nf.Mapping, ID, m2nf.ValueList);
+                    MapM2NVals(m2nf.Mapping, ID, (List<int>)m2nf.Data);
                 }
             }
             return ID;
@@ -451,13 +455,14 @@ namespace _min.Models
         public void UpdatePanel(Panel panel)
         {
             CheckAgainstOriginalDataRow(panel);
-            foreach (Field f in panel.fields) {
-                if (!(f is M2NMappingField) && f.validationRules.Contains(Common.ValidationRules.Unique)) {
-                    if (panel.RetrievedData[f.column] != null)       // TODO make sure all fields are set to null when should be
+            foreach (IField f in panel.fields) {
+                if (f is IColumnField) {
+                    IColumnField cf = (IColumnField)f;
+                    if (cf.Unique && panel.RetrievedData[cf.ColumnName] != null)       // TODO make sure all fields are set to null when should be
                     {
-                        bool unique = CheckUniqueness(panel.tableName, f.column, panel.RetrievedData[f.column], panel.PK);
-                        if (!unique) throw new ConstraintException("Field \"" + f.caption + "\" is restrained to be unique and \""
-                             + f.value.ToString() + "\" is already present");
+                        bool unique = CheckUniqueness(panel.tableName, cf.ColumnName, panel.RetrievedData[cf.ColumnName], panel.PK);
+                        if (!unique) throw new ConstraintException("Field \"" + cf.Data + "\" is restrained to be unique and \""
+                             + cf.Data.ToString() + "\" is already present");
                      }
                 }
             }
@@ -481,20 +486,20 @@ namespace _min.Models
                 RollbackTransaction();
                 throw new ConstraintException(FriendlyConstraintException(ce.Message, panel), null);
             }
-            foreach (Field f in panel.fields)
+            foreach (IField f in panel.fields)
             {
                 if (f is M2NMappingField)
                 {
                     M2NMappingField m2nf = (M2NMappingField)f;
                     int ID = (int)panel.PK[m2nf.Mapping.myColumn];
                     UnmapM2NMappingKey(m2nf.Mapping, ID);
-                    MapM2NVals(m2nf.Mapping, ID, m2nf.ValueList);
+                    MapM2NVals(m2nf.Mapping, ID, (List<int>)m2nf.Data);
                 }
             }
         }
 
         private void CheckAgainstOriginalDataRow(Panel panel){
-            var columns = panel.fields.Where(x => !(x is M2NMappingField)).Select(x => x.column).ToList<string>();
+            var columns = panel.fields.Where(x => x is IColumnField).Select(x => ((IColumnField)x).ColumnName).ToList<string>();
             DataRow actualRow = fetch("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
             if (actualRow == null) throw new WebDriverDataModificationException(
                 "The record could not be found. It may have been removed in the meantime.");
@@ -515,7 +520,7 @@ namespace _min.Models
         public void DeleteFromPanel(Panel panel)
         {
             BeginTransaction();
-            foreach (Field f in panel.fields) {
+            foreach (IField f in panel.fields) {
                 if (f is M2NMappingField) {
                     M2NMapping mapping = ((M2NMappingField)f).Mapping;
                     UnmapM2NMappingKey(mapping, (int)(panel.PK[mapping.mapMyColumn]));
@@ -604,8 +609,9 @@ namespace _min.Models
         /// <returns>the modified string</returns>
         private string FriendlyConstraintException(string originalMessage, Panel panel) {
             string newMessage = originalMessage;
-            foreach (Field f in panel.fields) {
-                newMessage = newMessage.Replace("'" + f.column + "'", "\"" + f.caption + "\"");
+            foreach (IField f in panel.fields) {
+                if(f is IColumnField)
+                    newMessage = newMessage.Replace("'" + ((IColumnField)f).ColumnName + "'", "\"" + ((IColumnField)f).Caption + "\"");
             }
             return newMessage;
         }

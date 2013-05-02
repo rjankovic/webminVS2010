@@ -151,6 +151,10 @@ namespace _min.Models
             container.Controls.Add(button);
         }
 
+        public virtual void InventData() { 
+        
+        }
+
     }
 
     [DataContract]
@@ -196,16 +200,20 @@ namespace _min.Models
             
             
             string[] DataKeyNames = PKColNames.ToArray();
-            
-            // one of our datakeys may have been a FK and its value is now the representative field of the
-            // foreign table, not our key, but in such cases the key will be stored in a prefixed column.
-            for (int i = 0; i < DataKeyNames.Length; i++) {
-                FK fk = FKs.Where(x => x.myColumn == DataKeyNames[i]).FirstOrDefault();
-                if (fk is FK) {
-                    DataKeyNames[i] = CC.TABLE_COLUMN_REAL_VALUE_PREFIX + DataKeyNames[i];
+
+            if (CE.GlobalState == GlobalState.Administer)
+            {
+                // one of our datakeys may have been a FK and its value is now the representative field of the
+                // foreign table, not our key, but in such cases the key will be stored in a prefixed column.
+                for (int i = 0; i < DataKeyNames.Length; i++)
+                {
+                    FK fk = FKs.Where(x => x.myColumn == DataKeyNames[i]).FirstOrDefault();
+                    if (fk is FK)
+                    {
+                        DataKeyNames[i] = CC.TABLE_COLUMN_REAL_VALUE_PREFIX + DataKeyNames[i];
+                    }
                 }
             }
-
 
             grid.DataKeyNames = DataKeyNames;
             
@@ -268,6 +276,24 @@ namespace _min.Models
             }*/
             grid.RowCommand += handler;
             grid.ID = "Control" + controlId;
+        }
+
+        public override void InventData()
+        {
+            this.data = new DataTable();
+            foreach (string colName in displayColumns)
+                data.Columns.Add(new DataColumn(colName, typeof(string)));
+            foreach (string keyName in PKColNames)
+                if(!data.Columns.Contains(keyName))
+                    data.Columns.Add(new DataColumn(keyName, typeof(string)));
+
+            int count = (int)(DateTime.Now.Ticks % 5) + 5;
+            for(int i = 0; i < count; i++){
+                DataRow r = data.NewRow();
+                foreach(DataColumn col in data.Columns)
+                    r[col] = NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Sentences, "{0}", NLipsum.Core.Lipsums.NagyonFaj);
+                data.Rows.Add(r);
+            }
         }
 
     }
@@ -401,6 +427,26 @@ namespace _min.Models
                         child.NavId.ToString());
                 item.ChildItems.Add(childItem);
                 AddSubmenuForItem(child, childItem);
+            }
+        }
+
+        public override void InventData()
+        {
+            Random rnd = new Random((Int32)(DateTime.Now.Ticks % 10000000));
+            data.DataSet.EnforceConstraints = false;
+            data.Rows.Clear();
+            data.DataSet.EnforceConstraints = true;
+            int n = rnd.Next() % 10 + 10;
+            HierarchyNavTable hierarchy = (HierarchyNavTable)(data);
+            for (int i = 0; i < n; i++) // generate a random tree - each node picks a parent or no parent with equal chance
+            {
+                HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
+                r.Id = i + 1;
+                r.ParentId = rnd.Next() % (i + 1);
+                if ((int)(r.ParentId) == 0) r.ParentId = null;
+                r.Caption = NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Words, "{0}", NLipsum.Core.Lipsums.LeMasque);
+                r.NavId = r.Id;
+                data.Rows.Add(r);
             }
         }
     }

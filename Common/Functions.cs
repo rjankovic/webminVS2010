@@ -6,6 +6,7 @@ using System.Reflection;
 using System.IO;
 using System.Data;
 using System.Web.UI;
+using NLipsum.Core;
 
 namespace _min.Common
 {
@@ -35,6 +36,11 @@ namespace _min.Common
             }
             res = null;
             return false;
+        }
+
+        public static string LWord()
+        {
+            return NLipsum.Core.LipsumGenerator.Generate(1, NLipsum.Core.Features.Words, "{0}", NLipsum.Core.Lipsums.TheRaven);
         }
 
         public static Stream GenerateStreamFromString(string s)
@@ -97,5 +103,7 @@ namespace _min.Common
             currentPage.Validators.Add(new ValidationError(message));
         }
     }
+
+
 
 }

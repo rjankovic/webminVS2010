@@ -43,8 +43,8 @@ namespace _min.Models
             List<FK> FKs = stats.FKs[tableName];
             List<string> PKCols = stats.PKs[tableName];
 
-            List<Field> fields = new List<Field>();
-            List<ValidationRules> validation = new List<ValidationRules>();
+            List<IField> fields = new List<IField>();
+            
 
 
             foreach (M2NMapping mapping in mappings)    // find mappings related to this table
@@ -52,76 +52,21 @@ namespace _min.Models
                 if (mapping.myTable != tableName) continue;
                 List<string> displayColOrder = stats.ColumnsToDisplay[mapping.refTable];
                 mapping.displayColumn = displayColOrder[0];
-                fields.Add(new M2NMappingField(0, mapping.myColumn, 0, mapping));
+                fields.Add(new M2NMappingField(mapping, "Mapping " + mapping.myTable + " to " + mapping.refTable));
             }
 
-            // standard FKs
-            foreach (FK actFK in FKs)
-            {
-                validation = new List<ValidationRules>();
-                if (!cols[actFK.myColumn].AllowDBNull) validation.Add(ValidationRules.Required);
-                List<string> displayColOrder = stats.ColumnsToDisplay[actFK.refTable];
-                actFK.displayColumn = displayColOrder[0];
-                fields.Add(new FKField(0, actFK.myColumn, 0, actFK));
-
-                cols[actFK.myColumn].ExtendedProperties.Add("AlreadyUsed", null);
-                //cols.Remove(actFK.myColumn);    // will be edited as a foreign key
+            List<IColumnFieldFactory> factories = (List<IColumnFieldFactory>)(System.Web.HttpContext.Current.Application["ColumnFieldFactories"]);
+            foreach (DataColumn col in cols) {
+                if (col.AutoIncrement) continue;
+                IColumnFieldFactory leadingFactory = (from f in factories where f.CanHandle(col) orderby f.Specificity descending select f).FirstOrDefault();
+                if (leadingFactory == null && !col.AllowDBNull)
+                    return null;
+                IColumnField field = leadingFactory.Create(col);
+                field.Required = !col.AllowDBNull;
+                field.Unique = col.Unique;
+                fields.Add(field);
             }
 
-            // editable fields in the order as defined in table; don`t edit AI
-            foreach (DataColumn col in cols)
-            {
-                if (col.ExtendedProperties.Contains("AlreadyUsed")) continue;
-                validation = new List<ValidationRules>();
-                if (!col.ExtendedProperties.ContainsKey(CC.COLUMN_EDITABLE)) continue;
-                if (!col.AllowDBNull && col.DataType != typeof(bool)) validation.Add(ValidationRules.Required);
-                if (col.Unique) validation.Add(ValidationRules.Unique);
-                FieldTypes fieldType;  // default => standard textBox
-
-                // this is an enum column
-                if (col.ExtendedProperties.ContainsKey(CC.ENUM_COLUMN_VALUES))
-                {
-                    EnumField enumField = new EnumField(0, col.ColumnName, 0, (List<string>)(col.ExtendedProperties[CC.ENUM_COLUMN_VALUES]));
-                    enumField.validationRules = validation;
-                    fields.Add(enumField);
-                    continue;
-                }
-                // a switch through Data|Type would be clearer, it it was possible
-                else if (col.DataType == typeof(string))
-                {
-                    if (col.MaxLength <= 255) fieldType = FieldTypes.ShortText;
-                    else fieldType = FieldTypes.Text;
-                }
-                else if (col.DataType == typeof(int) || col.DataType == typeof(long) ||
-                    col.DataType == typeof(short) || col.DataType == typeof(sbyte))
-                {
-                    fieldType = FieldTypes.ShortText;       // numbers will be edited as plain text => must be validated at all times
-                    validation.Add(ValidationRules.Ordinal);
-                }
-                else if (col.DataType == typeof(float) || col.DataType == typeof(double) || col.DataType == typeof(decimal))
-                {
-                    fieldType = FieldTypes.ShortText;
-                    validation.Add(ValidationRules.Decimal);
-                }
-                else if (col.DataType == typeof(bool))
-                {
-                    fieldType = FieldTypes.Bool;
-                }
-                else if (col.DataType == typeof(DateTime) || col.DataType == typeof(MySql.Data.Types.MySqlDateTime))
-                {
-                    fieldType = FieldTypes.Date;
-                    validation.Add(ValidationRules.Date);
-                }
-                else
-                {
-                    throw new Exception("Unrecognised column type " + col.DataType.ToString());
-                }
-                Field f = new Field(0, col.ColumnName, fieldType, 0);
-                f.validationRules = validation;
-                fields.Add(f);  // don`t add any properties, just copy from Stat
-            }
-            fields.OrderBy(x => ((int)(x.position)));
-            // setup controls as properies
             PropertyCollection controlProps = new PropertyCollection();
             PropertyCollection viewProps = new PropertyCollection();
             string panelName = tableName + " Editation";
@@ -196,7 +141,7 @@ namespace _min.Models
             List<Control> Controls = new List<Control>();
             if (selfRefFK != null)  // this will be a NavTree
             {
-                Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<Field>(),
+                Panel res = new Panel(tableName, 0, PanelTypes.NavTree, new List<Panel>(), new List<IField>(),
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
                 control = new TreeControl(0, new HierarchyNavTable(), PKCols[0], selfRefFK.myColumn,
@@ -210,7 +155,7 @@ namespace _min.Models
             }
             else
             {       // a simple NavTable
-                Panel res = new Panel(tableName, 0, PanelTypes.NavTable, new List<Panel>(), new List<Field>(),
+                Panel res = new Panel(tableName, 0, PanelTypes.NavTable, new List<Panel>(), new List<IField>(),
                     new List<Control>(), PKCols);
                 res.displayAccessRights = 1;
                 List<UserAction> actions = new List<UserAction>(new UserAction[] { UserAction.View, UserAction.Delete });
@@ -337,40 +282,34 @@ namespace _min.Models
             List<M2NMapping> mappings = stats.Mappings[proposalPanel.tableName];
 
             bool good = true;
+            
             if (proposalPanel.type == PanelTypes.Editable)
             // this is indeed the only panelType containing fields => only editable
             {
-                foreach (Field field in proposalPanel.fields)
+                foreach (IField field in proposalPanel.fields)
                 {
-                    string messageBeginning = "Column " + field.column + " managed by field " + field.caption + " ";
-                    if (field.type == FieldTypes.Holder)
-                        continue;
-                    if (!(field is M2NMappingField) && !(cols.Contains(field.column)))
+                    if(!(field is IColumnField)) continue;
+                    IColumnField cf = (IColumnField)field;
+                    string messageBeginning = "Column " + cf.ColumnName + " managed by field " + cf.Caption + " ";
+                    if (!(cols.Contains(cf.ColumnName)))
                     {
                         errorMsgs.Add(messageBeginning + "does not exist in table");
                         good = false;
                     }
                     else
                     {
-                        if (!(field is FKField) && !(field is M2NMappingField))     // NavTable won`t be edited in the panel
+                        if (!(cf is FKField))     // NavTable won`t be edited in the panel
                         {
-                            List<ValidationRules> r = field.validationRules;
-                            if (cols[field.column].AllowDBNull == false &&
-                                !cols[field.column].AutoIncrement &&
-                                !(field.type == FieldTypes.Bool) &&
-                                !r.Contains(ValidationRules.Required))
+                            if (cols[cf.ColumnName].AllowDBNull == false &&
+                                !cols[cf.ColumnName].AutoIncrement &&
+                                !(cf is CheckboxField)&&
+                                !cf.Required)
                             {
                                 errorMsgs.Add(messageBeginning
                                     + "cannot be set to null, but the coresponding field is not required");
                                 good = false;
                             }
 
-                            if (field.type == FieldTypes.Bool && r.Count > 0)
-                            {
-                                errorMsgs.Add(messageBeginning + ": no validation can be assigned to a checkbox. If needed," +
-                                    "set its default value true and remove it from the form.");
-                                good = false;
-                            }
 
                             /*
                             if ((r.Contains(ValidationRules.Date) || r.Contains(ValidationRules.DateTime))
@@ -382,8 +321,8 @@ namespace _min.Models
                                 good = false;
                             }
                             */
-
-                            DataColumn fieldColumn = cols[field.column];
+                            /*
+                            DataColumn fieldColumn = cols[field.Column];
                             if (field.type != FieldTypes.ShortText)
                             {
                                 if (field.type == FieldTypes.Text && fieldColumn.DataType != typeof(string))
@@ -397,34 +336,35 @@ namespace _min.Models
                                 errorMsgs.Add(messageBeginning + " must have a caption");
                                 good = false;
                             }
-                            if ((cols[field.column].DataType == typeof(int)
-                                || cols[field.column].DataType == typeof(long)
-                                || cols[field.column].DataType == typeof(short)) && !field.validationRules.Contains(ValidationRules.Ordinal))
+                            if ((cols[field.Column].DataType == typeof(int)
+                                || cols[field.Column].DataType == typeof(long)
+                                || cols[field.Column].DataType == typeof(short)) && !field.validationRules.Contains(ValidationRules.Ordinal))
                             {
-                                errorMsgs.Add(messageBeginning + " is of type " + cols[field.column].DataType.ToString() +
+                                errorMsgs.Add(messageBeginning + " is of type " + cols[field.Column].DataType.ToString() +
                                     ", but is not restrained to ordinal values by a validation rule");
                                 good = false;
                             }
 
-                            if ((cols[field.column].DataType == typeof(decimal)
-                                 || cols[field.column].DataType == typeof(double)
-                                || cols[field.column].DataType == typeof(float)) && !field.validationRules.Contains(ValidationRules.Decimal))
+                            if ((cols[field.Column].DataType == typeof(decimal)
+                                 || cols[field.Column].DataType == typeof(double)
+                                || cols[field.Column].DataType == typeof(float)) && !field.validationRules.Contains(ValidationRules.Decimal))
                             {
-                                errorMsgs.Add(messageBeginning + " is of type " + cols[field.column].DataType.ToString() +
+                                errorMsgs.Add(messageBeginning + " is of type " + cols[field.Column].DataType.ToString() +
                                     ", but is not restrained to numeric values by a validation rule");
                                 good = false;
                             }
-                            if (cols[field.column].Unique && !field.validationRules.Contains(ValidationRules.Unique)) {
+                            if (cols[field.Column].Unique && !field.validationRules.Contains(ValidationRules.Unique)) {
                                 errorMsgs.Add(messageBeginning + " is constrained to be unique, but the corresponding field does not have "
                                     + "the \"Unique\" validation rule set.");
                                 good = false;
                             }
+                             */ 
                         }
                     }
                 }
                 IEnumerable<string> requiredColsMissing = from DataColumn col in stats.ColumnTypes[proposalPanel.tableName]
                                                           where col.AllowDBNull == false && col.DefaultValue == null &&
-                                                          !proposalPanel.fields.Exists(x => x.column == col.ColumnName)
+                                                          !proposalPanel.fields.Exists(x => x is IColumnField && ((IColumnField)x).ColumnName == col.ColumnName)
                                                           select col.ColumnName;
 
                 foreach (string missingCol in requiredColsMissing)
@@ -445,7 +385,7 @@ namespace _min.Models
                 }
             }
             else throw new Exception("Validation-non editable panel as an editable one.");
-
+            
             
             return good;
         }

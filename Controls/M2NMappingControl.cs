@@ -53,8 +53,8 @@ namespace _min.Controls
             foreach (ListItem item in inList.Items)
             {
                 outList.Items.Add(item);
-                inList.Items.Remove(item);
-            }        
+            }
+            inList.Items.Clear();
         }
 
         public void SetIncludedOptions(List<string> included)
