@@ -46,7 +46,6 @@ namespace _min.Models
             List<IField> fields = new List<IField>();
             
 
-
             foreach (M2NMapping mapping in mappings)    // find mappings related to this table
             {
                 if (mapping.myTable != tableName) continue;
@@ -58,7 +57,8 @@ namespace _min.Models
             List<IColumnFieldFactory> factories = (List<IColumnFieldFactory>)(System.Web.HttpContext.Current.Application["ColumnFieldFactories"]);
             foreach (DataColumn col in cols) {
                 if (col.AutoIncrement) continue;
-                IColumnFieldFactory leadingFactory = (from f in factories where f.CanHandle(col) orderby f.Specificity descending select f).FirstOrDefault();
+                IColumnFieldFactory leadingFactory = (from f in factories where f.CanHandle(col) && !(f is ICustomizableColumnFieldFactory) 
+                                                      orderby f.Specificity descending select f).FirstOrDefault();
                 if (leadingFactory == null && !col.AllowDBNull)
                     return null;
                 IColumnField field = leadingFactory.Create(col);
@@ -271,7 +271,7 @@ namespace _min.Models
         /// <param name="proposalPanel"></param>
         /// <param name="recursive">run itself on panel children</param>
         /// <returns>true if no errors were found, true otherwise</returns>
-        public bool checkPanelProposal(Panel proposalPanel, out List<string> errorMsgs)
+        public bool checkPanelProposal(Panel proposalPanel, out List<string> errorMsgs, Dictionary<DataColumn, Dictionary<string, object>> customs)
         // non-recursive checking after the initial check - after panel modification
         {
             errorMsgs = new List<string>();
@@ -365,7 +365,10 @@ namespace _min.Models
                 IEnumerable<string> requiredColsMissing = from DataColumn col in stats.ColumnTypes[proposalPanel.tableName]
                                                           where col.AllowDBNull == false && col.DefaultValue == null &&
                                                           !proposalPanel.fields.Exists(x => x is IColumnField && ((IColumnField)x).ColumnName == col.ColumnName)
+                                                          && (!customs.ContainsKey(col) || (bool)customs[col]["required"] == false)
                                                           select col.ColumnName;
+                // if the oclum is contained in customs, only the custom factory validation will be left so this validation does not need to be called
+                // again
 
                 foreach (string missingCol in requiredColsMissing)
                 {

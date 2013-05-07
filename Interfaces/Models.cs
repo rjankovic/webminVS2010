@@ -200,7 +200,7 @@ namespace _min.Interfaces
     }
 
 
-    public interface IFieldFactory
+    public interface IFieldFactory : ICloneable
     {
         string UIName { get; }
         FieldSpecificityLevel Specificity { get; }
@@ -212,11 +212,12 @@ namespace _min.Interfaces
         Type ProductionType { get; }
     }
 
-    public interface ICustomizableFieldFactory : IFieldFactory {
+    public interface ICustomizableColumnFieldFactory : IColumnFieldFactory {
         void ShowForm(WC.Panel panel);
-        bool ValidateForm();
-        void LoadProduct(IField field);
-        void UpdateProduct(IField field);
+        void ValidateForm();
+        string ErrorMessage { get; }
+        void LoadProduct(IColumnField field);
+        void UpdateProduct(IColumnField field);
     }
 
     /*

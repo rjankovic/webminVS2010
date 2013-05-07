@@ -32,7 +32,8 @@ namespace _min.Shared
         ValidationSummary validationSummary;
         bool noSessionForActPanel = false;
         MinMaster mm;
-
+        
+        
         /// <summary>
         /// Initializes basic environment - Project, SystemDriver (contains architecture - all the panels linked in a tree), architect, stats, webDriver;
         /// sets the panel PK (if present), creates basic dropdown menu and lets the WebControls of the wohole rest of the page be created
@@ -356,6 +357,7 @@ namespace _min.Shared
 
         private void UserActionCommandHandler(object sender, CommandEventArgs e)
         {
+            
             if (CE.GlobalState == GlobalState.Administer && mm.SysDriver.LockOwner(CE.project.Id, LockTypes.AdminLock) != null)
             {
                 AdminLockAlert();

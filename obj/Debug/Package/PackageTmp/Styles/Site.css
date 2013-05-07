@@ -1,0 +1,657 @@
+﻿/* DEFAULTS
+----------------------------------------------------------*/
+
+body   
+{
+    background: #FFF;
+    font-size: .80em;
+    font-family: "Helvetica Neue", "Lucida Grande", "Segoe UI", Arial, Helvetica, Verdana, sans-serif;
+    margin: 0px;
+    padding: 0px;
+    color: #222;
+    height: 100%;
+    z-index:0;
+}
+
+a:link, a:visited
+{
+    color: #222;
+    text-decoration: none;
+}
+
+a:hover
+{
+    color: #444;
+    text-decoration: underline;
+}
+
+a:active
+{
+    color: #034af3;
+}
+
+p
+{
+    margin-bottom: 10px;
+    line-height: 1.6em;
+}
+
+
+@font-face {  
+  font-family: "Flyboy";  
+  src: url(FlyBoyBB.otf ); /* IE */  
+  src: local("Flyboy BB"), url(FlyBoyBB.otf ) format("opentype"); /* non-IE */  
+}  
+
+/* HEADINGS   
+----------------------------------------------------------*/
+
+h1, h2, h3, h4, h5, h6
+{
+    font-size: 1.5em;
+    color: #666666;
+    font-variant: small-caps;
+    text-transform: none;
+    font-weight: 200;
+    margin-bottom: 0px;
+}
+
+h1
+{
+    font-size: 1.6em;
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+}
+
+h2
+{
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+h3
+{
+    font-size: 1.2em;
+}
+
+h4
+{
+    font-size: 1.1em;
+}
+
+h5, h6
+{
+    font-size: 1em;
+}
+
+/* this rule styles <h1> and <h2> tags that are the 
+first child of the left and right table columns */
+.rightColumn > h1, .rightColumn > h2, .leftColumn > h1, .leftColumn > h2
+{
+    margin-top: 0px;
+}
+
+
+/* PRIMARY LAYOUT ELEMENTS   
+----------------------------------------------------------*/
+
+.page
+{
+    width: 100%;
+    background-color: #fff;
+    padding: 0;
+    margin: 0px auto 0px auto;
+    height: 100%;
+    border-top: 1px solid #000;
+}
+
+.header
+{
+    position: relative;
+    margin: 0px;
+    padding: 0px;
+    background: #000;
+    color: #FFF;
+    width: 100%;
+    float:left;
+    position: absolute;
+}
+
+.pride
+{
+ width: 100%;
+ font-size: 120px;
+ color: #EEE;
+ font-family:"Flyboy";
+ text-align:center;
+ float: left;
+ }
+
+.WMCorner
+{
+    padding: 5px 10px 5px 10px;
+    float:left;
+    font-size: 1.35em;
+    border-right: 2px solid #444;
+}
+
+.header h1
+{
+    font-weight: 700;
+    margin: 0px;
+    padding: 0px 0px 0px 20px;
+    color: #f9f9f9;
+    border: none;
+    line-height: 2em;
+    font-size: 2em;
+}
+
+.main
+{
+    width: 920px;
+    margin: 60px auto;
+    padding: 10px;
+    min-height: 100%;
+}
+
+.leftCol
+{
+    padding: 6px 0px;
+    margin: 12px 8px 8px 8px;
+    width: 200px;
+    min-height: 200px;
+}
+
+.footer
+{
+    color: #4e5766;
+    padding: 8px 0px 0px 0px;
+    margin: 0px auto;
+    text-align: center;
+    line-height: normal;
+}
+
+
+/* TAB MENU   
+----------------------------------------------------------*/
+
+div.hideSkiplink
+{
+    background-color:#3a4f63;
+    width:100%;
+}
+
+div.menu
+{
+    /*padding: 4px 0px 4px 8px;*/
+}
+
+div.menu > .cssMenuNav :hover > ul {top: 35px;}
+
+
+div.menu ul
+{
+    background: #000;
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+    width: auto;
+    color: #FFF;
+    z-index: 3000;
+}
+
+div.menu ul li a, div.menu ul li a:visited
+{
+    display: block;
+    line-height: 1.35em;
+    padding: 8px 20px 4px;
+    text-decoration: none;
+    white-space: nowrap;
+    color: #AAA;
+    z-index:1000;
+}
+
+div.menu ul li ul
+{
+    background-color: #222;    
+}
+
+div.menu ul li a:hover
+{
+    color: #FFF;
+}
+
+
+
+div.menu ul li ul li a:hover
+{
+     color: #FFF;
+    border-bottom: 4px solid #444;
+}
+
+/* FORM ELEMENTS   
+----------------------------------------------------------*/
+
+div.inMenu
+{
+    /* margin: 0 auto; */
+    width: 100%;
+    border-bottom: 1px solid #AAA;
+}
+
+
+div.inMenu ul li
+{
+    
+    padding: 0px 10px 0px 0px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+div.inMenu ul li a
+{
+    font-size: 14px;
+    font-weight: bold;
+    color: #666;
+    padding-bottom: 5px;
+}
+div.inMenu ul li a:hvoer
+{
+    border-bottom: 3px solid #666;
+}
+
+
+
+div.inMenu ul li ul li
+{
+    padding: 0;    
+    text-align: left;
+    border-left: 1px solid #AAA;
+}
+
+div.inMenu ul li ul li:first-child
+{
+    padding-top: 15px;    
+}
+
+div.inMenu ul li ul li ul li:first-child
+{
+    padding-top: 0px;
+}
+
+div.inMenu ul li ul li a
+{
+    padding: 0px 20px 5px 20px;
+}
+div.inMenu ul li ul li:hover
+{
+    border-bottom: 1px solid #AAA;    
+}
+
+/* FORMS
+-----------------------------------------------------------------------------*/
+
+fieldset
+{
+    margin: 1em 0px;
+    padding: 1em;
+    border: 1px solid #ccc;
+}
+
+fieldset p 
+{
+    margin: 2px 12px 10px 10px;
+}
+
+fieldset.login label, fieldset.register label, fieldset.changePassword label
+{
+    display: block;
+}
+
+fieldset label.inline 
+{
+    display: inline;
+}
+
+legend 
+{
+    font-size: 1.1em;
+    font-weight: 600;
+    padding: 2px 4px 8px 4px;
+}
+
+input.textEntry 
+{
+    width: 320px;
+    border: 1px solid #ccc;
+}
+
+input.passwordEntry 
+{
+    width: 320px;
+    border: 1px solid #ccc;
+}
+
+div.accountInfo
+{
+    width: 42%;
+}
+
+/* PANEL HEADING
+----------------------------------------------------------*/
+
+div.panelHeading
+{
+    float:left;
+    background-color: #444;
+    color: #DDD;  
+    padding: 0px 10px 0px 10px;
+    margin-bottom: 30px;
+    
+    border-color: #444;
+    -webkit-border-bottom-right-radius: 10px;
+    -moz-border-radius-bottomright: 10px;
+    border-bottom-right-radius: 10px;  
+}
+
+div.panelHeading a, div.panelHeading a:visited, div.panelHeading span
+{
+    float: left;
+    color: #DDD;
+    padding: 5px 10px 5px 10px;
+    font-size: 1.0em;
+    text-decoration: none;
+}
+
+div.panelHeading a
+{
+    color: #BBB;
+    }
+div.panelHeading a:hover
+{
+    color: #DDD;
+    }
+/*    
+div.panelHeading a:nth-child(2)
+{
+    border-left: 1px solid #AAA;
+    }
+*/
+
+
+/* NavTable
+----------------------------------------------------------*/
+
+.navTable
+{
+    border-color: #AAA;
+}
+
+.navTable a
+{
+    margin-left: 10px;
+    }
+.navTable td
+{
+    padding: 3px 6px 3px 6px;
+    }
+.navTable th
+{
+    padding: 3px 6px 3px 6px;
+    font-weight: bold;
+    color: #000;
+    background-color: #AAA;
+    }
+.navTablePaging a, .navTablePaging span
+{
+    margin: 0;
+    padding: 5px;
+    font-weight: bold;
+    color: #444;
+}
+
+.navTablePaging
+{
+    background-color: #AAA;
+    }
+.navTablePaging a:hover
+{
+    color: #000;
+    text-decoration: none;
+    }
+    
+/* INPUTS
+----------------------------------------------------------*/
+
+input, select, textarea
+{
+    border: 1px solid #999;
+    padding: 5px;
+    background-color: #F9F9F9;
+    margin: 15px 10px 0 0px;
+}
+input:active, select:active, textarea:active
+{
+    border-color: #444;
+    
+    }
+select
+{
+    padding: 0;
+    }
+    
+.ajax__html_editor_extender_container input
+{
+    margin: 0;
+    padding: 0;
+}
+.ajax__html_editor_extender_container
+{
+    margin: 15px 10px 0 0;
+}
+
+.formTbl tr td:first-child
+{
+    padding-top: 1em;
+    padding-right: 20px;
+    text-align:right;
+    }
+    
+.projectDetail input[type="text"]
+{
+    width: 500px;
+    }
+.projectDetail tr td:first-child
+{
+    padding-right: 50px;
+    }
+
+/* MISC  
+----------------------------------------------------------*/
+
+.clear
+{
+    clear: both;
+}
+
+.noBullets
+{
+    list-style-type:none;
+    }
+
+.title
+{
+    display: block;
+    float: left;
+    text-align: left;
+    width: auto;
+}
+
+.loginDisplay
+{
+    font-size: 1.1em;
+    display: block;
+    text-align: right;
+    padding: 10px;
+    color: White;
+}
+
+.loginDisplay a:link
+{
+    color: white;
+}
+
+.loginDisplay a:visited
+{
+    color: white;
+}
+
+.loginDisplay a:hover
+{
+    color: white;
+}
+
+.failureNotification
+{
+    font-size: 1.2em;
+    color: Red;
+}
+
+.bold
+{
+    font-weight: bold;
+}
+
+.noShrink
+{
+    width:200px;
+    }
+/*
+.submitButton
+{
+    text-align: right;
+    padding-right: 10px;
+}
+
+/* DROPDOWN MENU
+---leave it------------------------------------------------*/
+
+/*
+.cssMenuContainer {position:relative; float:left;}
+
+.cssMenuNav, 
+.cssMenuNav ul {padding:0; margin:0; list-style:none; position:relative; z-index:100;}
+.cssMenuNav {float:left; padding:0; position:relative;}
+
+.cssMenuNav table {border-collapse:collapse;}
+.cssMenuNav li {float:left;}
+.cssMenuNav li li {float:none;}
+
+.cssMenuNav li a li {float:left;}
+
+.cssMenuNav li a {display:block; float:left; line-height:30px; white-space:nowrap;}
+.cssMenuNav li li a {float:none;}
+
+.cssMenuNav li:hover {position:relative; z-index:100;}
+.cssMenuNav a:hover {position:relative; z-index:100; border:0;}
+.cssMenuNav li:hover > a {}
+
+.cssMenuNav :hover  ul {left:0; z-index:300; op:30px;}
+.cssMenuNav a:hover ul {left:-1px; }
+
+.cssMenuNav ul {position:absolute; left:-9999px; top:-9999px;}
+
+
+.cssMenuNav li:hover li:hover > ul {left:0; margin-left:100%; top:0;}
+
+.cssMenuNav li:hover > ul ul {position:absolute; left:-9999px; top:-9999px; width:auto;}
+
+.cssMenuNav li:hover li:hover > a {}
+
+.cssMenuNav li a:hover ul li a:hover {}
+
+
+.cssMenuNav a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover a:hover ul
+{left:100%; top:0;}
+
+.cssMenuNav a:hover ul ul,
+.cssMenuNav a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul ul
+{position:absolute; left:-9999px; top:-9999px;}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+div.cssMenuContainer {position:relative; float:left; margin: 0 auto; padding: 0;}
+
+.cssMenuNav, 
+.cssMenuNav ul {padding:0; margin:0; list-style:none; position:relative; z-index:100;}
+.cssMenuNav {float:left; padding:0; position:relative;}
+
+.cssMenuNav table {border-collapse:collapse;}
+.cssMenuNav li {float:left;}
+.cssMenuNav li li {float:none;}
+/* a hack for IE5.x and IE6 */
+.cssMenuNav li a li {float:left;}
+
+.cssMenuNav li a {display:block; float:left; height:25px; padding:0 20px 0 10px; line-height:25px; white-space:nowrap;}
+.cssMenuNav li li a {float:none;}
+
+.cssMenuNav li:hover {position:relative; z-index:100;}
+.cssMenuNav a:hover {position:relative; z-index:100; border:0;}
+.cssMenuNav li:hover > a {}
+
+.cssMenuNav :hover  ul {left:0; top:25px; z-index:300;}
+.cssMenuContainer > .cssMenuNav :hover > ul {top: 30px;}
+.cssMenuNav a:hover ul {left:-1px;}
+
+.cssMenuNav ul {position:absolute; left:-9999px; top:-9999px;}
+
+/* it could have been this simple if all browsers understood */
+/* show next level */
+.cssMenuNav li:hover li:hover > ul {left:0; margin-left:100%; top:0;}
+/* keep further levels hidden */
+.cssMenuNav li:hover > ul ul {position:absolute; left:-9999px; top:-9999px; width:auto;}
+/* show path followed */
+.cssMenuNav li:hover li:hover > a {}
+
+.cssMenuNav li a:hover ul li a:hover {}
+
+/* but IE5.x and IE6 need this lot to style the flyouts*/
+/* show next level */
+.cssMenuNav a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul,
+.cssMenuNav a:hover a:hover a:hover a:hover a:hover ul
+{left:100%; top:0;}
+
+/* keep further levels hidden */
+.cssMenuNav a:hover ul ul,
+.cssMenuNav a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover ul ul,
+.cssMenuNav a:hover a:hover a:hover a:hover ul ul
+{position:absolute; left:-9999px; top:-9999px;}
+

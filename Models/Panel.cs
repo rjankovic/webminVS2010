@@ -141,7 +141,7 @@ namespace _min.Models
         {
             foreach (IField newField in fields)
             {
-                if (this.fields.Any(f => f.FieldId == newField.FieldId && this.panelId != 0))
+                if (this.fields.Any(f => f.FieldId == newField.FieldId && this.panelId != 0 && f.FieldId != null && f.FieldId != 0))
                     throw new Exception("Panel already contains a field with this id.");
                 this.fields.Add(newField);
                 newField.Panel = this;

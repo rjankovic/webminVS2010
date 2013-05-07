@@ -7,6 +7,7 @@ using System.IO;
 using System.Data;
 using System.Web.UI;
 using NLipsum.Core;
+using System.Drawing.Imaging;
 
 namespace _min.Common
 {
@@ -58,6 +59,12 @@ namespace _min.Common
             StreamReader reader = new StreamReader(s);
             return reader.ReadToEnd();
         }
+
+        public static double UnixTimestamp()
+        {
+            return (DateTime.Now - new DateTime(1970, 1, 1).ToLocalTime()).TotalSeconds;
+        }
+
     }
 
     public class ColumnDisplayComparer : IComparer<DataColumn>

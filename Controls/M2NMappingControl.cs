@@ -115,6 +115,7 @@ namespace _min.Controls
         
         protected override void Render(HtmlTextWriter writer)
         {
+            
             AddAttributesToRender(writer);
             writer.AddAttribute(HtmlTextWriterAttribute.Cellpadding, "10", false);
             writer.RenderBeginTag(HtmlTextWriterTag.Table);
@@ -127,11 +128,11 @@ namespace _min.Controls
             outList.CssClass = "noShrink";
             inList.Attributes.Add("title", "Included items");
             outList.Attributes.Add("title", "Excluded items");
-            inList.Attributes.Add("runat", "server");
+            //inList.Attributes.Add("runat", "server");
             inList.RenderControl(writer);
             writer.RenderEndTag();
             writer.RenderBeginTag(HtmlTextWriterTag.Td);
-            outList.Attributes.Add("runat", "server");
+            //outList.Attributes.Add("runat", "server");
             outList.RenderControl(writer);
             writer.RenderEndTag();
             writer.RenderEndTag();

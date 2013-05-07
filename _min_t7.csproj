@@ -74,6 +74,7 @@
     <Content Include="Account\PasswordRecovery.aspx" />
     <Content Include="Account\Login.aspx" />
     <Content Include="Account\Register.aspx" />
+    <Content Include="Architect\EditEditableCustom.aspx" />
     <Content Include="Architect\EditPanels.aspx" />
     <Content Include="Architect\EditNav.aspx" />
     <Content Include="Architect\EditEditable.aspx" />
@@ -169,6 +170,13 @@
     <Compile Include="Account\Register.aspx.designer.cs">
       <DependentUpon>Register.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Architect\EditEditableCustom.aspx.cs">
+      <DependentUpon>EditEditableCustom.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Architect\EditEditableCustom.aspx.designer.cs">
+      <DependentUpon>EditEditableCustom.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Architect\EditPanels.aspx.cs">
       <DependentUpon>EditPanels.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -204,6 +212,7 @@
     <Compile Include="Architect\InitProposal.aspx.designer.cs">
       <DependentUpon>InitProposal.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Controls\ImageUpload.cs" />
     <Compile Include="Controls\CssMenu.cs" />
     <Compile Include="Error\Lockout.aspx.cs">
       <DependentUpon>Lockout.aspx</DependentUpon>
@@ -219,6 +228,7 @@
     <Compile Include="Misc\KeepAlive.aspx.designer.cs">
       <DependentUpon>KeepAlive.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Models\ImageField.cs" />
     <Compile Include="Shared\Show.aspx.cs">
       <DependentUpon>Show.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

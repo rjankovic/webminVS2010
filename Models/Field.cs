@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Data;
 using System.Runtime.Serialization;
 using System.IO;
-using System.Text.RegularExpressions;
 
 using _min.Interfaces;
 using _min.Common;
@@ -14,8 +11,7 @@ using UControl = System.Web.UI.WebControls.WebControl;
 using WC = System.Web.UI.WebControls;
 using System.Web;
 using CC = _min.Common.Constants;
-
-using NLipsum.Core;
+using CE = _min.Common.Environment;
 
 namespace _min.Models
 {
@@ -23,15 +19,8 @@ namespace _min.Models
     [DataContract]
     public abstract class FieldBase : IField
     {
-        static IEnumerable<Type> GetKnownTypes() {
-            var factories = (IEnumerable<IColumnFieldFactory>)HttpContext.Current.Application["ColumnFieldFactories"];
-            List<Type> types = new List<Type>();
-            foreach (IColumnFieldFactory factory in factories)
-                types.Add(factory.ProductionType);
-
-            types.Add(typeof(M2NMappingField));
-            types.Add(typeof(ColumnField));
-            return types;
+        public static IEnumerable<Type> GetKnownTypes() {
+            return CE.GetKnownTypes();
         }
 
         [IgnoreDataMember]
@@ -118,6 +107,12 @@ namespace _min.Models
 }
     [DataContract]
     public abstract class ColumnField : FieldBase, IColumnField {
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
+        
         [DataMember]
         public string ColumnName { get; protected set; }
         [DataMember]
@@ -137,6 +132,11 @@ namespace _min.Models
 
         protected WC.TextBox myControl;
         protected string value;
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
 
         public override UControl MyControl
         {
@@ -230,11 +230,22 @@ namespace _min.Models
         {
             return new TextField(column.ColumnName, column.ColumnName);
         }
+
+        public object Clone()
+        {
+            return new TextFieldFactory();
+        }
     }
 
     [DataContract]
     public class TextEditorField : TextField
     {
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
+
         public override UControl MyControl
         {
             get
@@ -291,6 +302,11 @@ namespace _min.Models
             return new TextEditorField(column.ColumnName, column.ColumnName);
         }
 
+
+        public object Clone()
+        {
+            return new TextEditorFieldFactory();
+        }
     }
 
 
@@ -302,7 +318,10 @@ namespace _min.Models
         private DateTime? value = null;
         private string unparsedValue;
 
-
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
 
         public override void Validate()
         {
@@ -416,6 +435,11 @@ namespace _min.Models
         {
             return new DateField(column.ColumnName, column.ColumnName);
         }
+
+        public object Clone()
+        {
+            return new DateFieldFactory();
+        }
     }
 
 
@@ -428,6 +452,10 @@ namespace _min.Models
         protected WC.CheckBox myControl;
         private bool value = false;
 
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
 
         public override void Validate()
         {
@@ -499,7 +527,7 @@ namespace _min.Models
 
 
 
-    public class Checkboxactory : IColumnFieldFactory
+    public class CheckboxFieldFactory : IColumnFieldFactory
     {
         public string UIName
         {
@@ -534,6 +562,11 @@ namespace _min.Models
         {
             return new CheckboxField(column.ColumnName, column.ColumnName);
         }
+
+        public object Clone()
+        {
+            return new CheckboxFieldFactory();
+        }
     }
 
 
@@ -544,6 +577,11 @@ namespace _min.Models
         protected WC.DropDownList myControl;
         private int? value = null;
 
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
 
         public override void Validate()
         {
@@ -664,12 +702,23 @@ namespace _min.Models
             return new FKField(column.ColumnName, column.ColumnName, (FK)column.ExtendedProperties["FK"]);
         }
 
+
+        public object Clone()
+        {
+            return new FKFieldFactory();
+        }
     }
 
 
     [DataContract]
     class M2NMappingField : FieldBase
     {
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
+
         [IgnoreDataMember]
         public SortedDictionary<int, string> options = null;
         [IgnoreDataMember]
@@ -764,6 +813,12 @@ namespace _min.Models
     public class IntegerField : ColumnField {
         private int? value;
         private WC.TextBox myControl;
+
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
 
         public IntegerField(string columnName, string caption)
             : base(columnName, caption)
@@ -870,12 +925,23 @@ namespace _min.Models
             return new IntegerField(column.ColumnName, column.ColumnName);
         }
 
+
+        public object Clone()
+        {
+            return new IntegerFieldfactory();
+        }
     }
 
 
     [DataContract]
     public class DecimalField : ColumnField
     {
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
+
         [IgnoreDataMember]
         private double? value;
         [IgnoreDataMember]
@@ -987,9 +1053,14 @@ namespace _min.Models
             return new DecimalField(column.ColumnName, column.ColumnName);
         }
 
+
+        public object Clone()
+        {
+            return new DecimalFieldfactory();
+        }
     }
 
-
+    
 
     [DataContract]
     public class EnumField : ColumnField {
@@ -999,6 +1070,11 @@ namespace _min.Models
         private string value;
         [DataMember]
         private List<string> options;
+
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            return CE.GetKnownTypes();
+        }
 
         public EnumField(string columnName, string caption, List<string> options) 
             :base(columnName, caption)
@@ -1059,7 +1135,7 @@ namespace _min.Models
                     this.value = null;
                     return;
                 }
-                if (!options.Contains(value))
+                if (!options.Contains(value as string))
                     throw new ArgumentException("This option in not a part of the enumeration");
                 this.value = value as string;
             }
@@ -1104,434 +1180,14 @@ namespace _min.Models
                 return FieldSpecificityLevel.High;
             }
         }
+
+        public object Clone()
+        {
+            return new EnumFieldFactory();
+        }
     }
+    
 
     // no factory for M2N
 
-
-
-
-
-
-
-
-
-
-
-
-    /*
-
-
-        /// <summary>
-        /// creates WebControl for hte field, may give it basic styling, doesn`t bind any data
-        /// </summary>
-        /// <param name="extenders">AjaxControlToolkit extenders, for the needs of a html text field</param>
-        /// <param name="handler">General event handler for events on text fields, that there for any fieldtype so far</param>
-        /// <returns></returns>
-        public virtual UControl ToUControl(EventHandler handler = null)
-        {
-            System.Web.UI.Control res;
-            switch (type)
-            {
-
-                case FieldTypes.Date:
-                    WC.TextBox resCal = new WC.TextBox();
-                    resCal.ID = "Field" + fieldId.ToString();
-                    resCal.CssClass = "includeDatePicker";
-                    //AjaxControlToolkit.CalendarExtender calendarExtender = new AjaxControlToolkit.CalendarExtender();
-                    //calendarExtender.TargetControlID = resCal.ID;
-                    //extenders.Add(calendarExtender);
-
-                    res = resCal;
-                    break;
-                case FieldTypes.DateTime:
-                    throw new NotImplementedException(); // composite control
-                case FieldTypes.Time:
-                    throw new NotImplementedException();
-                case FieldTypes.Holder:
-                    WC.Panel resHol = new WC.Panel();
-                    //return resHol;
-                    res = resHol;
-                    break;
-                case FieldTypes.ShortText:
-                    WC.TextBox resTxt = new WC.TextBox();
-                    //resTxt.EnableViewState = false;
-                    //if(value is string)
-                    //    resTxt.Text = (string)value;
-                    //resTxt.ID = "Field" + fieldId.ToString();
-                    resTxt.Width = 300;
-                    res = resTxt;
-                    break;
-                case FieldTypes.Text:
-                    //AjaxControlToolkit.HtmlEditorExtender editor = new AjaxControlToolkit.HtmlEditorExtender();
-                    WC.TextBox tb = new WC.TextBox();
-                    //if(value is string)
-                    //    tb.Text = (string)value;
-                    tb.ID = "Field" + fieldId.ToString();
-                    tb.Width = 500;
-                    tb.Height = 250;
-                    tb.CssClass = "includeEditor";
-                    //editor.Enabled = true;
-                    //editor.TargetControlID = tb.ID;
-                    //extenders.Add(editor);
-                    res = tb;
-                    break;
-                case FieldTypes.Bool:
-                    WC.CheckBox cb = new WC.CheckBox();
-                    if (value is bool)
-                        cb.Checked = (bool)value;
-                    res = cb;
-                    break;
-                case FieldTypes.Enum:
-                    throw new NotFiniteNumberException();
-                default:
-                    throw new NotImplementedException();
-            }
-            res.ID = "Field" + fieldId;
-            this.myControl = res;
-            return res;
-        }
-
-        // retrieves data seved in vewstate on Page_Load, saves it to inner value variable
-        public virtual void RetrieveData()
-        {
-            switch (type)
-            {
-                case FieldTypes.Date:
-                    WC.TextBox resCal = (WC.TextBox)myControl;
-                    DateTime date = DateTime.MinValue;
-                    DateTime.TryParse(resCal.Text, out date);
-                    if (date != DateTime.MinValue)
-                        value = date;
-                    break;
-                case FieldTypes.DateTime:
-                    throw new NotImplementedException(); // composite control
-                case FieldTypes.Time:
-                    throw new NotImplementedException();
-                case FieldTypes.Holder:
-                    break;
-                case FieldTypes.Text:
-                case FieldTypes.ShortText:
-                    WC.TextBox resTxt = (WC.TextBox)myControl;
-                    value = resTxt.Text;
-                    break;
-                case FieldTypes.Bool:
-                    WC.CheckBox cb = (WC.CheckBox)myControl;
-                    value = cb.Checked;
-                    break;
-                case FieldTypes.Enum:
-                    throw new NotFiniteNumberException();
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        // sets the WebControl`s value based on the inner value variable
-        public virtual void SetControlData()
-        {
-            if (value == null || value == DBNull.Value) return;
-            switch (type)
-            {
-                case FieldTypes.Date:
-                    WC.TextBox resCal = (WC.TextBox)myControl;
-                    if (value is DateTime)
-                        resCal.Text = ((DateTime)value).ToShortDateString();
-                    break;
-                case FieldTypes.DateTime:
-                    throw new NotImplementedException(); // composite control
-                case FieldTypes.Time:
-                    throw new NotImplementedException();
-                case FieldTypes.Holder:
-                    break;
-                case FieldTypes.Text:
-                case FieldTypes.ShortText:
-                    WC.TextBox resTxt = (WC.TextBox)myControl;
-                    resTxt.Text = value.ToString();
-                    break;
-                case FieldTypes.Bool:
-                    WC.CheckBox cb = (WC.CheckBox)myControl;
-                    if(value is sbyte){
-                        if ((sbyte)value == 0) value = false;
-                        else if ((sbyte)value == 1) value = true;
-                    }
-                    cb.Checked = (bool)value;
-                    break;
-                case FieldTypes.Enum:
-                    throw new NotFiniteNumberException();
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        // creates a validator for every ValidatorRule in rules collection
-        public virtual List<WC.BaseValidator> GetValidator()
-        {
-            List<WC.BaseValidator> res = new List<WC.BaseValidator>();
-            UControl fieldControl = myControl;
-
-            foreach (ValidationRules rule in validationRules)
-            {
-                switch (rule)
-                {
-                    case ValidationRules.Required:
-                        WC.RequiredFieldValidator reqVal;
-                        reqVal = new WC.RequiredFieldValidator();
-                        reqVal.ControlToValidate = fieldControl.ID; // if not set, set in ToUControl using panel and field id
-                        reqVal.ErrorMessage = this.caption + " is required";
-                        reqVal.Display = WC.ValidatorDisplay.None;
-                        res.Add(reqVal);
-                        break;
-                    case ValidationRules.Ordinal:
-                        WC.RegularExpressionValidator regexVal = new WC.RegularExpressionValidator();
-                        regexVal.ValidationExpression = "[0-9]+";
-                        regexVal.ControlToValidate = fieldControl.ID;
-                        regexVal.ErrorMessage = this.caption + " must be an integer";
-                        regexVal.Display = WC.ValidatorDisplay.None;
-                        res.Add(regexVal);
-                        break;
-                    case ValidationRules.Decimal:
-                        WC.RegularExpressionValidator regexVal2 = new WC.RegularExpressionValidator();
-                        regexVal2.ValidationExpression = "[0-9]+([.,][0-9]+)?";
-                        regexVal2.ControlToValidate = fieldControl.ID;
-                        regexVal2.ErrorMessage = this.caption + " must be a decimal number";
-                        regexVal2.Display = WC.ValidatorDisplay.None;
-                        res.Add(regexVal2);
-                        break;
-                    case ValidationRules.Unique:
-                        // will be ensured during Webdriver insert / update
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return res;
-        }
-
-        // does server-side validation (which is neccessary with mono)
-        public virtual List<string> Validate()
-        {
-            List<string> res = new List<string>();
-            UControl fieldControl = myControl;
-
-            foreach (ValidationRules rule in validationRules)
-            {
-                switch (rule)
-                {
-                    case ValidationRules.Required:
-                        if(value == null || String.IsNullOrEmpty(value.ToString()))
-                            res.Add(this.caption + " is required");
-                        break;
-                    case ValidationRules.Ordinal:
-                        if (!(value == null || String.IsNullOrEmpty(value.ToString())) && !Regex.IsMatch(value as string, "[0-9]+"))
-                            res.Add(this.caption + " must be an integer");
-                        break;
-                    case ValidationRules.Decimal:
-                        if (!(value == null || String.IsNullOrEmpty(value.ToString())) && !Regex.IsMatch(value as string, "[0-9]+([.,][0-9]+)?"))
-                            res.Add(this.caption + " must be a decimal number");
-                        break;
-                    case ValidationRules.Unique:
-                        // will be ensured during Webdriver insert / update
-                        break;
-                    default:
-                        break;
-                }
-            }
-            return res;
-        }
-    }
-
-
-    [DataContract]
-    class FKField : Field
-    {
-        [IgnoreDataMember]
-        private int? _value;
-        [IgnoreDataMember]
-        public SortedDictionary<int, string> options = null;
-        public override object value
-        {
-
-            get
-            {
-                return _value;
-            }
-            set
-            {
-                if (value == null || value == DBNull.Value)
-                    this._value = null;
-                else
-                    if (!(value is int))
-                        throw new ArgumentException("Value of a FK field must be int or null");
-                    else
-                        this._value = (int)value;
-            }
-        }
-        [DataMember]
-        private FK fk;
-
-        public FK FK
-        {
-            get
-            {
-                return fk;
-            }
-
-            private set
-            {
-                fk = value;
-            }
-
-        }
-
-        public FKField(int fieldId, string column, int panelId, FK fk, string caption = null)
-            : base(fieldId, column, FieldTypes.FK, panelId, caption)
-        {
-            this.fk = fk;
-        }
-
-
-        public void SetOptions(SortedDictionary<int, string> options)
-        {     // set inner options collection, dont bind them yet
-            if (this.options == null) this.options = options;
-            else throw new Exception("FK Options already set");
-        }
-
-        public override UControl ToUControl(EventHandler handler = null)
-        {
-            WC.DropDownList res = new WC.DropDownList();
-            res.ID = "Field" + fieldId;
-            this.myControl = res;
-            return res;
-        }
-
-        public override void RetrieveData()
-        {
-            WC.DropDownList ddl = (WC.DropDownList)myControl;
-            int v = Int32.Parse(ddl.SelectedValue);
-            if (v == int.MinValue) value = null;
-            else value = v;
-        }
-
-        public override void SetControlData()
-        {
-            WC.DropDownList ddl = (WC.DropDownList)myControl;
-            ddl.DataTextField = "Value";
-            ddl.DataValueField = "Key";
-            if (!validationRules.Contains(ValidationRules.Required)) options[int.MinValue] = "";
-            ddl.DataSource = options;
-            ddl.DataBind();
-            if (value == null) return;
-            ddl.SelectedIndex = ddl.Items.IndexOf(ddl.Items.FindByValue(value.ToString()));
-        }
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-
-
-    [DataContract]
-    class EnumField : Field
-    {
-        [IgnoreDataMember]
-        private int? _value;
-        [DataMember]
-        private List<string> options = null;
-        public override object value
-        {
-
-            get
-            {
-                return _value;
-            }
-            set
-            {
-                if (value == null || value == DBNull.Value || value.ToString() == "")
-                    this._value = null;
-                else
-                    if (value is string)
-                    {
-                        if (options.Contains(value as string))
-                            _value = options.IndexOf(value as string) + 1;
-                        else throw new ArgumentException("Value not forund within enum options");
-                    }
-                    else if (value is int)
-                    {
-                        _value = (int)value;
-                    }
-                    else throw new ArgumentException("Value not found winthin enum options");
-            }
-        }
-
-        public EnumField(int fieldId, string column, int panelId, List<string> options, string caption = null)
-            : base(fieldId, column, FieldTypes.Enum, panelId, caption)
-        {
-            this.options = options;
-        }
-
-
-        public override UControl ToUControl(EventHandler handler = null)
-        {
-            WC.DropDownList res = new WC.DropDownList();
-            res.ID = "Field" + fieldId;
-            this.myControl = res;
-            return res;
-        }
-
-        public override void RetrieveData()
-        {
-            WC.DropDownList ddl = (WC.DropDownList)myControl;
-            if(ddl.SelectedIndex == -1) return;
-            int v = Int32.Parse(ddl.SelectedValue);
-            value = v;
-        }
-
-        public override void SetControlData()
-        {
-            SortedDictionary<int, string> optDict = new SortedDictionary<int, string>();
-            for (int i = 0; i < options.Count; i++)
-            {
-                optDict[i + 1] = options[i];
-            }
-
-            WC.DropDownList ddl = (WC.DropDownList)myControl;
-            ddl.DataTextField = "Value";
-            ddl.DataValueField = "Key";
-            if (!validationRules.Contains(ValidationRules.Required)) optDict[int.MinValue] = "";
-            ddl.DataSource = optDict;
-            ddl.DataBind();
-            if (value == null) return;
-            ddl.SelectedIndex = ddl.Items.IndexOf(ddl.Items.FindByValue(value.ToString()));
-        }
-
-    }
-     */
 }

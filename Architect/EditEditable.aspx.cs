@@ -15,6 +15,7 @@ using _min.Navigation;
 using CC = _min.Common.Constants;
 using CE = _min.Common.Environment;
 using MPanel = _min.Models.Panel;
+using WPanel = System.Web.UI.WebControls.Panel;
 using _min.Controls;
 using _min.Interfaces;
 
@@ -37,7 +38,7 @@ namespace _min.Architect
         protected void Page_Init(object sender, EventArgs e)
         {
             mm = (MinMaster)Master;
-            factories = (List<IColumnFieldFactory>)Application["ColumnFiledFactories"];
+            factories = (List<IColumnFieldFactory>)Application["ColumnFieldFactories"];
             _min.Common.Environment.GlobalState = GlobalState.Architect;
 
             int panelId = Int32.Parse(Page.RouteData.Values["panelId"] as string);
@@ -120,6 +121,7 @@ namespace _min.Architect
                 dl.DataValueField = "Key";
                 dl.DataTextField = "Value";
                 dl.DataBind();
+
                 dl.SelectedIndex = current;
                 typeCell.Controls.Add(dl);
                 r.Cells.Add(typeCell);
@@ -151,11 +153,15 @@ namespace _min.Architect
                 CheckBox requiredCb = new CheckBox();
                 Label requiredlabel = new Label();
                 requiredlabel.Text = "required ";
-                requiredCb.Checked = cf.Required;
                 CheckBox uniCheck = new CheckBox();
                 Label uniLabel = new Label();
                 uniLabel.Text = "unique";
-                uniCheck.Checked = cf.Unique;
+
+                if (cf != null)
+                {
+                    requiredCb.Checked = cf.Required;
+                    uniCheck.Checked = cf.Unique;
+                }
 
                 if (!(cf is CheckBoxField))
                 {
@@ -176,8 +182,11 @@ namespace _min.Architect
                 if (cf != null) {
                     caption.Text = cf.Caption;
                 }
+                // index 6
                 
                 tbl.Rows.Add(r);
+                
+                
             }
 
             
@@ -246,8 +255,26 @@ namespace _min.Architect
             
             
             backButton.PostBackUrl = backButton.GetRouteUrl("ArchitectShowRoute", new { projectName = mm.ProjectName });
+
+
+             
             
         }
+        /*
+        protected void Page_LoadComplete(object sender, EventArgs e) {
+            int i = 1;
+            foreach (DataColumn col in mm.Stats.ColumnTypes[actPanel.tableName])
+            {       // standard fields
+                TableRow r = tbl.Rows[i++];
+                if (!((CheckBox)r.Cells[1].Controls[0]).Checked)
+                    continue;
+                // label, present, type, valid, caption
+
+                TypeDrop_IndexChanged(((DropDownList)r.Cells[2].Controls[0]), new EventArgs());
+            }
+
+        }
+        */
 
         
 
@@ -257,6 +284,8 @@ namespace _min.Architect
             List<IField> fields = new List<IField>();
             int i = 1;
 
+            Dictionary<DataColumn, Dictionary<string, object>> customs = new Dictionary<DataColumn, Dictionary<string, object>>();
+
             foreach (DataColumn col in mm.Stats.ColumnTypes[actPanel.tableName])
             {       // standard fields
                 TableRow r = tbl.Rows[i++];
@@ -265,20 +294,34 @@ namespace _min.Architect
                 // label, present, type, valid, caption
 
                IColumnFieldFactory factory = factories[Int32.Parse(((DropDownList)r.Cells[2].Controls[0]).SelectedValue)];
+               
 
                 // cell 3 is for FK display column dropList
 
-                List<ValidationRules> rules = new List<ValidationRules>();
-                CheckBox reqChb = (CheckBox)r.Cells[4].Controls[1];
-                if(reqChb.Checked) rules.Add(ValidationRules.Required);
-                if(r.Cells[4].Controls.Count == 3){
-                    DropDownList ddl = (DropDownList)r.Cells[4].Controls[2];
-                    if(ddl.SelectedValue != "")
-                        rules.Add((ValidationRules)Enum.Parse(typeof(ValidationRules), ddl.SelectedValue));
+                //List<ValidationRules> rules = new List<ValidationRules>();
+                //if(reqChb.Checked) rules.Add(ValidationRules.Required);
+
+               bool required = false;
+               bool unique = false;
+                if(r.Cells[4].Controls.Count == 4){
+                    CheckBox reqChb = (CheckBox)r.Cells[4].Controls[1];
+                    CheckBox uniChb = (CheckBox)r.Cells[4].Controls[3];
+                    required = reqChb.Checked;
+                    unique = reqChb.Checked;
                 }
                 
                 string caption = ((TextBox)r.Cells[5].Controls[0]).Text;
                 if (caption == "") caption = null;
+
+                if (factory is ICustomizableColumnFieldFactory)
+                {
+                    customs[col] = new Dictionary<string, object>();
+                    customs[col]["factory"] = factory.Clone();      // so that each field gets its factory even if there more custom fields of the same type
+                    customs[col]["required"] = required;
+                    customs[col]["unique"] = unique;
+                    customs[col]["caption"] = caption;
+                    continue;
+                }
 
                 IField newField;
                 /*
@@ -299,6 +342,9 @@ namespace _min.Architect
                 //{
                     newField = factory.Create(col);
                     newField.Caption = caption;
+                    newField.Required = required;
+                    if (newField is IColumnField)
+                        ((IColumnField)newField).Unique = unique;
                 //}
                 fields.Add(newField);
             }
@@ -350,24 +396,33 @@ namespace _min.Architect
             resPanel.panelName = panelName.Text;
 
             
-            valid = valid && mm.Architect.checkPanelProposal(resPanel, out errorMsgs);
+            valid = valid && mm.Architect.checkPanelProposal(resPanel, out errorMsgs, customs);
             
             // validate the Panel using Architect`s validator - don`t edit PKs, unique columns must have the constraint, must contain all collumns except Nullable
             // and AI and more rules
             validationResult.Items.Clear();
             if (valid)
             {
-                validationResult.Items.Add(new ListItem("Valid"));
+                if (customs.Count == 0)
+                {
+                    validationResult.Items.Add(new ListItem("Valid"));
 
-                actPanel = resPanel;
-                mm.SysDriver.BeginTransaction();
-                mm.SysDriver.UpdatePanel(actPanel);
-                Session.Clear();
-                mm.SysDriver.IncreaseVersionNumber();
-                mm.SysDriver.CommitTransaction();
-                
-                validationResult.Items.Add(new ListItem("Saved"));
-                Response.Redirect(Page.Request.RawUrl);
+                    actPanel = resPanel;
+                    mm.SysDriver.BeginTransaction();
+                    mm.SysDriver.UpdatePanel(actPanel);
+                    Session.Clear();
+                    mm.SysDriver.IncreaseVersionNumber();
+                    mm.SysDriver.CommitTransaction();
+
+                    validationResult.Items.Add(new ListItem("Saved"));
+                    Response.Redirect(Page.Request.RawUrl);
+                }
+                else { 
+                    Session["interPanel"] = resPanel;
+                    Session["customs"] = customs;
+                    Response.RedirectToRoute("ArchitectEditEditableCustomRoute", new {projectName = CE.project.Name, panelId = actPanel.panelId});  
+                        // for the sake of unity (and SysDriver)
+                }
             }
             else
             {

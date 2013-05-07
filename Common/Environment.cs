@@ -6,6 +6,7 @@ using System.Data;
 using System.Text.RegularExpressions;
 using _min.Interfaces;
 using _min.Models;
+using System.Web;
 
 namespace _min.Common
 {
@@ -18,12 +19,21 @@ namespace _min.Common
     public enum ValidationRules { Required, Ordinal, Decimal, DateTime, Date, Unique }
     public enum GlobalState { Architect, Administer, UsersManagement, ProjectsManagement, Account, Error, Unknown }
     public enum LockTypes { AdminLock, ArchitectLock }
+    public enum FileNameFormat { UnixTime, UploadName, Both }
+    public enum TargetImageFormat { JPG, PNG }
 
     public class LockAcquiryException : Exception
     { }
 
     public static class Environment
     {
+        public static string BaseDir
+        {
+            get
+            {
+                return AppDomain.CurrentDomain.BaseDirectory;
+            }
+        }
         private static GlobalState _globalState = Common.GlobalState.Unknown;
         public static GlobalState GlobalState
         {
@@ -35,7 +45,17 @@ namespace _min.Common
             }
         }
 
+        public static IEnumerable<Type> GetKnownTypes()
+        {
+            var factories = (IEnumerable<IColumnFieldFactory>)HttpContext.Current.Application["ColumnFieldFactories"];
+            List<Type> types = new List<Type>();
+            foreach (IColumnFieldFactory factory in factories)
+                types.Add(factory.ProductionType);
 
+            types.Add(typeof(M2NMappingField));
+            types.Add(typeof(ColumnField));
+            return types;
+        }
         
         // User and Project objects can be created freely, 
         // but only once initiated in the Environment

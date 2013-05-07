@@ -46,6 +46,8 @@ namespace _min
                 "~/Architect/EditMenu.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectEditEditableRoute", "architect/editEditable/{projectName}/{panelId}", 
                 "~/Architect/EditEditable.aspx");
+            RouteTable.Routes.MapPageRoute("ArchitectEditEditableCustomRoute", "architect/editEditableCustom/{projectname}/{panelId}",
+    "~/Architect/EditEditableCustom.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectEditNavRoute", "architect/editNav/{projectName}/{panelId}",
                 "~/Architect/EditNav.aspx");
             RouteTable.Routes.MapPageRoute("ArchitectEditPanelsRoute", "architect/editPanels/{projectName}",
@@ -72,35 +74,31 @@ namespace _min
 
         }
 
+
+
+        private void AddFactoriesFromAssembly(Assembly a, List<IColumnFieldFactory> factories) {
+            Type factoryType = typeof(IColumnFieldFactory);
+            factories.AddRange((from t in a.GetTypes()
+                                where t.GetInterfaces().Contains(factoryType)
+                                         && t.GetConstructor(Type.EmptyTypes) != null
+                                select Activator.CreateInstance(t) as IColumnFieldFactory).ToList<IColumnFieldFactory>());
+        }
+
         void Session_Start(object sender, EventArgs e)
         {
-            // Code that runs when a new session is started
-
-            /*
-             DirectoryInfo dir = new DirectoryInfo("/ColumnFields/");
-            FileInfo[] dlls = dir.GetFiles("*.dll");
+            //create a list of all available ColumnField factories, both local and foreign
+            List<IColumnFieldFactory> factories = new List<IColumnFieldFactory>();
+            AddFactoriesFromAssembly(Assembly.GetExecutingAssembly(), factories);
             
+            DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + "bin/ColumnFields/");
+            FileInfo[] dlls = dir.GetFiles("*.dll");
+
             foreach (FileInfo fi in dlls)
             {
-                Assembly.LoadFrom(fi.FullName);
-            }*/
-
-            //List<_min.Interfaces.IColumnFieldFactory> factories = new List<Interfaces.IColumnFieldFactory>();
-            Type factoryType = typeof(IColumnFieldFactory);
-
-            List<IColumnFieldFactory> factories = (from t in Assembly.GetExecutingAssembly().GetTypes()
-                                                   where t.GetInterfaces().Contains(factoryType)
-                                                            && t.GetConstructor(Type.EmptyTypes) != null
-                                                   select Activator.CreateInstance(t) as IColumnFieldFactory).ToList<IColumnFieldFactory>();
-
-            /*
-            IEnumerable<Type> factoryDerivedTypes = Assembly.GetExecutingAssembly().GetTypes().Where(cl => factoryType.IsAssignableFrom(cl));
-            foreach (var instance in factoryDerivedTypes)
-            {
-                var instance = Activator.CreateInstance(t);
-                factories.Add((_min.Interfaces.IColumnFieldFactory)instance);
+                //Assembly foreign = Assembly.LoadFrom(fi.FullName);    // TODO: uncomment when done
+                //AddFactoriesFromAssembly(foreign, factories);
             }
-            */
+
 
             Application["ColumnFieldFactories"] = factories;
 

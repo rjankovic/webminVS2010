@@ -331,11 +331,12 @@ namespace _min.Models
         }
 
         public void TestConnection() {
-            MySqlCommand cmd = new MySqlCommand("SELECT 1");
+            MySqlCommand cmd = new MySqlCommand("SELECT VERSION()");
             cmd.Connection = conn;
             conn.Open();
-            cmd.ExecuteNonQuery();
+            string version = (string)cmd.ExecuteScalar();
             conn.Close();
+            if (!version.StartsWith("5")) throw new Exception("Incompatible MySQL version: " + version);
         }
 
     }
