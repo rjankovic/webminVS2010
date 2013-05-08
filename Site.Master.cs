@@ -53,7 +53,7 @@ namespace _min
             else 
                 Common.Environment.GlobalState = GlobalState.Error;
 
-
+            
             // session expiry means logout, even if the provider would keep it
             if (Session.IsNewSession && user != null 
                 && CE.GlobalState != GlobalState.Account && CE.GlobalState != GlobalState.Error)

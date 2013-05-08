@@ -181,7 +181,7 @@ namespace _min.Models
             }
             set
             {
-                if (value == null) {
+                if (value == null || value == DBNull.Value) {
                     this.value = null; 
                     return;
                 }
@@ -494,14 +494,21 @@ namespace _min.Models
             }
             set
             {
+                
                 if (value == null || value == DBNull.Value)
                 {
                     this.value = false;
                     return;
                 }
-                if (!(value is bool))
-                    throw new FormatException("A checkbox filed can be only assigned boolean data");
-                this.value = (bool)value;
+                if (value is sbyte)
+                {
+                    this.value = (sbyte)value == 1;
+                }
+                else if (value is bool)
+                {
+                    this.value = (bool)value;
+                }
+                else throw new FormatException("A checkbox filed can be only assigned boolean data");
             }
         }
 
@@ -648,11 +655,11 @@ namespace _min.Models
                     myControl.ClientIDMode = System.Web.UI.ClientIDMode.Static;
                     if (!Required)
                         FKOptions.Add(int.MinValue, "");
-                    myControl.DataSource = FKOptions;
-                    myControl.DataTextField = "Value";
-                    myControl.DataValueField = "Key";
-                    myControl.DataBind();
                 }
+                myControl.DataSource = FKOptions;
+                myControl.DataTextField = "Value";
+                myControl.DataValueField = "Key";
+                myControl.DataBind();
                 return myControl;
             }
         }
@@ -771,8 +778,8 @@ namespace _min.Models
                 {
                     myControl = new M2NMappingControl();
                     myControl.ID = "Field" + FieldId;
-                    myControl.SetOptions(FKOptions);
                 }
+                myControl.SetOptions(FKOptions);
                 return myControl;
             }
         }
@@ -1061,7 +1068,7 @@ namespace _min.Models
     }
 
     
-
+    /*
     [DataContract]
     public class EnumField : ColumnField {
         [IgnoreDataMember]
@@ -1185,8 +1192,9 @@ namespace _min.Models
         {
             return new EnumFieldFactory();
         }
+      
     }
-    
+    */
 
     // no factory for M2N
 

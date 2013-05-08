@@ -13,7 +13,7 @@ namespace _min.Controls
     /// A WebControl for the management of an associtive / mapping table consisting of two select boxes, which exchange items upon select.
     /// This is achieved through jquery, the control itself onsly sets the initial values and retrieves the selection upon request.
     /// </summary>
-    [ToolboxData("<{0}:M2NMappingControl runat=\"server\"></{0}:M2NMappingControl>")]
+    [ToolboxData("<{0}:M2NMappingControl></{0}:M2NMappingControl>")]
     public class M2NMappingControl : CompositeControl
     {
         private ListBox inList = new ListBox();

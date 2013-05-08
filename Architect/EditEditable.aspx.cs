@@ -39,8 +39,7 @@ namespace _min.Architect
         {
             mm = (MinMaster)Master;
             factories = (List<IColumnFieldFactory>)Application["ColumnFieldFactories"];
-            _min.Common.Environment.GlobalState = GlobalState.Architect;
-
+            
             int panelId = Int32.Parse(Page.RouteData.Values["panelId"] as string);
 
             actPanel = mm.SysDriver.Panels[panelId];
@@ -108,14 +107,9 @@ namespace _min.Architect
                     if (factories[i].CanHandle(col))
                         typeOptions.Add(i, factories[i].UIName);
                     if(cf != null && cf.GetType() == (factories[i].ProductionType)){
-                        current = i;
+                        current = typeOptions.Count - 1;
                     }
                 }
-
-
-                    /*if (f is EnumField)
-                        dl.DataSource = EnumType;
-                    else*/
 
                 dl.DataSource = typeOptions;
                 dl.DataValueField = "Key";
@@ -253,12 +247,8 @@ namespace _min.Architect
             actions.SetOptions(new List<string>(actionTypes));
             actions.SetIncludedOptions(activeActions);
             
-            
             backButton.PostBackUrl = backButton.GetRouteUrl("ArchitectShowRoute", new { projectName = mm.ProjectName });
 
-
-             
-            
         }
         /*
         protected void Page_LoadComplete(object sender, EventArgs e) {
@@ -340,6 +330,12 @@ namespace _min.Architect
                 }*/
                 //else
                 //{
+                // react to the changes to the displaycolumn for the FK
+                if (col.ExtendedProperties.Contains("FK")) {
+                    FK colFK = (FK)(col.ExtendedProperties["FK"]);
+                    colFK.displayColumn = ((DropDownList)(r.Cells[3].Controls[0])).SelectedValue;
+                    col.ExtendedProperties["FK"] = colFK;
+                }
                     newField = factory.Create(col);
                     newField.Caption = caption;
                     newField.Required = required;

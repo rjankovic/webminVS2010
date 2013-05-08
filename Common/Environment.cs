@@ -100,7 +100,7 @@ namespace _min.Common
     }
 
 
-    static class Constants {
+    public static class Constants {
         public const string SALT = "hjjh5435435jl43kj5ljlj53l4j5lk4";
 
         public const string ADMIN_PREFIX = "Admin of ";

@@ -95,8 +95,8 @@ namespace _min
 
             foreach (FileInfo fi in dlls)
             {
-                //Assembly foreign = Assembly.LoadFrom(fi.FullName);    // TODO: uncomment when done
-                //AddFactoriesFromAssembly(foreign, factories);
+                Assembly foreign = Assembly.LoadFrom(fi.FullName);    // TODO: uncomment when done
+                AddFactoriesFromAssembly(foreign, factories);
             }
 
 

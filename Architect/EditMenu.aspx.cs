@@ -30,8 +30,7 @@ namespace _min.Architect
         protected void Page_Init(object sender, EventArgs e)
         {
 
-            _min.Common.Environment.GlobalState = GlobalState.Architect;
-
+            
             mm = (MinMaster)Master;
 
             if (!Page.IsPostBack)

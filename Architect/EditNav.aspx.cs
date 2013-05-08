@@ -35,8 +35,7 @@ namespace _min.Architect
             ValidationResult.Items.Clear();
             mm = (MinMaster)Master;
 
-            _min.Common.Environment.GlobalState = GlobalState.Architect;
-
+            
             string projectName = Page.RouteData.Values["projectName"] as string;
             int panelId = Int32.Parse(Page.RouteData.Values["panelId"] as string);
 

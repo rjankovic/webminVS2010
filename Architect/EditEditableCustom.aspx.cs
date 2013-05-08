@@ -32,7 +32,6 @@ namespace _min.Architect
         protected void Page_Init(object sender, EventArgs e)
         {
             mm = (MinMaster)Master;
-            _min.Common.Environment.GlobalState = GlobalState.Architect;
             //if (!Page.IsPostBack)
             //{
                 interPanel = (MPanel)Session["interPanel"];

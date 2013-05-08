@@ -25,8 +25,7 @@ namespace _min.Architect
         protected void Page_Load(object sender, EventArgs e)
         {
             mm = (MinMaster)Master;
-            _min.Common.Environment.GlobalState = GlobalState.Architect;
-
+            
             mm.SysDriver.ClearProposal();
 
             if (!Page.IsPostBack)

@@ -32,8 +32,7 @@ namespace _min.Architect
         protected void Page_Init(object sender, EventArgs e)
         {
             mm = (MinMaster)Master;
-            _min.Common.Environment.GlobalState = GlobalState.Architect;
-    
+            
             if (!(Session["Summary"] is DataTable))
             {
                 HierarchyNavTable baseNavTable = ((TreeControl)(mm.SysDriver.MainPanel.controls[0])).storedHierarchyData;

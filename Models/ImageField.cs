@@ -247,7 +247,7 @@ namespace _min.Models
             }
             set
             {
-                if (value == null)
+                if (value == null || value == DBNull.Value)
                 {
                     fileName = null;
                     return;
@@ -350,32 +350,6 @@ namespace _min.Models
         targetFormatRadios.DataBind();
 
         panel.Controls.Add(formTbl);
-             
-        /*
-        WC.Label mainPathLabel = new WC.Label();
-        mainPathLabel.Text = "Full size image directory";
-        WC.Label thumbPathLabel = new WC.Label();
-        thumbPathLabel.Text = "Thumbnail image directory";
-        WC.Label mainWidthLabel = new WC.Label();
-        mainWidthLabel.Text = "Maximum width for the main image";
-        WC.Label thumbWidthLabel = new WC.Label();
-        thumbPathLabel.Text = "Maximum width for the thumbnail";
-        WC.Label useThumbsLabel = new WC.Label();
-        useThumbsLabel.Text = "Use thumbnails";
-        WC.Label targetFormatLabel = new WC.Label();
-        targetFormatLabel.Text = "Convert images to format";
-
-        panel.Controls.Add(mainPathLabel);
-        panel.Controls.Add(mainPathBox);
-        panel.Controls.Add(thumbPathLabel);
-        panel.Controls.Add(thumbPathBox);
-            
-        panel.Controls.Add(mainWidthLabel);
-        panel.Controls.Add(fullWidthBox);
-        panel.Controls.Add(thumbWidthLabel);
-        panel.Controls.Add(thumbWidthBox);
-        panel.Controls.Add(targetFormatLabel);
-        panel.Controls.Add(targetFormatRadios);*/
     }
 
         public void LoadProduct(IColumnField field)
