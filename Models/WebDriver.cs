@@ -20,13 +20,15 @@ namespace _min.Models
         { }
     }
 
-    class WebDriverMySql : BaseDriverMySql, IWebDriver
+    class WebDriver : IWebDriver
     {
+        private IBaseDriver driver;
 
-        private DbDeployableMySql dbe = new DbDeployableMySql();
-        public WebDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
-            : base(connstring, logTable, writeLog)
-        { }
+        private DbDeployableFactory dbe = new DbDeployableFactory();
+        public WebDriver(IBaseDriver driver)
+        {
+            this.driver = driver;
+        }
 
 
         /// <summary>
@@ -38,7 +40,7 @@ namespace _min.Models
             if (panel.fields.Count() > 0)
             { // editable Panel, fetch the DataRow, simple controls - must have unique PK
                 var columns = panel.fields.Where(x => x is IColumnField).Select(x => ((IColumnField)x).ColumnName).ToList<string>();
-                DataTable table = fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
+                DataTable table = driver.fetchAll("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
                 if (table.Rows.Count > 1) throw new Exception("PK is not unique");
                 if (table.Rows.Count == 0) throw new WebDriverDataModificationException(
                     "No data fulfill the condition. The record may have been removed.");
@@ -77,10 +79,10 @@ namespace _min.Models
 
                     List<IDbCol> selectCols = new List<IDbCol>();
                     // don`t need to use constants - the column names are set in HierarchNavTable
-                    DataTable fetched = fetchAll("SELECT", 
+                    DataTable fetched = driver.fetchAll("SELECT", 
                         dbe.Col(tc.PKColNames[0], "Id"), ",",
                         dbe.Cols(selectCols), dbe.Col(tc.parentColName, "ParentId"), ",",
-                        "CAST(", dbe.Col(tc.displayColName), "AS CHAR) AS `Caption`", ",",
+                        "CAST(", dbe.Col(tc.displayColName), "AS CHAR) AS \"Caption\"", ",",
                         dbe.Col(tc.PKColNames[0], "NavId"),
                         "FROM", panel.tableName);
                     
@@ -152,174 +154,7 @@ namespace _min.Models
         {
             return NLipsum.Core.LipsumGenerator.GenerateHtml(3);
         }
-        /*
-        /// <summary>
-        /// fill the panel with example data in Architect mode
-        /// </summary>
-        /// <param name="panel"></param>
-        public void FillPanelArchitect(Panel panel)
-        {
-            Random rnd = new Random();
-            int amount;
-            foreach (Field field in panel.fields)
-            {
-                amount = rnd.Next() % 5 + 5;
-                switch (field.type)
-                {
-                    case _min.Common.FieldTypes.Enum:
-                        field.value = 1;
-                        break;
-                    case _min.Common.FieldTypes.Date:
-                        field.value = DateTime.Now;
-                        break;
-                    case _min.Common.FieldTypes.DateTime:
-                        field.value = DateTime.Now;
-                        break;
-                    case _min.Common.FieldTypes.Time:
-                        field.value = DateTime.Now;
-                        break;
-                    case _min.Common.FieldTypes.Holder:
-                        break;
-                    case _min.Common.FieldTypes.ShortText:
-                        field.value = LWord();
-                        if (field.validationRules.Contains(Common.ValidationRules.Ordinal)) field.value = rnd.Next() % 10000;
-                        else if (field.validationRules.Contains(Common.ValidationRules.Decimal)) field.value = rnd.NextDouble() * 1000;
-                        break;
-                    case _min.Common.FieldTypes.Text:
-                        field.value = LText();
-                        break;
-                    case _min.Common.FieldTypes.Bool:
-                        field.value = false;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (panel.type == Common.PanelTypes.NavTable || panel.type == Common.PanelTypes.NavTree)
-            {
-                foreach (Control c in panel.controls)
-                {
-
-                    if (c is NavTableControl)
-                    {
-                        AssignDataForNavTable((NavTableControl)c, true);        // assigns only the schema - no values
-                        // number of rows
-                        int n = rnd.Next() % 5 + 5;
-                        DataRow[] rows = new DataRow[n];
-                        for (int i = 0; i < n; i++)
-                            rows[i] = c.data.NewRow();
-                        
-                        c.data.Constraints.Clear(); // can do this - just for the Architect - so that are no unique constraint exceptions
-                        foreach (DataColumn col in c.data.Columns)
-                        {
-                            if (col.DataType == typeof(DateTime) || col.DataType == typeof(MySql.Data.Types.MySqlDateTime))
-                            {
-
-                                foreach (DataRow r in rows)
-                                {
-                                    DateTime dt = DateTime.Now + new TimeSpan(rnd.Next() % 30, rnd.Next() % 24, rnd.Next() % 60, rnd.Next() % 60);
-                                    if (col.DataType == typeof(DateTime))
-                                        r[col] = dt;
-                                    else r[col] = new MySql.Data.Types.MySqlDateTime(dt);
-                                }
-                            }
-                            else if(col.DataType == typeof(int) || col.DataType == typeof(long) || col.DataType == typeof(short)
-                                || col.DataType == typeof(sbyte))
-                            {
-                                foreach (DataRow r in rows) r[col] = rnd.Next() % 100;
-                            }
-                            else if (col.DataType == typeof(float)
-                                || col.DataType == typeof(double)
-                                || col.DataType == typeof(decimal))
-                            {
-                                foreach (DataRow r in rows) r[col] = rnd.NextDouble() % 100000;
-                            }
-                            else if (col.DataType == typeof(bool))
-                            {
-                                foreach (DataRow r in rows) r[col] = false;
-                            }
-                            else
-                            {
-                                foreach (DataRow r in rows)
-                                {
-                                    string s = LSentence();
-                                    if (col.MaxLength > -1 && col.MaxLength < s.Length)
-                                    {
-                                        s = s.Substring(0, col.MaxLength);
-                                    }
-                                    r[col] = s;
-                                }
-                            }
-                        }
-                        foreach (DataRow r in rows)
-                            c.data.Rows.Add(r);
-                    }
-                    else if (c is TreeControl)
-                    {
-                        c.data.DataSet.EnforceConstraints = false;
-                        c.data.Rows.Clear();
-                        c.data.DataSet.EnforceConstraints = true;
-                        int n = rnd.Next() % 10 + 10;
-                        HierarchyNavTable hierarchy = (HierarchyNavTable)(c.data);
-                        for (int i = 0; i < n; i++) // generate a random tree - each node picks a parent or no parent with equal chance
-                        {
-                            HierarchyRow r = (HierarchyRow)hierarchy.NewRow();
-                            r.Id = i + 1;
-                            r.ParentId = rnd.Next() % (i + 1);
-                            if ((int)(r.ParentId) == 0) r.ParentId = null;
-                            r.Caption = LWord();
-                            r.NavId = r.Id;
-                            c.data.Rows.Add(r);
-                        }
-                    }
-                }
-            }
-
-            foreach (Panel p in panel.children)
-                FillPanelArchitect(p);
-        }
-
-
-        /// <summary>
-        /// fills all the fields that are either FKField or M2NMappingField, in the given panel (called by FillpanelArchitect)
-        /// </summary>
-        /// <param name="panel"></param>
-        public void FillPanelFKOptionsArchitect(Panel panel) {
-            Random rnd = new Random();
-            int amount;
-            foreach (Field field in panel.fields)
-            {
-                amount = rnd.Next() % 5 + 5;
-                switch (field.type)
-                {
-                    case _min.Common.FieldTypes.FK:
-                        FKField fkf = field as FKField;
-                        string[] options = Lipsum();
-                        fkf.options = new SortedDictionary<int, string>();
-                        foreach (string s in options)
-                            fkf.options.Add(rnd.Next(), s);
-                        break;
-                    case _min.Common.FieldTypes.M2NMapping:
-                        M2NMappingField m2nf = field as M2NMappingField;
-                        m2nf.options = new SortedDictionary<int, string>();
-                        string[] opts = Lipsum();
-                        int rndNext;
-                        foreach (string s in opts)
-                        {
-                            rndNext = rnd.Next();
-                            if (!m2nf.options.ContainsKey(rndNext))
-                                m2nf.options.Add(rndNext, s);
-                            else
-                                continue;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-        */  // will be done by the fields & controls
+        // will be done by the fields & controls
         // used by AssignDataForNavTable
         delegate DataTable FetchMethod(params object[] parts);
 
@@ -372,9 +207,9 @@ namespace _min.Models
 
             FetchMethod fetchAccordingly;       // so that we can use the same fetch-code for both Architect and Admin mode
             if (schemaOnly)
-                fetchAccordingly = fetchSchema;
+                fetchAccordingly = driver.fetchSchema;
             else
-                fetchAccordingly = fetchAll;
+                fetchAccordingly = driver.fetchAll;
 
             if (countingForeignTableUse.Values.Any(x => x > 1))
             {
@@ -389,11 +224,11 @@ namespace _min.Models
                         Common.Constants.SALT + (countingForeignTableUse[fk.refTable]--).ToString() : "");
                     joins.Add(dbe.Join(fk, alias));
                 }
-                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM `" + ntc.panel.tableName + "`", dbe.Joins(joins));
+                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM ", dbe.Table(ntc.panel.tableName), dbe.Joins(joins));
             }
             else
             {
-                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM `" + ntc.panel.tableName + "`", 
+                ntc.data = fetchAccordingly("SELECT ", dbe.Cols(specSelect), " FROM ", dbe.Table(ntc.panel.tableName), 
                     dbe.Joins(ntc.FKs.Where(x => x.refTable != x.myTable).ToList<FK>()));
             }
         }
@@ -411,9 +246,9 @@ namespace _min.Models
                 if(f is IColumnField)
                 {
                     IColumnField cf = (IColumnField)f;
-                    if (panel.RetrievedData[cf.ColumnName] != null && cf.Unique)
+                    if (panel.RetrievedManagedData[cf.ColumnName] != null && cf.Unique)
                     {
-                        bool unique = CheckUniqueness(panel.tableName, cf.ColumnName, panel.RetrievedData[cf.ColumnName]);
+                        bool unique = driver.CheckUniqueness(panel.tableName, cf.ColumnName, panel.RetrievedManagedData[cf.ColumnName]);
                         if (!unique) throw new ConstraintException("Field \"" + cf.Caption + "\" is restrained to be unique and \""
                              + cf.Data.ToString() + "\" is already present");
                     }
@@ -422,10 +257,10 @@ namespace _min.Models
             int ID;
             try
             {
-                BeginTransaction();
-                query("INSERT INTO " + panel.tableName + " ", dbe.InsVals(panel.RetrievedInsertData));
-                ID = LastId();      // TODO safe? Does transaction ensure insert separation?
-                CommitTransaction();
+                driver.BeginTransaction();
+                driver.query("INSERT INTO ", dbe.Table(panel.tableName), dbe.InsVals(panel.RetrievedInsertData));
+                ID = driver.LastId();      // TODO safe? Does transaction ensure insert separation?
+                driver.CommitTransaction();
             }
             catch (MySql.Data.MySqlClient.MySqlException mye) {
                 // Can occur, if there is a unique Key on multiple columns - such constraint cannot be set in panel management
@@ -434,7 +269,7 @@ namespace _min.Models
                 
                 // will already be out of transaction - BaseDriver closes it immediately
                 //if(IsInTransaction)
-                //    RollbackTransaction();
+                //    driver.RollbackTransaction();
                 throw new ConstraintException(FriendlyConstraintException(mye.Message, panel), null);
             }
             foreach (IField f in panel.fields) {
@@ -458,32 +293,32 @@ namespace _min.Models
             foreach (IField f in panel.fields) {
                 if (f is IColumnField) {
                     IColumnField cf = (IColumnField)f;
-                    if (cf.Unique && panel.RetrievedData[cf.ColumnName] != null)       // TODO make sure all fields are set to null when should be
+                    if (cf.Unique && panel.RetrievedManagedData[cf.ColumnName] != null)       // TODO make sure all fields are set to null when should be
                     {
-                        bool unique = CheckUniqueness(panel.tableName, cf.ColumnName, panel.RetrievedData[cf.ColumnName], panel.PK);
+                        bool unique = driver.CheckUniqueness(panel.tableName, cf.ColumnName, panel.RetrievedManagedData[cf.ColumnName], panel.PK);
                         if (!unique) throw new ConstraintException("Field \"" + cf.Data + "\" is restrained to be unique and \""
                              + cf.Data.ToString() + "\" is already present");
                      }
                 }
             }
             foreach (DataColumn PKcol in panel.PK.Table.Columns) {  // row PK midified
-                if (panel.PK[PKcol.ColumnName].ToString() != panel.RetrievedData[PKcol.ColumnName].ToString())
+                if (panel.PK[PKcol.ColumnName].ToString() != panel.RetrievedManagedData[PKcol.ColumnName].ToString())
                     throw new WebDriverValidationException("The field '" + PKcol.ColumnName + 
                         "' is a part of the item`s identity and cannot be changed unless the item is recreated."); 
             }
             try
             {
-                BeginTransaction();
-                int affected = query("UPDATE " + panel.tableName + " SET ", dbe.UpdVals(panel.RetrievedData), " WHERE ", dbe.Condition(panel.PK));
+                driver.BeginTransaction();
+                int affected = driver.query("UPDATE " + panel.tableName + " SET ", dbe.UpdVals(panel.RetrievedInsertData), " WHERE ", dbe.Condition(panel.PK));
                 if (affected > 1)
                 {
-                    RollbackTransaction();
+                    driver.RollbackTransaction();
                     throw new Exception("Panel PK not unique, trying to update multiple rows at a time!");
                 }
-                CommitTransaction();
+                driver.CommitTransaction();
             }
             catch (ConstraintException ce) {
-                RollbackTransaction();
+                driver.RollbackTransaction();
                 throw new ConstraintException(FriendlyConstraintException(ce.Message, panel), null);
             }
             foreach (IField f in panel.fields)
@@ -500,7 +335,7 @@ namespace _min.Models
 
         private void CheckAgainstOriginalDataRow(Panel panel){
             var columns = panel.fields.Where(x => x is IColumnField).Select(x => ((IColumnField)x).ColumnName).ToList<string>();
-            DataRow actualRow = fetch("SELECT ", dbe.Cols(columns), " FROM ", panel.tableName, "WHERE", dbe.Condition(panel.PK));
+            DataRow actualRow = driver.fetch("SELECT ", dbe.Cols(columns), " FROM ",  dbe.Table(panel.tableName), "WHERE", dbe.Condition(panel.PK));
             if (actualRow == null) throw new WebDriverDataModificationException(
                 "The record could not be found. It may have been removed in the meantime.");
             //if(!DataRowComparer.Equals(actualRow, panel.OriginalData))
@@ -519,26 +354,26 @@ namespace _min.Models
         /// <param name="panel"></param>
         public void DeleteFromPanel(Panel panel)
         {
-            BeginTransaction();
+            driver.BeginTransaction();
             foreach (IField f in panel.fields) {
                 if (f is M2NMappingField) {
                     M2NMapping mapping = ((M2NMappingField)f).Mapping;
                     UnmapM2NMappingKey(mapping, (int)(panel.PK[mapping.mapMyColumn]));
                 }
             }
-            int affected = query("DELETE FROM", dbe.Table(panel.tableName), " WHERE", dbe.Condition(panel.PK));
+            int affected = driver.query("DELETE FROM", dbe.Table(panel.tableName), " WHERE", dbe.Condition(panel.PK));
             
             if (affected > 1)
             {
-                RollbackTransaction();
+                driver.RollbackTransaction();
                 throw new Exception("Panel PK not unique, trying to delete more rows at a time!");
             } 
-            CommitTransaction();
+            driver.CommitTransaction();
         }
 
         private SortedDictionary<int, string> FetchFKOptions(FK fk)
         {
-            DataTable tbl = fetchAll("SELECT `" + fk.refColumn + "`, `" + fk.displayColumn + "` FROM `" + fk.refTable + "`");
+            DataTable tbl = driver.fetchAll("SELECT ", dbe.Cols(new string[] {fk.refColumn, fk.displayColumn}), " FROM ", dbe.Table(fk.refTable));
             SortedDictionary<int, string> res = new SortedDictionary<int, string>();
             foreach (DataRow r in tbl.Rows)
             {
@@ -551,7 +386,7 @@ namespace _min.Models
 
         private void UnmapM2NMappingKey(M2NMapping mapping, int key)
         {
-            query("DELETE FROM `" + mapping.mapTable + "` WHERE ", dbe.Col(mapping.mapMyColumn), " = ", key);
+            driver.query("DELETE FROM", dbe.Table(mapping.mapTable), "WHERE", dbe.Col(mapping.mapMyColumn), " = ", key);
         }
 
         /// <summary>
@@ -571,7 +406,7 @@ namespace _min.Models
             {
                 row[0] = key;
                 row[1] = val;
-                query("INSERT INTO", mapping.mapTable, dbe.InsVals(row));
+                driver.query("INSERT INTO", mapping.mapTable, dbe.InsVals(row));
             }
         }
 
@@ -583,7 +418,7 @@ namespace _min.Models
         /// <returns></returns>
         private List<int> FetchMappingValues(M2NMapping mapping, int key)
         {
-            DataTable tbl = fetchAll("SELECT", dbe.Col(mapping.mapRefColumn), "FROM", mapping.mapTable, "WHERE", dbe.Col(mapping.mapMyColumn), " = ", key);
+            DataTable tbl = driver.fetchAll("SELECT", dbe.Col(mapping.mapRefColumn), "FROM", dbe.Table(mapping.mapTable), "WHERE", dbe.Col(mapping.mapMyColumn), " = ", dbe.InObj(key));
             List<int> res = new List<int>();
             foreach (DataRow r in tbl.Rows)
                 res.Add((int)(r[0]));
@@ -597,7 +432,7 @@ namespace _min.Models
         /// <returns></returns>
         public DataRow PKColRowFormat(Panel panel)
         {
-            return fetchSchema("SELECT ", dbe.Cols(panel.PKColNames), " FROM `" + panel.tableName + "` LIMIT 1").NewRow();
+            return driver.fetchSchema("SELECT ", dbe.Cols(panel.PKColNames), " FROM ", dbe.Table(panel.tableName)).NewRow();
         }
 
         /// <summary>

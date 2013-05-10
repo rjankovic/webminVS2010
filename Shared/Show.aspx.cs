@@ -517,5 +517,10 @@ namespace _min.Shared
         protected void Repropose_Click(object sender, EventArgs e) {
             Response.RedirectToRoute("ArchitectInitRoute", new { projectName = CE.project.Name });
         }
+
+        public override void VerifyRenderingInServerForm(System.Web.UI.Control control)
+        {
+            // for the M2N
+        }
     }
 }

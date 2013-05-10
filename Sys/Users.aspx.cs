@@ -17,21 +17,19 @@ namespace _min.Sys
 {
     public partial class WebForm1 : System.Web.UI.Page
     {
-        ISystemDriver sysDriver;
-
+        MinMaster mm;
+        
         protected void Page_Load(object sender, EventArgs e)
         {
-
-            string connString = ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
-            sysDriver = new SystemDriverMySql(connString);
-
+            mm = (MinMaster)Master;
+            
             if (!Page.IsPostBack)
             {
                 MembershipUserCollection users = Membership.GetAllUsers();
-                List<CE.Project> projects = sysDriver.GetProjectObjects();
-                int userId = (int)(Membership.GetUser().ProviderUserKey);
+                List<CE.Project> projects = mm.SysDriver.GetProjectObjects();
+                object userId = (Membership.GetUser().ProviderUserKey);
 
-                int globalAccess = sysDriver.GetUserRights(userId, null);
+                int globalAccess = mm.SysDriver.GetUserRights(userId, null);
                 if (globalAccess >= 1000)
                 {
                     projects.Reverse();
@@ -43,7 +41,7 @@ namespace _min.Sys
                     List<CE.Project> inaccessible = new List<CE.Project>();
                     foreach (CE.Project p in projects)
                     {
-                        if (sysDriver.GetUserRights(userId, p.Id) < 1000) inaccessible.Add(p);
+                        if (mm.SysDriver.GetUserRights(userId, p.Id) < 1000) inaccessible.Add(p);
                     }
                     foreach (CE.Project p in inaccessible)
                         projects.Remove(p);
@@ -80,10 +78,10 @@ namespace _min.Sys
 
             if (project != 0)
             {
-                permissions = sysDriver.GetUserRights(user, project);
+                permissions = mm.SysDriver.GetUserRights(user, project);
             }
             else {
-                permissions = sysDriver.GetUserRights(user, null);
+                permissions = mm.SysDriver.GetUserRights(user, null);
             }
 
             
@@ -95,21 +93,23 @@ namespace _min.Sys
         protected void PermissionsSubmit_Click(object sender, EventArgs e)
         {
             int? project;
-            int user;
+            object userId;
             try
             {
                 project = Int32.Parse(ProjectSelect.SelectedValue);
-                user = Int32.Parse(UserSelect.SelectedValue);
+                userId = UserSelect.SelectedValue;
             }
             catch { return; }
             if(project == 0) project = null;
 
             int permissions = 0;
+            int originalGlobal = mm.SysDriver.GetUserRights(userId, null);
             if (AdministerCb.Checked) permissions += 10;
             if (ArchitectCb.Checked) permissions += 100;
             if (PermitCb.Checked) permissions += 1000;
+            if (originalGlobal >= 10000 && project == null) permissions += 10000;   // so that the project manager permission is kept for the one owner
 
-            sysDriver.SetUserRights(user, project, permissions);
+            mm.SysDriver.SetUserRights(userId, project, permissions);
         }
 
     }

@@ -23,11 +23,14 @@ namespace _min
         public IStats Stats { get; private set; }
         public string ProjectName { get; private set; }
         public MembershipUser user = null;
+        public DbServer DbServer;
 
         protected void Page_Init(object sender, EventArgs e)
         {
+            DbServer = (DbServer)Enum.Parse(typeof(DbServer), System.Configuration.ConfigurationManager.AppSettings["ServerType"] as string);
+
             user = Membership.GetUser();
-            
+
             // set the warning only for logged in users
                 System.Configuration.ConfigurationManager.AppSettings["SessionWarning"] = 
                     (user is MembershipUser) ? (Session.Timeout - 5).ToString() :"-1";
@@ -63,7 +66,21 @@ namespace _min
             }
 
 
-            SysDriver = new SystemDriverMySql(ConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString);
+            IBaseDriver systemBaseDriver = null;
+
+            switch (DbServer)
+            {
+                case DbServer.MySql:
+                    systemBaseDriver = new BaseDriverMySql(ConfigurationManager.ConnectionStrings["MySqlServer"].ConnectionString);
+                    break;
+                case DbServer.MsSql:
+                    systemBaseDriver = new BaseDriverMsSql(ConfigurationManager.ConnectionStrings["MsSqlServer"].ConnectionString);
+                    break;
+                default:
+                    break;
+            }
+
+            SysDriver = new SystemDriver(systemBaseDriver);
             
             // global service
 
@@ -81,12 +98,31 @@ namespace _min
                     NewProjectLoad = true;
                 }
                 
-
                 CE.project = SysDriver.GetProject(ProjectName);
-                
 
-                Stats = new StatsMySql(CE.project.ConnstringIS, CE.project.WebDbName);
-                WebDriver = new WebDriverMySql(CE.project.ConnstringWeb);
+
+
+                IBaseDriver statsBaseDriver = null;
+                IBaseDriver webBaseDriver = null;
+
+                switch (DbServer)
+                {
+                    case DbServer.MySql:
+                        statsBaseDriver = new BaseDriverMySql(CE.project.ConnstringIS);
+                        Stats = new StatsMySql((BaseDriverMySql)statsBaseDriver, CE.project.WebDbName);
+                        webBaseDriver = new BaseDriverMySql(CE._project.ConnstringWeb);
+                        break;
+                    case DbServer.MsSql:
+                        statsBaseDriver = new BaseDriverMsSql(CE.project.ConnstringIS);
+                        Stats = new StatsMsSql((BaseDriverMsSql)statsBaseDriver);
+                        webBaseDriver = new BaseDriverMsSql(CE._project.ConnstringWeb);
+                        break;
+                    default:
+                        break;
+                }
+                WebDriver = new WebDriver(webBaseDriver);
+
+
                 Architect = new _min.Models.Architect(SysDriver, Stats);
 
                 if ((!Page.IsPostBack || NewProjectLoad) && CE.GlobalState != GlobalState.Error) 
@@ -143,7 +179,7 @@ namespace _min
                     List<CE.Project> allProjects = SysDriver.GetProjectObjects();
                     List<string> allNames = (from CE.Project p in allProjects select p.Name).ToList<string>();
 
-                    int userId = (int)(user.ProviderUserKey);
+                    object userId = user.ProviderUserKey;
                     int globalRights = SysDriver.GetUserRights(userId, null);
                     // by default, fetch only the sites to which the access rights are set explicitly,
                     // if global rights are sufficient, replace them with the complete lists
@@ -218,9 +254,9 @@ namespace _min
                 Response.End();
             }
 
-            List<int> usersOnline = GetUsersOnline();
+            List<object> usersOnline = GetUsersOnline();
             SysDriver.RemoveForsakenLocks(usersOnline);
-            int userId = (int)(user.ProviderUserKey);
+            object userId = user.ProviderUserKey;
 
             int globalRights = SysDriver.GetUserRights(userId, null);
             int localRights = SysDriver.GetUserRights(userId, CE.project.Id);
@@ -304,14 +340,14 @@ namespace _min
         /// lisst the ids of users online
         /// </summary>
         /// <returns></returns>
-        private List<int> GetUsersOnline()
+        private List<object> GetUsersOnline()
         {
             MembershipUserCollection all = Membership.GetAllUsers();
-            List<int> res = new List<int>();
+            List<object> res = new List<object>();
             foreach (MembershipUser u in all)
             {
                 if (u.IsOnline)
-                    res.Add((int)(u.ProviderUserKey));
+                    res.Add(u.ProviderUserKey);
             }
             return res;
         }

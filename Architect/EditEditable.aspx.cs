@@ -297,7 +297,7 @@ namespace _min.Architect
                     CheckBox reqChb = (CheckBox)r.Cells[4].Controls[1];
                     CheckBox uniChb = (CheckBox)r.Cells[4].Controls[3];
                     required = reqChb.Checked;
-                    unique = reqChb.Checked;
+                    unique = uniChb.Checked;
                 }
                 
                 string caption = ((TextBox)r.Cells[5].Controls[0]).Text;

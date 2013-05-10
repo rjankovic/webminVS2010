@@ -16,15 +16,13 @@ namespace _min.Sys
     public partial class Projects : System.Web.UI.Page
     {
         DataTable projectsTable = new DataTable();
-        ISystemDriver sysDriver = null;
-
+        MinMaster mm;
 
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            string connString = WebConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
-            sysDriver = new SystemDriverMySql(connString);
-            projectsTable = sysDriver.GetProjects();
+            mm = (MinMaster)Master;
+            projectsTable = mm.SysDriver.GetProjects();
             ProjectsGrid.DataSource = projectsTable;
             ProjectsGrid.DataBind();
         }

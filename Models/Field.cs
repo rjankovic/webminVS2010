@@ -154,7 +154,8 @@ namespace _min.Models
 
         public override void Validate()
         {
-            if (string.IsNullOrEmpty(value))
+            ErrorMessage = null;
+            if (Required && string.IsNullOrEmpty(value))
                 ErrorMessage = "The " + Caption + " is required.";
         }
 
@@ -325,6 +326,7 @@ namespace _min.Models
 
         public override void Validate()
         {
+            ErrorMessage = null;
             if (String.IsNullOrEmpty(unparsedValue))
             {
                 if (Required)
@@ -460,6 +462,7 @@ namespace _min.Models
         public override void Validate()
         {
             // should not be used
+            ErrorMessage = null;
             if (Required && value == false)
                 ErrorMessage = "You must check the option of " + Caption;
         }
@@ -592,7 +595,7 @@ namespace _min.Models
 
         public override void Validate()
         {
-
+            ErrorMessage = null;
         }
 
         public override List<WC.BaseValidator> GetValidators()
@@ -808,7 +811,7 @@ namespace _min.Models
 
         public override void Validate()
         {
-            
+            ErrorMessage = null;
         }
         public override List<WC.BaseValidator> GetValidators()
         {
@@ -845,6 +848,7 @@ namespace _min.Models
 
         public override void Validate()
         {
+            ErrorMessage = null;
             if(Required && String.IsNullOrEmpty(myControl.Text))
                 ErrorMessage = "The field " + Caption + " is required";
             else if(!String.IsNullOrEmpty(myControl.Text) && (value == null))
@@ -974,6 +978,7 @@ namespace _min.Models
 
         public override void Validate()
         {
+            ErrorMessage = null;
             if (Required && String.IsNullOrEmpty(myControl.Text))
                 ErrorMessage = "The field " + Caption + " is required";
             else if (!String.IsNullOrEmpty(myControl.Text) && (value == null))

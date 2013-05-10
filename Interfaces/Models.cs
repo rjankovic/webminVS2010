@@ -8,12 +8,15 @@ using MySql.Data.MySqlClient;
 using MySql.Web;
 using CE = _min.Common.Environment;
 using WC = System.Web.UI.WebControls;
+using System.Data.Sql;
+using System.Data.SqlClient;
 
 namespace _min.Interfaces
 {
     public interface IBaseDriver 
     {
         DataTable fetchAll(params object[] parts);
+        DataTable fetchSchema(params object[] parts);
         DataRow fetch(params object[] parts);
         object fetchSingle(params object[] parts);
         int query(params object[] parts);   // returns rows affected
@@ -21,14 +24,25 @@ namespace _min.Interfaces
         void CommitTransaction();
         void RollbackTransaction();
         DataTable logTable { get; }
+        bool WriteLog { get; set; }
+        bool IsInTransaction { get; }
         int LastId();
         int NextAIForTable(string tableName);
         void TestConnection();
+        bool CheckUniqueness(string tableName, string columnName, object newValue, DataRow updatedItemPK = null);
+        bool CheckUniqueness(string tableName, string columnName, object newValue, string idColumnName, int id);
     }
 
-    public interface IMySqlQueryDeployable
+    public interface IQueryDeployable { }
+
+    public interface IMSSqlQueryDeployabe : IQueryDeployable 
     {
-        void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount);
+        void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount);
+    }
+
+    public interface IMySqlQueryDeployable : IQueryDeployable
+    {
+        void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount);
     }
 
     /// <summary>
@@ -48,62 +62,62 @@ namespace _min.Interfaces
         IDbCol Col(string column, string alias);
         IDbCol Col(string table, string column, string alias);
         
-        IMySqlQueryDeployable Cols(List<IDbCol> cols);
-        IMySqlQueryDeployable Cols(List<string> colNames);
+        IQueryDeployable Cols(IEnumerable<IDbCol> cols);
+        IQueryDeployable Cols(IEnumerable<string> colNames);
         
         IDbJoin Join(FK fk);
         IDbJoin Join(FK fk, string alias);
         
-        IMySqlQueryDeployable Joins(List<IDbJoin> joins);
-        IMySqlQueryDeployable Joins(List<FK> FKs);
+        IQueryDeployable Joins(IEnumerable<IDbJoin> joins);
+        IMySqlQueryDeployable Joins(IEnumerable<FK> FKs);
 
-        IDbInList InList(List<object> list);
-        IMySqlQueryDeployable Condition(DataRow lowerBounds, DataRow upperBounds = null);
+        IDbInList InList(IEnumerable<object> list);
+        IQueryDeployable Condition(DataRow lowerBounds, DataRow upperBounds = null);
 
         IDbTable Table(string table, string alias = null);
     }
 
-    public interface IDbInObj: IMySqlQueryDeployable
+    public interface IDbInObj: IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         object o { get; set; }
         
     }
-    public interface IDbVals: IMySqlQueryDeployable
+    public interface IDbVals : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         Dictionary<string, object> vals { get; set; }
         
     }
-    public interface IDbCol: IMySqlQueryDeployable
+    public interface IDbCol : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         string table { get; set; }
         string column { get; set; }
         string alias { get; set; }
     }
-    public interface IDbCols: IMySqlQueryDeployable
+    public interface IDbCols : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         List<IDbCol> cols { get; set; }
     }
-    public interface IDbJoin: IMySqlQueryDeployable
+    public interface IDbJoin : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         FK fk { get; set; }
         string alias { get; set; }
     }
-    public interface IDbJoins: IMySqlQueryDeployable
+    public interface IDbJoins : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         List<IDbJoin> joins { get; set; }
     }
-    public interface IDbInList: IMySqlQueryDeployable
+    public interface IDbInList : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         List<object> list { get; set; }
     }
 
-    public interface IDbTable : IMySqlQueryDeployable
+    public interface IDbTable : IMySqlQueryDeployable, IMSSqlQueryDeployabe
     {
         string table { get; set; }
         string alias { get; set; }
     }
 
-    public interface IWebDriver : IBaseDriver     // webDB
+    public interface IWebDriver     // webDB
     {
         void FillPanel(Panel panel);
         void FillPanelFKOptions(Panel panel);
@@ -113,7 +127,7 @@ namespace _min.Interfaces
         DataRow PKColRowFormat(Panel panel);
     }
 
-    public interface IStats : IBaseDriver {    // information_schema
+    public interface IStats {    // information_schema
         Dictionary<string, DataColumnCollection> ColumnTypes { get; }
         Dictionary<string, List<string>> ColumnsToDisplay { get; }
         List<string> TwoColumnTables();
@@ -126,7 +140,7 @@ namespace _min.Interfaces
         void SetDisplayPreferences(Dictionary<string, string> pref);
     }
 
-    public interface ISystemDriver : IBaseDriver // systemDB
+    public interface ISystemDriver // systemDB
     {
         Panel MainPanel { get; }
         Dictionary<int, Panel> Panels { get; }
@@ -154,16 +168,21 @@ namespace _min.Interfaces
         void DeleteProject(int projectId);
 
         void IncreaseVersionNumber();
-        void SetUserRights(int user, int? project, int rights);
-        int GetUserRights(int user, int? project);
+        void SetUserRights(object userId, int? project, int rights);
+        int GetUserRights(object userId, int? project);
         List<Common.Environment.Project> GetProjectObjects();
         
-        void ReleaseLock(int user, int project, LockTypes lockType);
-        bool TryGetLock(int user, int project, LockTypes lockType);
-        int? LockOwner(int project, LockTypes lockType);
-        void RemoveForsakenLocks(List<int> activeUsers);
-        void UserMenuOptions(int user, out List<string> adminOf, out List<string> architectOf);
-        void ReleaseLocksExceptProject(int userId, int projectId);
+        void ReleaseLock(object userId, int project, LockTypes lockType);
+        bool TryGetLock(object userId, int project, LockTypes lockType);
+        object LockOwner(int project, LockTypes lockType);
+        void RemoveForsakenLocks(List<object> activeUsers);
+        void UserMenuOptions(object userId, out List<string> adminOf, out List<string> architectOf);
+        void ReleaseLocksExceptProject(object userId, int projectId);
+
+
+        //?
+        void BeginTransaction();
+        void CommitTransaction();
     }
 
 

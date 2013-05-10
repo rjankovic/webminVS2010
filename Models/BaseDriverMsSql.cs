@@ -6,72 +6,46 @@ using _min.Interfaces;
 using MySql.Data.MySqlClient;
 using System.Data;
 using System.Diagnostics;
-using _min.Common;
+using System.Data.Sql;
+using System.Data.SqlClient;
 
 namespace _min.Models
 {
     /// <summary>
     /// Provides basic database layer using and IDbDeployableFactory query parts
     /// </summary>
-    class BaseDriverMySql : BaseDriver, IBaseDriver
+    class BaseDriverMsSql : BaseDriver, IBaseDriver
     {
             // empty space always at the beggining of appended command!
             // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong
-        /*
-        protected override MySqlTransaction currentTransaction { get; set; }
-        protected override MySqlDataAdapter adapter { get; set; }
-        protected override MySqlConnection conn { get; set; }
-        DbDeployableFactory dbe = new DbDeployableFactory();
-        */
 
+        private SqlTransaction _currentTransaction;
+        private SqlDataAdapter _adapter;
+        private SqlConnection _conn;
 
-        private MySqlTransaction _currentTransaction;
-        private MySqlDataAdapter _adapter;
-        private MySqlConnection _conn;
-
-        protected override IDbTransaction currentTransaction
-        {
+        protected override IDbTransaction currentTransaction {
             get { return _currentTransaction; }
-            set { _currentTransaction = (MySqlTransaction)value; }
+            set { _currentTransaction = (SqlTransaction)value; }
         }
-        protected override IDbDataAdapter adapter
-        {
+        protected override IDbDataAdapter adapter {
             get { return _adapter; }
-            set { _adapter = (MySqlDataAdapter)value; }
+            set { _adapter = (SqlDataAdapter)value; }
         }
-        protected override IDbConnection conn
-        {
+        protected override IDbConnection conn {
             get { return _conn; }
-            set { _conn = (MySqlConnection)value; }
+            set { _conn = (SqlConnection)value; }
         }
+        //DbDeployableFactory dbe = new DbDeployableFactory();
 
 
-        public BaseDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
+        public BaseDriverMsSql(string connstring, DataTable logTable = null, bool writeLog = false)
             :base(connstring, logTable, writeLog)
         {
-            conn = new MySqlConnection(connstring);
-            adapter = new MySqlDataAdapter();
+            conn = new SqlConnection(connstring);
+            adapter = new SqlDataAdapter();
         }
 
-        protected override QueryType getQueryType(string query) {
-            query = query.Trim();
-            string firstWord = query.Split(' ').First();
-            switch (firstWord.ToUpper())
-            {
-                case "SELECT":
-                case "SHOW":
-                    return QueryType.Select;
-                case "INSERT":
-                    return QueryType.Insert;
-                case "UPDATE":
-                    return QueryType.Update;
-                case "DELETE":
-                    return QueryType.Delete;
-                default:
-                    throw new FormatException("Unrecognised type of MySql Command");
-            }
-        }
-
+        
         private void log(string query, Stopwatch watch){
                 DataRow logInfo = logTable.NewRow();
                 logInfo["query"] = query;
@@ -88,7 +62,7 @@ namespace _min.Models
         protected override IDbCommand translate(params object[] parts) {
 
             int paramCount = 0;
-            MySqlCommand resultCmd = new MySqlCommand();
+            SqlCommand resultCmd = new SqlCommand();
             StringBuilder resultQuery = new StringBuilder();
 
             foreach(object part in parts){
@@ -100,7 +74,7 @@ namespace _min.Models
                 }
                 else if (part is IMySqlQueryDeployable)
                 {
-                    ((IMySqlQueryDeployable)part).Deploy(resultCmd, resultQuery, ref paramCount);
+                    ((IMSSqlQueryDeployabe)part).Deploy(resultCmd, resultQuery, ref paramCount);
                 }
                 else if (part is ValueType)
                 {
@@ -115,22 +89,22 @@ namespace _min.Models
         }
 
         public override int LastId() {
-            string id = fetchSingle("SELECT LAST_INSERT_ID()").ToString();
+            string id = fetchSingle("SELECT @@IDENTITY").ToString();
             return Int32.Parse(id);
         }
 
         public override int NextAIForTable(string tableName) {
-            DataRow res = fetch("SHOW TABLE STATUS LIKE '" + tableName + "'");
-            return (int)res["Auto_increment"];
+            return (int)fetchSingle("SELECT IDENT_CURRENT('" + tableName + "')+1");
         }
 
         public override void TestConnection() {
-            MySqlCommand cmd = new MySqlCommand("SELECT VERSION()");
+            SqlCommand cmd = new SqlCommand("SELECT SERVERPROPERTY('productversion')");
             cmd.Connection = _conn;
             conn.Open();
             string version = (string)cmd.ExecuteScalar();
             conn.Close();
-            if (!version.StartsWith("5")) throw new Exception("Incompatible MySQL version: " + version);
+            // 1 or 10= (1 is basically impossible)
+            if (!version.StartsWith("1")) throw new Exception("Incompatible SQL Server version: " + version);
         }
 
     }

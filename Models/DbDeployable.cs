@@ -3,6 +3,8 @@ using _min.Interfaces;
 using MySql.Data.MySqlClient;
 using System.Text;
 using System.Data;
+using System.Data.SqlClient;
+using System.Data.Sql;
 
 namespace _min.Models
 {
@@ -10,7 +12,7 @@ namespace _min.Models
     /// <summary>
     /// A set of query parts that can append themselves to a MySql command
     /// </summary>
-    public partial class DbDeployableMySql : IDbDeployableFactory
+    public partial class DbDeployableFactory : IDbDeployableFactory
     {   // the other part is ConditionMySql
         
         // empty space always at the beggining of appended command!
@@ -19,7 +21,7 @@ namespace _min.Models
         /// <summary>
         /// simple object parameter
         /// </summary>
-        class InputObj : IDbInObj, IMySqlQueryDeployable
+        class InputObj : IDbInObj, IMySqlQueryDeployable, IMSSqlQueryDeployabe
         { 
             public object o { get; set; }
             public InputObj(object o)
@@ -27,14 +29,20 @@ namespace _min.Models
                 this.o = o;
             }
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append(" @param" + paramCount);
+                cmd.Parameters.AddWithValue("@param" + paramCount++, o);
+            }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append(" @param" + paramCount);
                 cmd.Parameters.AddWithValue("@param" + paramCount++, o);
             }
         }
 
-        public abstract class Vals : IDbVals, IMySqlQueryDeployable
+        public abstract class Vals : IDbVals, IMySqlQueryDeployable, IMSSqlQueryDeployabe
         {
             public Dictionary<string, object> vals { get; set; }
             public Vals(Dictionary<string, object> vals)
@@ -56,7 +64,8 @@ namespace _min.Models
                 return res;
             }
 
-            public abstract void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount);
+            public abstract void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount);
+            public abstract void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount);
         }
 
         /// <summary>
@@ -70,7 +79,7 @@ namespace _min.Models
             public InsertVals(DataRow r)
                 : base(r)
             { }
-            public override void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public override void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append(" (`" + string.Join("`,`", vals.Keys) + "`) VALUES(");
                 bool first = true;
@@ -79,6 +88,20 @@ namespace _min.Models
                     sb.Append((first ? " " : ", ") + "@param" + paramCount);
                     first = false;
                     cmd.Parameters.AddWithValue("@param" + paramCount++, o);
+                }
+                sb.Append(")");
+            }
+
+            public override void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append(" ([" + string.Join("],[", vals.Keys) + "]) VALUES(");
+                bool first = true;
+                foreach (object o in vals.Values)
+                {
+                    sb.Append((first ? " " : ", ") + ((o==null)?"NULL":("@param" + paramCount)));
+                    first = false;
+                    if(o != null)
+                        cmd.Parameters.AddWithValue("@param" + paramCount++, o);
                 }
                 sb.Append(")");
             }
@@ -95,7 +118,7 @@ namespace _min.Models
             public UpdateVals(DataRow r)
                 : base(r)
             { }
-            public override void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public override void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 bool first = true;
                 foreach (KeyValuePair<string, object> kvp in vals)
@@ -105,13 +128,25 @@ namespace _min.Models
                     cmd.Parameters.AddWithValue("@param" + paramCount++, kvp.Value);
                 }
             }
+
+            public override void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                bool first = true;
+                foreach (KeyValuePair<string, object> kvp in vals)
+                {
+                    sb.Append((first ? "" : ", ") + "[" + kvp.Key + "] = " + ((kvp.Value == null)?"NULL":("@param" + paramCount)));
+                    first = false;
+                    if(kvp.Value != null)
+                        cmd.Parameters.AddWithValue("@param" + paramCount++, kvp.Value);
+                }
+            }
         }
 
 
         /// <summary>
         /// single column name
         /// </summary>
-        class Column : IDbCol, IMySqlQueryDeployable
+        class Column : IDbCol, IMySqlQueryDeployable, IMSSqlQueryDeployabe
         {
             public string table { get; set; }
             public string column { get; set; }
@@ -132,46 +167,67 @@ namespace _min.Models
                 this.table = table;
             }
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append(" "
                     + (table == null ? "" : ("`" + table + "`."))
                     + ("`" + column + "`")
                     + (alias == null ? "" : (" AS '" + alias + "'")));
             }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append(" "
+                    + (table == null ? "" : ("[" + table + "]."))
+                    + ("[" + column + "]")
+                    + (alias == null ? "" : (" AS [" + alias + "]")));
+            }
         }
 
         /// <summary>
         /// a few column names divided by commas
         /// </summary>
-        class Columns : IMySqlQueryDeployable
+        class Columns : IMySqlQueryDeployable, IMSSqlQueryDeployabe
         {
-            private List<Column> cols;
-            public Columns(List<Column> cols)
+            private IEnumerable<Column> cols;
+            public Columns(IEnumerable<Column> cols)
             {
                 this.cols = cols;
             }
 
-            public Columns(List<string> colNames)
+            public Columns(IEnumerable<string> colNames)
             {
-                this.cols = new List<Column>();
-                foreach (string s in colNames)
-                    cols.Add(new Column(s));
+                List<Column> resCols = new List<Column>();
+                foreach (string colname in colNames) {
+                    resCols.Add(new Column(colname));
+                }
+                this.cols = resCols;
             }
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 bool first = true;
                 foreach (Column c in cols)
                 {
                     if (!first) sb.Append(", ");
                     first = false;
-                    c.Deoploy(cmd, sb, ref paramCount);     // the first col will also create the needed space
+                    c.Deploy(cmd, sb, ref paramCount);     // the first col will also create the needed space
+                }
+            }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                bool first = true;
+                foreach (Column c in cols)
+                {
+                    if (!first) sb.Append(", ");
+                    first = false;
+                    c.Deploy(cmd, sb, ref paramCount);     // the first col will also create the needed space
                 }
             }
         }
 
-        class InnerJoin : IDbJoin, IMySqlQueryDeployable
+        class InnerJoin : IDbJoin, IMySqlQueryDeployable, IMSSqlQueryDeployabe
         {
             public FK fk { get; set; }
             public string alias { get; set; }
@@ -187,24 +243,30 @@ namespace _min.Models
                 this.alias = alias;
             }
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append(" JOIN `" + fk.refTable + "`" + (alias == null ? "" : (" AS `" + alias + "`"))
                     + " ON `" + fk.myTable + "`.`" + fk.myColumn + "` = `" + (alias == null ? fk.refTable : alias) + "`.`" + fk.refColumn + "`");
+            }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append(" JOIN [" + fk.refTable + "]" + (alias == null ? "" : (" AS [" + alias + "]"))
+                    + " ON [" + fk.myTable + "].[" + fk.myColumn + "] = [" + (alias == null ? fk.refTable : alias) + "].[" + fk.refColumn + "]");
             }
         }
 
         /// <summary>
         /// muliple joins concatenated
         /// </summary>
-        class InnerJoins : IMySqlQueryDeployable
+        class InnerJoins : IMySqlQueryDeployable, IMSSqlQueryDeployabe
         {
             private List<InnerJoin> joins;
             public InnerJoins(List<InnerJoin> joins)
             {
                 this.joins = joins;
             }
-            public InnerJoins(List<FK> FKs)
+            public InnerJoins(IEnumerable<FK> FKs)
             {
                 List<InnerJoin> joins = new List<InnerJoin>();
                 foreach (FK fk in FKs)
@@ -215,11 +277,19 @@ namespace _min.Models
             }
 
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 foreach (InnerJoin j in joins)
                 {
-                    j.Deoploy(cmd, sb, ref paramCount);
+                    j.Deploy(cmd, sb, ref paramCount);
+                }
+            }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                foreach (InnerJoin j in joins)
+                {
+                    j.Deploy(cmd, sb, ref paramCount);
                 }
             }
         }
@@ -227,15 +297,29 @@ namespace _min.Models
         /// <summary>
         /// IN(x,y,z,...) clause
         /// </summary>
-        class InStatement : IDbInList, IMySqlQueryDeployable
+        class InStatement : IDbInList, IMySqlQueryDeployable, IMSSqlQueryDeployabe
         {
             public List<object> list { get; set; }
-            public InStatement(List<object> list)
+            public InStatement(IEnumerable<object> list)
             {
-                this.list = list;
+                this.list = new List<object>(list);
             }
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append("(");
+                bool first = true;
+                foreach (object item in list)
+                {
+                    sb.Append(first ? "" : ", ");
+                    first = false;
+                    sb.Append("@param" + paramCount);
+                    cmd.Parameters.AddWithValue("@param" + paramCount++, item);
+                }
+                sb.Append(")");
+            }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append("(");
                 bool first = true;
@@ -263,10 +347,16 @@ namespace _min.Models
                 this.alias = alias;      // TODO should check for empty strings
             }
 
-            public void Deoploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
+            public void Deploy(MySqlCommand cmd, StringBuilder sb, ref int paramCount)
             {
                 sb.Append(" `" + table + "`"
                 + (alias == null ? "" : (" AS '" + alias + "'")));
+            }
+
+            public void Deploy(SqlCommand cmd, StringBuilder sb, ref int paramCount)
+            {
+                sb.Append(" [" + table + "]"
+                + (alias == null ? "" : (" AS [" + alias + "]")));
             }
         }
 
@@ -309,15 +399,15 @@ namespace _min.Models
             return new Column(table, column, alias); 
         }
 
-        public IMySqlQueryDeployable Cols(List<IDbCol> cols)
+        public IQueryDeployable Cols(IEnumerable<IDbCol> cols)
         {
-            List<Column> cs = new List<Column>();
+            List<Column> colsCast = new List<Column>();
             foreach (IDbCol c in cols)
-                cs.Add((Column)c);
-            return new Columns(cs);
+                colsCast.Add((Column)c);
+            return new Columns(colsCast);
         }
 
-        public IMySqlQueryDeployable Cols(List<string> colNames)
+        public IQueryDeployable Cols(IEnumerable<string> colNames)
         {
             return new Columns(colNames);
         }
@@ -332,7 +422,7 @@ namespace _min.Models
             return new InnerJoin(fk, alias);
         }
 
-        public IMySqlQueryDeployable Joins(List<IDbJoin> joins)
+        public IQueryDeployable Joins(IEnumerable<IDbJoin> joins)
         {
             List<InnerJoin> joinsCast = new List<InnerJoin>();
             foreach(IDbJoin j in joins)
@@ -340,20 +430,20 @@ namespace _min.Models
             return new InnerJoins(joinsCast);
         }
 
-        public IMySqlQueryDeployable Joins(List<FK> FKs)
+        public IMySqlQueryDeployable Joins(IEnumerable<FK> FKs)
         {
             return new InnerJoins(FKs);
         }
 
-        public IDbInList InList(List<object> list)
+        public IDbInList InList(IEnumerable<object> list)
         {
             return new InStatement(list);
         }
 
 
-        public IMySqlQueryDeployable Condition(System.Data.DataRow lowerBounds, System.Data.DataRow upperBounds = null)
+        public IQueryDeployable Condition(System.Data.DataRow lowerBounds, System.Data.DataRow upperBounds = null)
         {
-            return new ConditionMySql(lowerBounds, upperBounds);
+            return new ConditionSql(lowerBounds, upperBounds);
         }
 
         public IDbTable Table(string table, string alias = null)

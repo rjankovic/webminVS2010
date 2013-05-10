@@ -27,8 +27,9 @@ namespace _min.Models
         public DataRow PK { get; set; }
         [IgnoreDataMember]
         public DataRow OriginalData { get; set; }
+        // the retrieved datarow without the columns that arent managed by a field in the panel
         [IgnoreDataMember]
-        public DataRow RetrievedData { get; private set; }
+        public DataRow RetrievedManagedData { get; private set; }
         [IgnoreDataMember]
         public DataRow RetrievedInsertData { get; private set; }
         [IgnoreDataMember]
@@ -201,12 +202,12 @@ namespace _min.Models
                 }
             }
 
-            RetrievedData = tbl.NewRow();
+            RetrievedManagedData = tbl.NewRow();
             RetrievedInsertData = insTbl.NewRow();
             if (PK != null)
             {
                 foreach (DataColumn col in PK.Table.Columns)
-                    RetrievedData[col.ColumnName] = PK[col.ColumnName];
+                    RetrievedManagedData[col.ColumnName] = PK[col.ColumnName];
             }
             foreach (IField f in fields)
             {
@@ -214,12 +215,12 @@ namespace _min.Models
                 IColumnField cf = f as IColumnField;
                 if (cf.Data != null && (cf.Data.ToString() != ""))      // dangerous?
                 {
-                    RetrievedData[cf.ColumnName] = cf.Data;
+                    RetrievedManagedData[cf.ColumnName] = cf.Data;
                     RetrievedInsertData[cf.ColumnName] = cf.Data;
                 }
                 else
                 {
-                    RetrievedData[cf.ColumnName] = DBNull.Value;
+                    RetrievedManagedData[cf.ColumnName] = DBNull.Value;
                     RetrievedInsertData[cf.ColumnName] = DBNull.Value;
                 }
             }

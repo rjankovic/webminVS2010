@@ -9,10 +9,9 @@ using _min.Models;
 namespace _min.Models
 {
 
-    class StatsMySql : IStats 
+    class StatsMsSql : IStats 
     {
-        private string webDb;
-        private BaseDriverMySql driver;
+        private BaseDriverMsSql driver;
         DbDeployableFactory dbe = new DbDeployableFactory();
 
         private Dictionary<string, DataColumnCollection> columnTypes = null;
@@ -113,9 +112,8 @@ namespace _min.Models
             }
         }
 
-        public StatsMySql(BaseDriverMySql driver, string webDb)
+        public StatsMsSql(BaseDriverMsSql driver)
         {
-            this.webDb = webDb;
             this.driver = driver;
         }
 
@@ -144,22 +142,24 @@ namespace _min.Models
         /// </summary>
         private void GetColumnTypes()
         {
-            DataTable stats = driver.fetchAll("SELECT COLUMNS.* FROM COLUMNS JOIN TABLES USING(TABLE_SCHEMA, TABLE_NAME) " +  
-                "WHERE TABLE_TYPE != \"VIEW\" AND TABLES.TABLE_SCHEMA = \"" + webDb + 
-                "\" ORDER BY COLUMNS.TABLE_NAME, ORDINAL_POSITION");
+            DataTable stats = driver.fetchAll("SELECT COLS.*,"
+                 +" COLUMNPROPERTY(OBJECT_ID(COLS.TABLE_NAME), COLS.COLUMN_NAME, 'IsIdentity') AS 'HAS_IDENTITY'"
+                 +" FROM INFORMATION_SCHEMA.COLUMNS AS COLS"
+                 +" JOIN INFORMATION_SCHEMA.TABLES AS TBLS ON COLS.TABLE_NAME = TBLS.TABLE_NAME " +  
+                "WHERE TBLS.TABLE_SCHEMA = 'dbo' AND TABLE_TYPE = 'BASE TABLE' ORDER BY COLS.TABLE_NAME, ORDINAL_POSITION");
             
             Dictionary<string, DataColumnCollection> res = new Dictionary<string, DataColumnCollection>();
 
-            BaseDriverMySql tempWebDb = new BaseDriverMySql(Common.Environment.project.ConnstringWeb);
+            BaseDriverMsSql tempWebDb = new BaseDriverMsSql(Common.Environment.project.ConnstringWeb);
             
             tempWebDb.BeginTransaction();
 
-            tempWebDb.query("SET SQL_SELECT_LIMIT=0");
+            //tempWebDb.query("SET SQL_SELECT_LIMIT=0");
             foreach(string tableName in TableList()){
-                DataTable schema = tempWebDb.fetchAll("SELECT * FROM ", dbe.Table(tableName));
+                DataTable schema = tempWebDb.fetchAll("SELECT TOP 0 * FROM ", dbe.Table(tableName));
                 res[tableName] = schema.Columns;
             }
-            tempWebDb.query("SET SQL_SELECT_LIMIT=DEFAULT");
+            //tempWebDb.query("SET SQL_SELECT_LIMIT=DEFAULT");
             tempWebDb.CommitTransaction();
             tempWebDb = null;
 
@@ -168,39 +168,30 @@ namespace _min.Models
                 DataColumn col = res[r["TABLE_NAME"] as string][r["COLUMN_NAME"] as string];        // set ColumnName
 
 
-                string columnType = r["COLUMN_TYPE"] as string;
-                if (columnType.StartsWith("enum")) {        // enum type
-                    string vals = columnType.Substring(5, columnType.Length - 5 - 1);       // the brackets
-                    string[] split = vals.Split(new char[]{','});
-                    List<string> EnumValues = new List<string>();
-                    foreach (string s in split) {
-                        EnumValues.Add(s.Substring(1, s.Length - 2));
-                    }
-                    col.ExtendedProperties.Add(CC.ENUM_COLUMN_VALUES, EnumValues);
-                }
-
+                //string dataType = r["DATA_TYPE"] as string;
+                
                 
                 if (col.DataType == typeof(string)) {
                     col.MaxLength = Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]);
                 }
-                string extra = r["EXTRA"] as string;    // set AutoIncrement
-                if (extra == "auto_increment")
+                bool hasIdentity = (int)r["HAS_IDENTITY"] == 1;    // set AutoIncrement
+                if (hasIdentity)
                     col.AutoIncrement = true;
                 if(!col.AutoIncrement)
                     col.ExtendedProperties.Add(Common.Constants.COLUMN_EDITABLE, true); // TODO add more restrictive rules...
 
                 object colDefault = r["COLUMN_DEFAULT"];      // set DefaultValue
-                if(!((colDefault is DBNull) || (colDefault.ToString() == String.Empty))){
-                    string colDefaltStr = colDefault as string;
-                    if(colDefaltStr == "CURRENT_TIMESTAMP")
-                        col.ExtendedProperties.Remove(Common.Constants.COLUMN_EDITABLE);
+                //if(!((colDefault is DBNull) || (colDefault.ToString() == String.Empty))){
+                    //string colDefaltStr = colDefault as string;
+                    //if(colDefaltStr == "CURRENT_TIMESTAMP")
+                    //    col.ExtendedProperties.Remove(Common.Constants.COLUMN_EDITABLE);
                     //else{
                        //object parsed;
                        //if(Common.Functions.TryTryParse(colDefaltStr, col.DataType, out parsed)){
                        //     col.DefaultValue = parsed;
                        //}
                     //}
-                }
+                //}
 
                 col.AllowDBNull = ((string)r["IS_NULLABLE"]) == "YES";
                 if(!(r["CHARACTER_MAXIMUM_LENGTH"] is DBNull)) col.MaxLength = Convert.ToInt32(r["CHARACTER_MAXIMUM_LENGTH"]);
@@ -234,8 +225,30 @@ namespace _min.Models
         /// <returns>Dictionary&lt;TableName, ListOfFKs&gt;</returns>
         public Dictionary<string, List<FK>> ForeignKeys() {
             Dictionary<string, List<FK>> res = new Dictionary<string, List<FK>>();
-            DataTable stats = driver.fetchAll("SELECT * FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
-                + webDb + "\" AND REFERENCED_COLUMN_NAME IS NOT NULL");
+            //!!!!!!!!
+            DataTable stats = driver.fetchAll(
+@"SELECT CONSTRAINT_NAME = REF_CONST.CONSTRAINT_NAME,
+TABLE_CATALOG = FK.TABLE_CATALOG,
+TABLE_SCHEMA = FK.TABLE_SCHEMA,
+TABLE_NAME = FK.TABLE_NAME,
+COLUMN_NAME = FK_COLS.COLUMN_NAME,
+REFERENCED_TABLE_CATALOG = PK.TABLE_CATALOG,
+REFERENCED_TABLE_SCHEMA = PK.TABLE_SCHEMA,
+REFERENCED_TABLE_NAME = PK.TABLE_NAME,
+REFERENCED_COLUMN_NAME = PK_COLS.COLUMN_NAME
+FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS REF_CONST
+INNER JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS FK
+ON REF_CONST.CONSTRAINT_CATALOG = FK.CONSTRAINT_CATALOG
+AND REF_CONST.CONSTRAINT_SCHEMA = FK.CONSTRAINT_SCHEMA
+AND REF_CONST.CONSTRAINT_NAME = FK.CONSTRAINT_NAME
+AND FK.CONSTRAINT_TYPE = 'FOREIGN KEY'
+INNER JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS PK ON REF_CONST.UNIQUE_CONSTRAINT_CATALOG = PK.CONSTRAINT_CATALOG
+AND REF_CONST.UNIQUE_CONSTRAINT_SCHEMA = PK.CONSTRAINT_SCHEMA
+AND REF_CONST.UNIQUE_CONSTRAINT_NAME = PK.CONSTRAINT_NAME
+AND PK.CONSTRAINT_TYPE = 'PRIMARY KEY'
+INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE FK_COLS ON REF_CONST.CONSTRAINT_NAME = FK_COLS.CONSTRAINT_NAME
+INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE PK_COLS ON PK.CONSTRAINT_NAME = PK_COLS.CONSTRAINT_NAME");
+//HAVING TABLE_CATALOG = REFERENCED_TABLE_CATALOG"); (somehow should be here)
 
             foreach (string tblName in Tables) {
                 res[tblName] = new List<FK>();
@@ -255,21 +268,7 @@ namespace _min.Models
         /// </summary>
         /// <returns></returns>
         public List<FK> SelfRefFKs() {
-            List<FK> res = new List<FK>();
-            DataTable stats = driver.fetchAll("SELECT * FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
-                + webDb + "\" AND TABLE_NAME = REFERENCED_TABLE_NAME AND REFERENCED_COLUMN_NAME IS NOT NULL");
-            foreach (DataRow r in stats.Rows)
-            {
-                FK fk = (new FK(r["TABLE_NAME"] as string, r["COLUMN_NAME"] as string, r["REFERENCED_TABLE_NAME"] as string,
-                    r["REFERENCED_COLUMN_NAME"] as string, r["REFERENCED_COLUMN_NAME"] as string));
-                // the following checks will be done in the Architect and errors will be displayed to the user
-                
-                //if(res.Any(x => x.myTable == fk.myTable)) continue; // there can be only one sef-ref FK per table
-                //if(PKs[fk.myTable].Count != 1) continue;    // must have a single-column primary key...
-                //if (fk.refColumn != PKs[fk.myTable][0]) continue;   // ...to which the FK refers
-                res.Add(fk);
-            }
-            return res;
+            return FKs.SelectMany(kv => from fk in kv.Value where fk.refTable == fk.myTable select fk).ToList<FK>();
         }
 
         /// <summary>
@@ -278,9 +277,10 @@ namespace _min.Models
         /// <returns>TableName->ListOfColumns</returns>
         public Dictionary<string, List<string>> PrimaryKeyCols(){
 
-            DataTable stats = driver.fetchAll("SELECT TABLE_NAME, COLUMN_NAME FROM KEY_COLUMN_USAGE WHERE CONSTRAINT_SCHEMA = \""
-                + webDb + "\" AND CONSTRAINT_NAME = \"PRIMARY\" "
-                + " ORDER BY TABLE_NAME, ORDINAL_POSITION");
+            DataTable stats = driver.fetchAll("SELECT ccu.TABLE_NAME, ccu.COLUMN_NAME " +
+                    "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
+                    "JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu ON tc.CONSTRAINT_NAME = ccu.Constraint_name " +
+                    "WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY' AND tc.TABLE_SCHEMA = 'dbo'");
 
             Dictionary<string, List<string>> res = new Dictionary<string, List<string>>();
             string tblName;
@@ -298,10 +298,7 @@ namespace _min.Models
         /// </summary>
         /// <returns>list of the tables</returns>
         public List<string> TablesMissingPK() {
-            DataTable stats = driver.fetchAll("SELECT L.TABLE_NAME FROM (SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA =  '"
-                + webDb + "' AND TABLE_TYPE = 'BASE TABLE') AS L LEFT JOIN (SELECT TABLE_NAME FROM KEY_COLUMN_USAGE WHERE TABLE_SCHEMA =  '"
-                + webDb + "' AND CONSTRAINT_NAME =  'PRIMARY' GROUP BY TABLE_NAME) AS R USING ( TABLE_NAME ) WHERE R.TABLE_NAME IS NULL");
-            return new List<string>(from row in stats.AsEnumerable() select row["TABLE_NAME"] as string);
+            return (from tbl in Tables where !PKs.ContainsKey(tbl) select tbl).ToList<string>();
         }
 
         /// <summary>
@@ -309,14 +306,15 @@ namespace _min.Models
         /// </summary>
         /// <returns></returns>
         public List<string> TableList() {
-            DataTable tab = driver.fetchAll("SELECT TABLE_NAME FROM TABLES WHERE TABLE_SCHEMA = '" + webDb + "' AND TABLE_TYPE = \"BASE TABLE\" ORDER BY TABLE_NAME");
+            DataTable tab = driver.fetchAll("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' "
+            + "AND TABLE_TYPE = ", dbe.InObj("BASE TABLE"), " ORDER BY TABLE_NAME");
             return new List<string>(from row in tab.AsEnumerable() select row["TABLE_NAME"] as string);
         }
 
         // these tabes are potential M2NMapping tables
         public List<string> TwoColumnTables()
         {
-            DataTable tab = driver.fetchAll("SELECT TABLE_NAME FROM COLUMNS WHERE TABLE_SCHEMA =  '" + webDb + "' GROUP BY TABLE_NAME " +
+            DataTable tab = driver.fetchAll("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA =  'dbo' GROUP BY TABLE_NAME " +
                 "HAVING COUNT( * ) = 2");
             return new List<string>(from row in tab.AsEnumerable() select row["TABLE_NAME"] as string);
         }

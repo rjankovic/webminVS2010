@@ -17,11 +17,12 @@ namespace _min.Models
     /// <summary>
     /// Manages project architecture storage / retrieval, but does not maintain project versioning
     /// </summary>
-    class SystemDriverMySql : BaseDriverMySql, ISystemDriver
+    class SystemDriver : ISystemDriver
     {
-        private DbDeployableMySql dbe = new DbDeployableMySql();
+        private DbDeployableFactory dbe = new DbDeployableFactory();
         public Panel MainPanel { get; private set; }
         public Dictionary<int, Panel> Panels { get; private set; }
+        private IBaseDriver driver;
 
         private Dictionary<LockTypes, int> lockNumbers = new Dictionary<LockTypes,int>{
             {LockTypes.AdminLock, 10},
@@ -29,15 +30,15 @@ namespace _min.Models
         };
 
         
-        public SystemDriverMySql(string connstring, DataTable logTable = null, bool writeLog = false)
-            : base(connstring, logTable, writeLog)
+        public SystemDriver(IBaseDriver baseDriver)
         {
-            Panels = new Dictionary<int, Panel>();
+            this.driver = baseDriver;
         }
 
 
         public void SetArchitecture(Panel mainPanel) {
             MainPanel = mainPanel;
+            Panels = new Dictionary<int, Panel>();
             FlattenPanel(MainPanel);
         }
         
@@ -48,13 +49,15 @@ namespace _min.Models
         /// loads the whole project from database (in 3 queries)
         /// </summary>
         public void FullProjectLoad() {
-            BeginTransaction();
+            Panels = new Dictionary<int, Panel>();
+
+            driver.BeginTransaction();
             FK control_panel = new FK("controls", "id_panel", "panels", "id_panel", null);
             FK field_panel = new FK("fields", "id_panel", "panels", "id_panel", null);
-            DataTable panels = fetchAll("SELECT * FROM ", dbe.Table("panels"), "WHERE id_project =", CE.project.Id);
-            DataTable controls = fetchAll("SELECT controls.* FROM ", dbe.Table("controls"), dbe.Join(control_panel), "WHERE id_project =", CE.project.Id);
-            DataTable fields = fetchAll("SELECT fields.* FROM ", dbe.Table("fields"), dbe.Join(field_panel), "WHERE id_project =", CE.project.Id);
-            CommitTransaction();
+            DataTable panels = driver.fetchAll("SELECT * FROM ", dbe.Table("panels"), "WHERE id_project =", CE.project.Id);
+            DataTable controls = driver.fetchAll("SELECT controls.* FROM ", dbe.Table("controls"), dbe.Join(control_panel), "WHERE id_project =", CE.project.Id);
+            DataTable fields = driver.fetchAll("SELECT fields.* FROM ", dbe.Table("fields"), dbe.Join(field_panel), "WHERE id_project =", CE.project.Id);
+            driver.CommitTransaction();
             
             panels.TableName = "panels";
             controls.TableName = "controls";
@@ -198,7 +201,7 @@ namespace _min.Models
         #endregion
 
         public void IncreaseVersionNumber() {
-            query("UPDATE", dbe.Table("projects"), "SET `version` = `version` + 1");
+            driver.query("UPDATE", dbe.Table("projects"), "SET ", dbe.Col("version"), " = ", dbe.Col("version"), " + 1");
         }
 
 
@@ -212,7 +215,7 @@ namespace _min.Models
         // not used for now
         public void LogUserAction(System.Data.DataRow data)
         {
-            query("INSERT INTO log_users", dbe.InsVals(data));
+            driver.query("INSERT INTO",  dbe.Table("log_users"), dbe.InsVals(data));
         }
 
         /// <summary>
@@ -228,17 +231,17 @@ namespace _min.Models
             insertVals["id_project"] = CE.project.Id;
             if (panel.parent != null)
                 insertVals["id_parent"] = panel.parent.panelId;
-            if (!IsInTransaction)
+            if (!driver.IsInTransaction)
             {
-                BeginTransaction();
-                query("INSERT INTO panels ", dbe.InsVals(insertVals));
-                panel.SetCreationId(LastId());
-                CommitTransaction();
+                driver.BeginTransaction();
+                driver.query("INSERT INTO", dbe.Table("panels"), dbe.InsVals(insertVals));
+                panel.SetCreationId(driver.LastId());
+                driver.CommitTransaction();
             }
             else
             {
-                query("INSERT INTO panels ", dbe.InsVals(insertVals));
-                panel.SetCreationId(LastId());
+                driver.query("INSERT INTO", dbe.Table("panels"), dbe.InsVals(insertVals));
+                panel.SetCreationId(driver.LastId());
             }
             if (recursive) foreach (Panel child in panel.children)
                     AddPanelOnly(child);
@@ -341,14 +344,14 @@ namespace _min.Models
                 updateVals["id_parent"] = panel.parent.panelId;
             updateVals["content"] = panel.Serialize();
              
-            query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE id_panel = ", panel.panelId);
+            driver.query("UPDATE panels SET", dbe.UpdVals(updateVals), "WHERE ", dbe.Col("id_panel"), " = ", panel.panelId);
 
-            query("DELETE FROM `fields` WHERE `id_panel` = ", panel.panelId);
+            driver.query("DELETE FROM", dbe.Table("fields"), "WHERE", dbe.Col("id_panel"), " = ", panel.panelId);
             foreach (IField field in panel.fields)
             {
                 AddField(field);
             }
-            query("DELETE FROM `controls` WHERE `id_panel` = ", panel.panelId);
+            driver.query("DELETE FROM ", dbe.Table("controls"), " WHERE ", dbe.Col("id_panel"), " = ", panel.panelId);
             foreach (Control control in panel.controls)
             {
                 AddControl(control);
@@ -366,7 +369,7 @@ namespace _min.Models
         /// <param name="panel"></param>
         public void RemovePanel(Panel panel)
         {
-            query("DELETE FROM panels WHERE id_panel = ", panel.panelId);
+            driver.query("DELETE FROM ", dbe.Table("panels"), " WHERE ", dbe.Table("id_panel"), " = ", panel.panelId);
         }
 
 
@@ -379,16 +382,16 @@ namespace _min.Models
             
             insertVals["id_panel"] = field.PanelId;
             insertVals["content"] = field.Serialize();
-            if (!IsInTransaction)
+            if (!driver.IsInTransaction)
             {
-                BeginTransaction();
-                query("INSERT INTO fields", dbe.InsVals(insertVals));
-                field.SetId(LastId());    // must be 0 in creation
-                CommitTransaction();
+                driver.BeginTransaction();
+                driver.query("INSERT INTO fields", dbe.InsVals(insertVals));
+                field.SetId(driver.LastId());    // must be 0 in creation
+                driver.CommitTransaction();
             }
             else {
-                query("INSERT INTO fields", dbe.InsVals(insertVals));
-                field.SetId(LastId());    // must be 0 in creation
+                driver.query("INSERT INTO fields", dbe.InsVals(insertVals));
+                field.SetId(driver.LastId());    // must be 0 in creation
             }
 
 
@@ -399,13 +402,13 @@ namespace _min.Models
         /// </summary>
         /// <param name="field"></param>
         private void UpdateField(IField field){
-            query("UPDATE fields SET content = ", field.Serialize(), " WHERE id_field = ", field.FieldId);
+            driver.query("UPDATE fields SET content = ", field.Serialize(), " WHERE id_field = ", field.FieldId);
             
         }
 
         public void RemoveField(IField field)
         {
-            query("DELETE FROM fields WHERE id_field = ", field.FieldId);
+            driver.query("DELETE FROM fields WHERE id_field = ", field.FieldId);
         }
 
         /// <summary>
@@ -418,17 +421,18 @@ namespace _min.Models
 
             insertVals["id_panel"] = control.panelId;
             insertVals["content"] = control.Serialize();
-            if (!IsInTransaction)
+            if (!driver.IsInTransaction)
             {
-                BeginTransaction();
-                query("INSERT INTO controls", dbe.InsVals(insertVals));
-                control.SetCreationId(LastId());    // must be 0 in creation
-                CommitTransaction();
+                bool wasInTrans = driver.IsInTransaction;
+                if(!wasInTrans) driver.BeginTransaction();
+                driver.query("INSERT INTO controls", dbe.InsVals(insertVals));
+                control.SetCreationId(driver.LastId());    // must be 0 in creation
+                if(!wasInTrans) driver.CommitTransaction();
             }
             else
             {
-                query("INSERT INTO controls", dbe.InsVals(insertVals));
-                control.SetCreationId(LastId());    // must be 0 in creation
+                driver.query("INSERT INTO controls", dbe.InsVals(insertVals));
+                control.SetCreationId(driver.LastId());    // must be 0 in creation
             }
             if (control is TreeControl)
             {
@@ -456,7 +460,7 @@ namespace _min.Models
             MemoryStream ms = new MemoryStream();
             DataContractSerializer ser = new DataContractSerializer(typeof(Control));
             ser.WriteObject(ms, control);
-            query("UPDATE controls SET content = ", Functions.StreamToString(ms), " WHERE id_control = ", control.controlId);
+            driver.query("UPDATE controls SET content = ", Functions.StreamToString(ms), " WHERE id_control = ", control.controlId);
             if (control is TreeControl) {
                 SaveStroedHierarchyOfControl((TreeControl)control);
             }
@@ -464,8 +468,8 @@ namespace _min.Models
 
         public void RemoveControl(Control control)
         {
-            query("DELETE FROM `controls` WHERE id_control = ", control.controlId);
-            query("DELETE FROM `hierarchy_nav_tables` WHERE `id_control` = ", control.controlId);
+            driver.query("DELETE FROM controls WHERE id_control = ", control.controlId);
+            driver.query("DELETE FROM hierarchy_nav_tables WHERE id_control = ", control.controlId);
         }
 
 
@@ -475,24 +479,24 @@ namespace _min.Models
         /// <param name="control"></param>
         private void SaveStroedHierarchyOfControl(TreeControl control) { 
             if(control.controlId != null)
-                query("DELETE FROM ", dbe.Table("hierarchy_nav_tables"), "WHERE `id_control` = ", control.controlId);
-            bool wasInTran = IsInTransaction;
+                driver.query("DELETE FROM ", dbe.Table("hierarchy_nav_tables"), "WHERE", dbe.Col("id_control"), " = ", control.controlId);
+            bool wasInTran = driver.IsInTransaction;
 
             Dictionary<string, object> insVals = new Dictionary<string, object> { 
                 { "id_control", control.controlId } 
             };
             
             if (!wasInTran)
-                BeginTransaction();
+                driver.BeginTransaction();
             foreach (HierarchyRow r in control.storedHierarchyData.Rows) {
                 insVals["id_item"] = r.Id; 
                 insVals["id_parent"] = r.ParentId;
                 insVals["caption"] = r.Caption;
                 insVals["id_nav"] = r.NavId;
-                query("INSERT INTO `hierarchy_nav_tables`", dbe.InsVals(insVals));
+                driver.query("INSERT INTO ", dbe.Table("hierarchy_nav_tables"), dbe.InsVals(insVals));
             }
             if (!wasInTran)
-                CommitTransaction();
+                driver.CommitTransaction();
         }
 
         /// <summary>
@@ -508,7 +512,7 @@ namespace _min.Models
             cols.Add(dbe.Col("id_parent", "ParentId"));
             cols.Add(dbe.Col("caption", "Caption"));
             cols.Add(dbe.Col("id_nav", "NavId"));
-            DataTable tbl = fetchAll("SELECT ", dbe.Cols(cols), 
+            DataTable tbl = driver.fetchAll("SELECT ", dbe.Cols(cols), 
                 " FROM ", dbe.Table("hierarchy_nav_tables"), "WHERE  id_control = ", control.controlId);
 
             HierarchyNavTable resHierarchy = new HierarchyNavTable();
@@ -525,26 +529,27 @@ namespace _min.Models
             CE.Project project = new CE.Project(
                 (Int32)row["id_project"],
                 (string)row["name"],
-                (string)row["server_type"],
+                //(string)row["server_type"],
+                "OneDay",
                 (string)row["connstring_web"],
                 (string)row["connstring_information_schema"],
-                (Int32)row["version"]
+                (Int32)(row["version"])
                 );
             return project;
         }
 
         public CE.Project GetProject(int projectId) { 
-            DataRow row = fetch("SELECT * FROM projects WHERE id_project = ", projectId);
+            DataRow row = driver.fetch("SELECT * FROM projects WHERE id_project = ", projectId);
             return ProjectFromDataRow(row);
             }
 
         public CE.Project GetProject(string projectName) {
-            DataRow row = fetch("SELECT * FROM projects WHERE `name` = '" + projectName + "'");
+            DataRow row = driver.fetch("SELECT * FROM projects WHERE ", dbe.Col("name"), " = ", dbe.InObj(projectName));
             return ProjectFromDataRow(row);
         }
 
         public string[] GetProjectNameList() {
-            DataTable resTable = fetchAll("SELECT name FROM projects");
+            DataTable resTable = driver.fetchAll("SELECT name FROM projects");
             string[] res = new string[resTable.Rows.Count];
             for (int i = 0; i < resTable.Rows.Count; i++)
                 res[i] = resTable.Rows[i]["name"] as string;
@@ -555,7 +560,7 @@ namespace _min.Models
         /// </summary>
         /// <returns></returns>
         public DataTable GetProjects() {
-            DataTable res = fetchAll("SELECT * FROM projects");
+            DataTable res = driver.fetchAll("SELECT * FROM projects");
             res.PrimaryKey = new DataColumn[] { res.Columns["id_project"] };
             return res;
         }
@@ -569,7 +574,7 @@ namespace _min.Models
         }
 
         public void UpdateProject(CE.Project project) {
-            if (!CheckUniqueness("projects", "name", project.Name, "id_project", project.Id))
+            if (!driver.CheckUniqueness("projects", "name", project.Name, "id_project", project.Id))
             {
                 throw new ConstraintException("The name of the project must be unique.");
             }
@@ -580,42 +585,43 @@ namespace _min.Models
                 {"connstring_information_schema", project.ConnstringIS}
              };
 
-            query("UPDATE projects SET ", dbe.UpdVals(updVals), " WHERE id_project = ", project.Id); 
+            driver.query("UPDATE projects SET ", dbe.UpdVals(updVals), " WHERE id_project = ", project.Id); 
         }
 
         public int InsertProject(CE.Project project) {
-            if (!CheckUniqueness("projects", "name", project.Name)) {
+            if (!driver.CheckUniqueness("projects", "name", project.Name)) {
                 throw new ConstraintException("The name of the project must be unique.");
             }
             Dictionary<string, object> insVals = new Dictionary<string, object>{
                 {"name", project.Name},
                 {"connstring_web", project.ConnstringWeb},
-                {"connstring_information_schema", project.ConnstringIS}
+                {"connstring_information_schema", project.ConnstringIS},
+                {"version", project.Version}
             };
 
-            BeginTransaction();
-            query("INSERT INTO projects ", dbe.InsVals(insVals));
-            int id = LastId();
-            CommitTransaction();
+            driver.BeginTransaction();
+            driver.query("INSERT INTO projects ", dbe.InsVals(insVals));
+            int id = driver.LastId();
+            driver.CommitTransaction();
             return id;
         }
 
         public void DeleteProject(int projectId) {
-            query("DELETE FROM ", dbe.Table("projects"), "WHERE `id_project` = ", projectId);
+            driver.query("DELETE FROM ", dbe.Table("projects"), "WHERE `id_project` = ", projectId);
         }
 
         public bool ProposalExists() {
-            object res = fetchSingle("SELECT COUNT(*) FROM panels WHERE id_project = ", CE.project.Id);
+            object res = driver.fetchSingle("SELECT COUNT(*) FROM panels WHERE id_project = ", CE.project.Id);
             return (Convert.ToInt32(res) > 0);
         }
 
         public void ClearProposal() {
-            query("DELETE FROM panels WHERE id_project = ", CE.project.Id);
+            driver.query("DELETE FROM ", dbe.Table("panels"), " WHERE ", dbe.Col("id_project"), " = ", CE.project.Id);
 
         }
 
         public void ProcessLogTable() {
-            ProcessLogTable(logTable);
+            ProcessLogTable(driver.logTable);
         }
 
         /// <summary>
@@ -624,8 +630,8 @@ namespace _min.Models
         /// <param name="data"></param>
         public void ProcessLogTable(DataTable data)
         {
-            bool didWriteLog = writeLog;    // do not log the logging
-            writeLog = false;
+            bool didWriteLog = driver.WriteLog;    // do not log the logging
+            driver.WriteLog = false;
 
             if (!(data is DataTable)) throw new MissingMemberException("logTable is not a DataTable");
             foreach (DataRow row in data.Rows)
@@ -644,40 +650,40 @@ namespace _min.Models
                 insertVals["count"] = queryGroup.Count;
                 insertVals["total_time"] = queryGroup.TotalTime;
                 insertVals["max_time"] = queryGroup.MaxTime;
-                query("INSERT INTO log_db", dbe.InsVals(insertVals));
+                driver.query("INSERT INTO log_db", dbe.InsVals(insertVals));
             }
             data.Clear();
 
-            writeLog = didWriteLog;
+            driver.WriteLog = didWriteLog;
         }
 
-        public void SetUserRights(int user, int? project, int access) {
+        public void SetUserRights(object userId, int? project, int access) {
             Dictionary<string, object> insertVals = new Dictionary<string, object>{
-                {"id_user", user},
+                {"id_user", userId.ToString()},
                 {"id_project", project},
                 {"access", access}
             };
-            BeginTransaction();
-            query("DELETE FROM ", dbe.Table("access_rights"), "WHERE `id_user` = ", user, " AND `id_project` " +
+            driver.BeginTransaction();
+            driver.query("DELETE FROM ", dbe.Table("access_rights"), "WHERE ", dbe.Col("id_user"), " = ", dbe.InObj(userId.ToString()), "AND", dbe.Col("id_project"),
                 ((project == null) ? "IS NULL" : ("= " + (int)project))); 
-            query("INSERT INTO ", dbe.Table("access_rights"), dbe.InsVals(insertVals));
-            CommitTransaction();
+            driver.query("INSERT INTO ", dbe.Table("access_rights"), dbe.InsVals(insertVals));
+            driver.CommitTransaction();
             //Dictionary<string, object> updVals = new Dictionary<string, object> { { "access", access } };
-            //query("UPDATE ", dbe.Table("access_rights"), dbe.UpdVals(updVals), "WHERE ", dbe.Col("id_project"), " = ", project, " AND `id_user` = ", user);
+            //driver.query("UPDATE ", dbe.Table("access_rights"), dbe.UpdVals(updVals), "WHERE ", dbe.Col("id_project"), " = ", project, " AND `id_user` = ", user);
         
         }
 
-        public int GetUserRights(int user, int? project) {
+        public int GetUserRights(object userId, int? project) {
             int? rights;
             if (project == null)
             {
-                rights = (int?)fetchSingle("SELECT", dbe.Col("access"), " FROM ", dbe.Table("access_rights"),
-                    "WHERE `id_project` IS NULL AND `id_user` = ", user);
+                rights = (int?)driver.fetchSingle("SELECT", dbe.Col("access"), " FROM ", dbe.Table("access_rights"),
+                    "WHERE ", dbe.Col("id_project"), " IS NULL AND ", dbe.Col("id_user"), " = ", dbe.InObj(userId.ToString()));
             }
             else
             {
-                rights = (int?)fetchSingle("SELECT", dbe.Col("access"), " FROM ", dbe.Table("access_rights"),
-                    "WHERE `id_project` = ", project, " AND `id_user` = ", user);
+                rights = (int?)driver.fetchSingle("SELECT", dbe.Col("access"), " FROM ", dbe.Table("access_rights"),
+                    "WHERE", dbe.Col("id_project"), " = ", dbe.InObj(project), " AND", dbe.Col("id_user"), " = ", dbe.InObj(userId.ToString()));
             }
             return rights ?? 0;
         }
@@ -686,38 +692,37 @@ namespace _min.Models
         /// Gets the names of project that the user is administrator / architect of, IGNORING the
         /// global rights
         /// </summary>
-        /// <param name="user"></param>
+        /// <param name="userId"></param>
         /// <param name="adminOf"></param>
         /// <param name="architectOf"></param>
-        public void UserMenuOptions(int user, out List<string> adminOf, out List<string> architectOf) { 
+        public void UserMenuOptions(object userId, out List<string> adminOf, out List<string> architectOf) { 
             FK access_project = new FK("access_rights", "id_project", "projects", "id_project", null);
-            DataTable admin = fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM `access_rights` ",
-                dbe.Join(access_project), "WHERE `id_user` = ", user, " AND " , dbe.Col("access_rights", "access", null), " % 100 >= 10");
+            DataTable admin = driver.fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM", dbe.Table("access_rights"),
+                dbe.Join(access_project), "WHERE", dbe.Col("id_user"), " = ", dbe.InObj(userId.ToString()), " AND " , dbe.Col("access_rights", "access", null), " % 100 >= 10");
             adminOf = (from DataRow r in admin.Rows select r[0] as string).ToList<string>();
             
-            DataTable architect = fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM `access_rights` ",
-                dbe.Join(access_project), "WHERE `id_user` = ", user, " AND ", dbe.Col("access_rights", "access", null), " % 1000 >= 100");
+            DataTable architect = driver.fetchAll("SELECT", dbe.Col("projects", "name", null), "FROM ", dbe.Table("access_rights"),
+                dbe.Join(access_project), "WHERE", dbe.Col("id_user"), " = ", dbe.InObj(userId.ToString()), " AND ", dbe.Col("access_rights", "access", null), " % 1000 >= 100");
             architectOf = (from DataRow r in architect.Rows select r[0] as string).ToList<string>();
         }
 
-        public void ReleaseLock(int user, int project, LockTypes lockType) { 
-            query("DELETE FROM ", dbe.Table("locks"), "WHERE `id_owner` = ", user, "AND `id_project` = ", 
-                project, "AND `lock_type` = ", lockNumbers[lockType]); 
+        public void ReleaseLock(object userId, int project, LockTypes lockType) { 
+            driver.query("DELETE FROM ", dbe.Table("locks"), "WHERE", dbe.Col("id_owner"), " = ", dbe.InObj(userId.ToString()), "AND ", dbe.Col("id_project"), " = ", 
+                project, "AND ", dbe.Col("lock_type"), " = ", lockNumbers[lockType]); 
         }
 
-        public bool TryGetLock(int user, int project, LockTypes lockType) {
+        public bool TryGetLock(object userId, int project, LockTypes lockType) {
            Dictionary<string, object> insVals = new Dictionary<string,object>{
                 {"id_project", project},
-                {"id_owner", user},
+                {"id_owner", userId.ToString()},
                 {"lock_type", lockNumbers[lockType]}
             };
-            int? owner = LockOwner(project, lockType);
-            if(owner == user) return true;
-            else if (owner == null)
+            object owner = LockOwner(project, lockType);
+            if (owner == null)
             {
                 try
                 {
-                    query("INSERT INTO `locks`", dbe.InsVals(insVals));
+                    driver.query("INSERT INTO", dbe.Table("locks"), dbe.InsVals(insVals));
                 }
                 catch
                 {
@@ -725,26 +730,36 @@ namespace _min.Models
                 }
                 return true;
             }
+            else if (owner.ToString() == userId.ToString()) return true;
+            
             return false;
         }
 
-        public int? LockOwner(int project, LockTypes lockType) {
+        public object LockOwner(int project, LockTypes lockType) {
             
-            object res = fetchSingle("SELECT `id_owner` FROM  `locks` WHERE `id_project` = ", 
-                project, " AND `lock_type` = ", lockNumbers[lockType]);
-            return (int?)(res);
+            object res = driver.fetchSingle("SELECT ", dbe.Col("id_owner"), " FROM ", dbe.Table("locks"), " WHERE ", dbe.Col("id_project"), " = ", 
+                project, " AND ", dbe.Col("lock_type"), " = ", lockNumbers[lockType]);
+            return res;
         }
 
-        public void RemoveForsakenLocks(List<int> activeUsers) {
-            List<object> activeUsersObj = new List<object>();
-            foreach (int i in activeUsers) 
-                activeUsersObj.Add(i);
-            if (activeUsers.Count > 0)
-                query("DELETE FROM `locks` WHERE `id_owner` NOT IN ", dbe.InList(activeUsersObj));
+        public void RemoveForsakenLocks(List<object> activeUserIds) {
+            //List<object> activeUsersObj = new List<object>();
+            //foreach (int i in activeUserIds) 
+            //    activeUsersObj.Add(i);
+            if (activeUserIds.Count > 0)
+                driver.query("DELETE FROM ", dbe.Table("locks"), " WHERE ", dbe.Col("id_owner"), " NOT IN ", dbe.InList(activeUserIds));
         }
 
-        public void ReleaseLocksExceptProject(int userId, int projectId) {
-            query("DELETE FROM `locks` WHERE `id_owner` = ", userId, " AND `id_project` != ", projectId);
+        public void ReleaseLocksExceptProject(object userId, int projectId) {
+            driver.query("DELETE FROM ", dbe.Table("locks"), " WHERE ", dbe.Col("id_owner"), " = ", dbe.InObj(userId.ToString()), " AND ", dbe.Col("id_project"), " != ", projectId);
+        }
+
+        public void BeginTransaction() {
+            driver.BeginTransaction();
+        }
+
+        public void CommitTransaction() {
+            driver.CommitTransaction();
         }
 
     }

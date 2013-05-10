@@ -10,7 +10,7 @@ using System.Web;
 
 namespace _min.Common
 {
-    public enum DbServer { MySql, MSSQL };
+    public enum DbServer { MySql, MsSql };
     public enum UserAction { View, Insert, Update, Delete, Multiple }
     public enum AppRequest { ArchitectureReload, StopLogging, StartLogging }
     public enum PanelTypes { Editable, NavTable, NavTree, MenuDrop, MenuTabs, Monitor, Container }
@@ -21,6 +21,9 @@ namespace _min.Common
     public enum LockTypes { AdminLock, ArchitectLock }
     public enum FileNameFormat { UnixTime, UploadName, Both }
     public enum TargetImageFormat { JPG, PNG }
+    // parsed from the query beginning so that we can throw an exception when the query type doesnt match the method used to execute it
+    public enum QueryType
+    {    Unknown, Insert, Update, Delete, Select };
 
     public class LockAcquiryException : Exception
     { }

@@ -18,20 +18,19 @@ namespace _min.Sys
     public partial class ProjectDetail : System.Web.UI.Page
     {
         DataTable projectsTable = new DataTable();
-        ISystemDriver sysDriver = null;
         CE.Project project = null;
-
-
+        MinMaster mm;
+        
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            string connString = WebConfigurationManager.ConnectionStrings["LocalMySqlServer"].ConnectionString;
-            sysDriver = new SystemDriverMySql(connString);
+
+            mm = (MinMaster)Master;
             if(Page.RouteData.Values.ContainsKey("projectId") && Int32.Parse(Page.RouteData.Values["projectId"] as string) > 0){
                 DeleteButton.Visible = true;
                 DetailsView.DefaultMode = DetailsViewMode.Edit;
                 int idProject = Int32.Parse(Page.RouteData.Values["projectId"] as string);
-                project = sysDriver.GetProject(idProject);
+                project = mm.SysDriver.GetProject(idProject);
                 if (!Page.IsPostBack)
                 {
                     DetailsView.DataSource = new CE.Project[] { project };
@@ -48,8 +47,17 @@ namespace _min.Sys
                 case "TestWeb":
                     try
                     {
-                        BaseDriverMySql drv =
-                            new BaseDriverMySql(((TextBox)(DetailsView.Rows[1].Cells[1].Controls[0])).Text);
+                        IBaseDriver drv = null;
+                        switch (mm.DbServer)
+                        {
+                            case DbServer.MySql:
+                                drv = new BaseDriverMySql(((TextBox)(DetailsView.Rows[1].Cells[1].Controls[0])).Text);
+                                break;
+                            case DbServer.MsSql:
+                                drv = new BaseDriverMsSql(((TextBox)(DetailsView.Rows[1].Cells[1].Controls[0])).Text);
+                                break;
+                        }
+                        
                         drv.TestConnection();
                         InfoList.Items.Add("Connection successful");
                     }
@@ -60,8 +68,16 @@ namespace _min.Sys
                 case "TestIS":
                     try
                     {
-                        BaseDriverMySql drv =
-                            new BaseDriverMySql(((TextBox)(DetailsView.Rows[3].Cells[1].Controls[0])).Text);
+                        IBaseDriver drv = null;
+                        switch (mm.DbServer)
+                        {
+                            case DbServer.MySql:
+                                drv = new BaseDriverMySql(((TextBox)(DetailsView.Rows[3].Cells[1].Controls[0])).Text);
+                                break;
+                            case DbServer.MsSql:
+                                drv = new BaseDriverMsSql(((TextBox)(DetailsView.Rows[3].Cells[1].Controls[0])).Text);
+                                break;
+                        }
                         drv.TestConnection();
                         InfoList.Items.Add("Connection successful");
                     }
@@ -98,7 +114,8 @@ namespace _min.Sys
             string name = e.Values["Name"] as string;
             string csis = e.Values["ConnstringIS"] as string;
             string cswb = e.Values["ConnstringWeb"] as string;
-            CE.Project newProject = new CE.Project(0, name, "MySQL", cswb, csis, 0);
+
+            CE.Project newProject = new CE.Project(0, name, mm.DbServer.ToString(), cswb, csis, 0);
             
             BasicValidation(newProject);
             if (InfoList.Items.Count > 0)
@@ -109,7 +126,7 @@ namespace _min.Sys
             
             try
             {
-                sysDriver.InsertProject(newProject);
+                mm.SysDriver.InsertProject(newProject);
             }
             catch (ConstraintException ce){
                 InfoList.Items.Add(ce.Message);
@@ -125,7 +142,7 @@ namespace _min.Sys
             string name = e.NewValues["Name"] as string;
             string csis = e.NewValues["ConnstringIS"] as string;
             string cswb = e.NewValues["ConnstringWeb"] as string;
-            CE.Project updatedProject = new CE.Project(project.Id, name, "MySQL", cswb, csis, project.Version + 1);
+            CE.Project updatedProject = new CE.Project(project.Id, name, "MSSQL", cswb, csis, project.Version + 1);
             
             BasicValidation(updatedProject);
             if (InfoList.Items.Count > 0)
@@ -136,7 +153,7 @@ namespace _min.Sys
             
             try
             {
-                sysDriver.UpdateProject(updatedProject);
+                mm.SysDriver.UpdateProject(updatedProject);
             }
             catch (ConstraintException ce)
             {
@@ -150,7 +167,7 @@ namespace _min.Sys
 
         protected void DeleteButton_Click(object sender, EventArgs e)
         {
-            sysDriver.DeleteProject(project.Id);
+            mm.SysDriver.DeleteProject(project.Id);
             Response.RedirectToRoute("ProjectsRoute");
         }
 

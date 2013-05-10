@@ -99,6 +99,7 @@ namespace _min.Controls
         protected override void CreateChildControls()
         {
             inList.SelectionMode = ListSelectionMode.Multiple;
+            outList.SelectionMode = ListSelectionMode.Multiple;
             inList.ClientIDMode = System.Web.UI.ClientIDMode.Static;
             outList.ClientIDMode = System.Web.UI.ClientIDMode.Static;
             inList.ID = this.ID + "_M2NIN";
