@@ -45,7 +45,7 @@ namespace _min.Models
                 this.logTable.Columns.Add("time", typeof(int));
             }
         }
-
+        /*
         protected virtual QueryType getQueryType(string query) {
             query = query.Trim();
             string firstWord = query.Split(' ').First();
@@ -63,7 +63,7 @@ namespace _min.Models
                     throw new FormatException("Unrecognised type of MySql Command");
             }
         }
-
+        */
         protected void log(string query, Stopwatch watch){
                 DataRow logInfo = logTable.NewRow();
                 logInfo["query"] = query;
@@ -93,11 +93,12 @@ namespace _min.Models
             {
                 cmd.Transaction = currentTransaction;
             }
+            /*
             QueryType type = this.getQueryType(cmd.CommandText);
             if (type != QueryType.Select)
             {
                 throw new Exception("Trying to fetch from a non-select query");
-            }
+            }*/
             DataSet resultSet = new DataSet();
             adapter.SelectCommand = cmd;
             Stopwatch watch = new Stopwatch();
@@ -128,18 +129,19 @@ namespace _min.Models
         /// </summary>
         /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
         /// <returns></returns>        
-        public System.Data.DataTable fetchAll(params object[] parts)
+        public virtual System.Data.DataTable fetchAll(params object[] parts)
         {
             IDbCommand cmd = translate(parts);
             cmd.Connection = conn;
             if (currentTransaction is IDbTransaction) {
                 cmd.Transaction = currentTransaction;
             }
-            QueryType type = this.getQueryType(cmd.CommandText);
+            //QueryType type = this.getQueryType(cmd.CommandText);
+            /*
             if (type != QueryType.Select)
             {
                 throw new Exception("Trying to fetch from a non-select query");
-            }
+            }*/
             DataSet resultSet = new DataSet();
             adapter.SelectCommand = cmd;
             Stopwatch watch = new Stopwatch();
@@ -169,8 +171,9 @@ namespace _min.Models
             }
 
             DataTable resTbl = resultSet.Tables[0];
-            resultSet.Tables.Clear();
-            return resTbl;
+            //resultSet.Tables.Clear();
+            //resultSet.Dispose();
+            return resTbl.Copy();
         }
         /// <summary>
         /// Composes an SQL query from the passed parts and returns the first row of the result in a DataRow - the query MUST be an SELECT statement.

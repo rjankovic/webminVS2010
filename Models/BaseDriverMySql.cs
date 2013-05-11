@@ -10,6 +10,7 @@ using _min.Common;
 
 namespace _min.Models
 {
+    
     /// <summary>
     /// Provides basic database layer using and IDbDeployableFactory query parts
     /// </summary>
@@ -23,7 +24,6 @@ namespace _min.Models
         protected override MySqlConnection conn { get; set; }
         DbDeployableFactory dbe = new DbDeployableFactory();
         */
-
 
         private MySqlTransaction _currentTransaction;
         private MySqlDataAdapter _adapter;
@@ -52,7 +52,7 @@ namespace _min.Models
             conn = new MySqlConnection(connstring);
             adapter = new MySqlDataAdapter();
         }
-
+        /*
         protected override QueryType getQueryType(string query) {
             query = query.Trim();
             string firstWord = query.Split(' ').First();
@@ -71,14 +71,14 @@ namespace _min.Models
                     throw new FormatException("Unrecognised type of MySql Command");
             }
         }
-
+        */
         private void log(string query, Stopwatch watch){
                 DataRow logInfo = logTable.NewRow();
                 logInfo["query"] = query;
                 logInfo["time"] = watch.ElapsedMilliseconds;
                 logTable.Rows.Add(logInfo);
         }
-
+        
         /// <summary>
         /// Creates a command by concatenating the provided arguments, preferably IMySqlQueryDeployable, which will translate themselves into SQL. ValueTypes will be passed
         /// as parameters and string will directly copied to the query.
@@ -90,7 +90,7 @@ namespace _min.Models
             int paramCount = 0;
             MySqlCommand resultCmd = new MySqlCommand();
             StringBuilder resultQuery = new StringBuilder();
-
+            resultQuery.Append("SET NAMES utf8; ");
             foreach(object part in parts){
                 if (part is string)
                 {         // strings are directly appended
@@ -113,7 +113,7 @@ namespace _min.Models
             resultCmd.CommandText = resultQuery.ToString();
             return resultCmd;
         }
-
+        
         public override int LastId() {
             string id = fetchSingle("SELECT LAST_INSERT_ID()").ToString();
             return Int32.Parse(id);

@@ -69,6 +69,12 @@ namespace _min.Models
             controls.PrimaryKey = new DataColumn[] { panels.Columns["id_control"] };
             fields.PrimaryKey = new DataColumn[] { panels.Columns["id_field"] };
             */
+            if(panels.DataSet is DataSet)
+                panels.DataSet.Tables.Clear();
+            if(controls.DataSet is DataSet)
+                controls.DataSet.Tables.Clear();
+            if(fields.DataSet is DataSet)
+                fields.DataSet.Tables.Clear();
             ds.Tables.Add(panels);
             ds.Tables.Add(controls);
             ds.Tables.Add(fields);

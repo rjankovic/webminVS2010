@@ -26,4 +26,3 @@ C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\_min_t7.dl
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\bin\_min_t7.pdb
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\obj\Debug\_min_t7.dll
 C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\obj\Debug\_min_t7.pdb
-C:\Users\RJ\Documents\Visual Studio 2010\Projects\_min_t7\_min_t7\obj\Debug\_min_t7.csprojResolveAssemblyReference.cache

@@ -319,7 +319,9 @@
     <None Include="ClassDiagram3.cd" />
     <Content Include="Shared\Web.config" />
     <None Include="Styles\FlyBoyBB.otf" />
-    <Content Include="Sys\Web.config" />
+    <Content Include="Sys\Web.config">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
@@ -332,7 +334,7 @@
         <WebProjectProperties>
           <UseIIS>False</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>9480</DevelopmentServerPort>
+          <DevelopmentServerPort>10744</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
           <IISUrl>
           </IISUrl>
