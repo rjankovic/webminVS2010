@@ -12,7 +12,7 @@ namespace _min.Models
 {
     abstract class BaseDriver
     {
-                    // empty space always at the beggining of appended command!
+            // empty space always at the beggining of appended command!
             // non-string && non-deployable ValueType  => param, string => copy straight, other => wrong
 
         protected abstract IDbConnection conn { get; set; }
@@ -45,25 +45,7 @@ namespace _min.Models
                 this.logTable.Columns.Add("time", typeof(int));
             }
         }
-        /*
-        protected virtual QueryType getQueryType(string query) {
-            query = query.Trim();
-            string firstWord = query.Split(' ').First();
-            switch (firstWord.ToUpper())
-            {
-                case "SELECT":
-                    return QueryType.Select;
-                case "INSERT":
-                    return QueryType.Insert;
-                case "UPDATE":
-                    return QueryType.Update;
-                case "DELETE":
-                    return QueryType.Delete;
-                default:
-                    throw new FormatException("Unrecognised type of MySql Command");
-            }
-        }
-        */
+        
         protected void log(string query, Stopwatch watch){
                 DataRow logInfo = logTable.NewRow();
                 logInfo["query"] = query;
@@ -93,12 +75,6 @@ namespace _min.Models
             {
                 cmd.Transaction = currentTransaction;
             }
-            /*
-            QueryType type = this.getQueryType(cmd.CommandText);
-            if (type != QueryType.Select)
-            {
-                throw new Exception("Trying to fetch from a non-select query");
-            }*/
             DataSet resultSet = new DataSet();
             adapter.SelectCommand = cmd;
             Stopwatch watch = new Stopwatch();
@@ -136,12 +112,6 @@ namespace _min.Models
             if (currentTransaction is IDbTransaction) {
                 cmd.Transaction = currentTransaction;
             }
-            //QueryType type = this.getQueryType(cmd.CommandText);
-            /*
-            if (type != QueryType.Select)
-            {
-                throw new Exception("Trying to fetch from a non-select query");
-            }*/
             DataSet resultSet = new DataSet();
             adapter.SelectCommand = cmd;
             Stopwatch watch = new Stopwatch();
@@ -171,8 +141,6 @@ namespace _min.Models
             }
 
             DataTable resTbl = resultSet.Tables[0];
-            //resultSet.Tables.Clear();
-            //resultSet.Dispose();
             return resTbl.Copy();
         }
         /// <summary>

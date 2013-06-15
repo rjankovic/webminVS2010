@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using _min.Interfaces;
-using MySql.Data.MySqlClient;
 using System.Data;
 using System.Diagnostics;
-using System.Data.Sql;
 using System.Data.SqlClient;
 
 namespace _min.Models
 {
     /// <summary>
-    /// Provides basic database layer using and IDbDeployableFactory query parts
+    /// Provides basic database layer for MS SQL Server using and IDbDeployableFactory query parts
     /// </summary>
     class BaseDriverMsSql : BaseDriver, IBaseDriver
     {
@@ -35,8 +31,7 @@ namespace _min.Models
             get { return _conn; }
             set { _conn = (SqlConnection)value; }
         }
-        //DbDeployableFactory dbe = new DbDeployableFactory();
-
+        
 
         public BaseDriverMsSql(string connstring, DataTable logTable = null, bool writeLog = false)
             :base(connstring, logTable, writeLog)
@@ -54,8 +49,7 @@ namespace _min.Models
         }
 
         /// <summary>
-        /// Creates a command by concatenating the provided arguments, preferably IMySqlQueryDeployable, which will translate themselves into SQL. ValueTypes will be passed
-        /// as parameters and string will directly copied to the query.
+        /// see BaseDriver
         /// </summary>
         /// <param name="parts">IMySQLQueryDeployable objects, strings or ValueTypes</param>
         /// <returns></returns>

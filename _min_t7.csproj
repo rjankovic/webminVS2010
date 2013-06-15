@@ -232,6 +232,11 @@
     <Compile Include="Models\BaseDriverMsSql.cs" />
     <Compile Include="Models\StatsMsSql.cs" />
     <Compile Include="Models\ImageField.cs" />
+    <Compile Include="Properties\Connstrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Connstrings.settings</DependentUpon>
+    </Compile>
     <Compile Include="Shared\Show.aspx.cs">
       <DependentUpon>Show.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -318,6 +323,11 @@
     <None Include="ClassDiagram2.cd" />
     <None Include="ClassDiagram3.cd" />
     <Content Include="Shared\Web.config" />
+    <None Include="ClassDiagram4.cd" />
+    <None Include="Properties\Connstrings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Connstrings.Designer.cs</LastGenOutput>
+    </None>
     <None Include="Styles\FlyBoyBB.otf" />
     <Content Include="Sys\Web.config">
       <SubType>Designer</SubType>

@@ -58,7 +58,7 @@ namespace _min
 
             
             // session expiry means logout, even if the provider would keep it
-            if (Session.IsNewSession && user != null 
+            if ((Session.IsNewSession || user == null) 
                 && CE.GlobalState != GlobalState.Account && CE.GlobalState != GlobalState.Error)
             {
                 FormsAuthentication.SignOut();
