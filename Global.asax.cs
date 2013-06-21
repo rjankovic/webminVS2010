@@ -78,10 +78,12 @@ namespace _min
 
         private void AddFactoriesFromAssembly(Assembly a, List<IColumnFieldFactory> factories) {
             Type factoryType = typeof(IColumnFieldFactory);
+            /*
             factories.AddRange((from t in a.GetTypes()
                                 where t.GetInterfaces().Contains(factoryType)
                                          && t.GetConstructor(Type.EmptyTypes) != null
                                 select Activator.CreateInstance(t) as IColumnFieldFactory).ToList<IColumnFieldFactory>());
+             */ 
         }
 
         void Session_Start(object sender, EventArgs e)

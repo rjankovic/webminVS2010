@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="EditNav.aspx.cs" Inherits="_min.Architect.EditNav" 
     EnableEventValidation="false" %>
-<%@ Register assembly="_min_t7" namespace="_min.Controls" tagprefix="cc1" %>
+<%@ Register assembly="Webmin" namespace="_min.Controls" tagprefix="cc1" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
         <script src="/Scripts/globalUI.js?<%=DateTime.Now.Ticks.ToString()%>" type="text/javascript"></script>
